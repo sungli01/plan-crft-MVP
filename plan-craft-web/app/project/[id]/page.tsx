@@ -90,13 +90,15 @@ export default function ProjectDetailPage() {
       );
 
       // 파일 다운로드
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${project?.title || 'document'}.html`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      if (typeof window !== 'undefined' && document) {
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${project?.title || 'document'}.html`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
     } catch (error) {
       console.error('다운로드 실패:', error);
       alert('다운로드에 실패했습니다');
