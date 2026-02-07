@@ -1,0 +1,38 @@
+{
+  "name": "plan-craft-backend",
+  "version": "1.0.0",
+  "description": "Plan-Craft Backend API Server",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node src/db/migrate.js",
+    "db:studio": "drizzle-kit studio"
+  },
+  "keywords": [
+    "plan-craft",
+    "api",
+    "hono"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.73.0",
+    "@hono/node-server": "^1.8.0",
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^12.6.2",
+    "dotenv": "^17.2.4",
+    "drizzle-orm": "^0.29.5",
+    "hono": "^4.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "postgres": "^3.4.8",
+    "ws": "^8.16.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "drizzle-kit": "^0.20.0"
+  }
+}

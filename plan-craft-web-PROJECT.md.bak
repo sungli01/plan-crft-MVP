@@ -1,0 +1,215 @@
+# Plan-Craft 웹 서비스
+
+## 🎯 목표
+
+**누구나 사용할 수 있는 AI 기반 사업계획서 자동 생성 서비스**
+
+---
+
+## 🏗️ 아키텍처
+
+```
+┌────────────────────────────────────────┐
+│     Frontend (Next.js 14)              │
+│  - App Router                          │
+│  - TypeScript                          │
+│  - Tailwind CSS                        │
+│  - shadcn/ui                           │
+└─────────────┬──────────────────────────┘
+              │ REST API + WebSocket
+┌─────────────┴──────────────────────────┐
+│     Backend (Hono + Node.js)           │
+│  - REST API                            │
+│  - WebSocket (진행률)                  │
+│  - JWT 인증                            │
+│  - 토큰 추적                           │
+└─────────────┬──────────────────────────┘
+              │
+┌─────────────┴──────────────────────────┐
+│     Plan-Craft v3.0 Engine             │
+│  - Multi-Agent System                  │
+│  - Claude Opus 4                       │
+│  - Image Integration                   │
+└────────────────────────────────────────┘
+```
+
+---
+
+## 📋 기능
+
+### 1️⃣ 인증
+- [x] 회원가입
+- [x] 로그인
+- [x] JWT 토큰
+- [ ] 소셜 로그인 (Google, GitHub)
+
+### 2️⃣ 프로젝트 관리
+- [x] 프로젝트 생성
+- [x] 프로젝트 목록
+- [x] 프로젝트 수정/삭제
+- [ ] 프로젝트 공유
+
+### 3️⃣ 문서 생성
+- [x] 실시간 진행률
+- [x] 품질 점수 표시
+- [x] HTML/PDF 다운로드
+- [ ] 섹션별 재생성
+
+### 4️⃣ 토큰 관리
+- [x] 실시간 사용량 표시
+- [x] 사용 내역
+- [x] 비용 계산
+- [ ] 충전 시스템
+
+### 5️⃣ 설정
+- [x] AI 모델 선택
+- [x] 품질 vs 비용 설정
+- [ ] 커스텀 템플릿
+
+---
+
+## 🛠️ 기술 스택
+
+### Frontend
+```json
+{
+  "framework": "Next.js 14",
+  "language": "TypeScript",
+  "styling": "Tailwind CSS",
+  "ui": "shadcn/ui",
+  "state": "Zustand",
+  "api": "TanStack Query"
+}
+```
+
+### Backend
+```json
+{
+  "framework": "Hono",
+  "runtime": "Node.js 20+",
+  "database": "PostgreSQL",
+  "cache": "Redis",
+  "auth": "JWT",
+  "websocket": "ws"
+}
+```
+
+### 배포
+```json
+{
+  "frontend": "Vercel",
+  "backend": "Railway",
+  "database": "Supabase",
+  "cache": "Redis Cloud"
+}
+```
+
+---
+
+## 📁 프로젝트 구조
+
+```
+plan-craft-web/
+├── frontend/               # Next.js 앱
+│   ├── app/               # App Router
+│   │   ├── (auth)/       # 인증 페이지
+│   │   ├── dashboard/    # 대시보드
+│   │   ├── projects/     # 프로젝트 관리
+│   │   └── generate/     # 문서 생성
+│   ├── components/       # UI 컴포넌트
+│   ├── lib/             # 유틸리티
+│   └── styles/          # 스타일
+│
+├── backend/              # Hono API
+│   ├── routes/          # API 라우트
+│   ├── middleware/      # 미들웨어
+│   ├── services/        # 비즈니스 로직
+│   ├── db/             # 데이터베이스
+│   └── engine/         # Plan-Craft 엔진
+│
+└── shared/              # 공통 타입/유틸
+    ├── types/
+    └── utils/
+```
+
+---
+
+## 🚀 개발 로드맵
+
+### Week 1: 백엔드 API
+- [x] Hono 프로젝트 설정
+- [x] 데이터베이스 스키마
+- [x] 인증 API
+- [x] 프로젝트 CRUD API
+- [ ] 문서 생성 API
+
+### Week 2: 프론트엔드
+- [ ] Next.js 프로젝트 설정
+- [ ] 인증 UI
+- [ ] 대시보드 UI
+- [ ] 프로젝트 관리 UI
+
+### Week 3: 통합
+- [ ] API 연동
+- [ ] WebSocket 통합
+- [ ] 실시간 진행률
+- [ ] 토큰 추적 UI
+
+### Week 4: 배포
+- [ ] Vercel 배포
+- [ ] Railway 배포
+- [ ] 도메인 연결
+- [ ] 모니터링 설정
+
+---
+
+## 💰 비즈니스 모델
+
+### Free Tier
+- 월 3개 문서
+- 기본 품질 (Sonnet)
+- 이미지 없음
+
+### Pro ($29/month)
+- 월 20개 문서
+- 고품질 (Opus)
+- 이미지 포함
+
+### Enterprise (Custom)
+- 무제한 문서
+- 전용 서버
+- API 액세스
+- 커스텀 템플릿
+
+---
+
+## 📊 예상 비용
+
+### 사용자당 비용 (월)
+```
+Free:  3문서 × $1.00  = $3.00
+Pro:   20문서 × $0.80 = $16.00
+```
+
+### 손익분기점
+```
+Pro 사용자 100명 = $2,900/월 (매출)
+                  - $1,600/월 (AI 비용)
+                  - $500/월 (인프라)
+                  = $800/월 (순이익)
+```
+
+---
+
+## 🔐 보안
+
+- JWT 토큰 인증
+- bcrypt 비밀번호 해싱
+- Rate Limiting
+- CORS 화이트리스트
+- API 키 암호화
+
+---
+
+작성일: 2026-02-07
+버전: 1.0.0

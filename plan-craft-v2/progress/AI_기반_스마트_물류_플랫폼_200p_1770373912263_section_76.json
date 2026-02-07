@@ -1,0 +1,24 @@
+{
+  "section": {
+    "id": 76,
+    "title": "26-1. CI/CD 파이프라인",
+    "targetWords": 800,
+    "parentTitle": "26. 배포 및 운영 계획",
+    "prompt": "자동 배포 체계. 최소 800단어."
+  },
+  "content": "## 26-1. CI/CD 파이프라인\n\n### 1. 개요\nAI 기반 스마트 물류 플랫폼의 안정적이고 지속적인 배포를 위해 CI/CD(Continuous Integration/Continuous Deployment) 파이프라인을 구축할 것입니다. CI/CD 파이프라인은 개발, 테스트, 배포 프로세스를 자동화하여 신속하고 안정적인 배포를 가능하게 합니다. 이를 통해 개발 주기를 단축하고, 배포 오류를 최소화하며, 지속적인 품질 관리를 할 수 있습니다.\n\n### 2. 기술 스택\nCI/CD 파이프라인을 구축하기 위해 다음과 같은 기술 스택을 사용할 것입니다:\n\n1. **버전 관리 시스템**: Git \n2. **CI 도구**: Jenkins\n3. **CD 도구**: AWS CodeDeploy\n4. **Docker**: 애플리케이션 및 인프라의 컨테이너화\n5. **Kubernetes**: 컨테이너 오케스트레이션 및 배포 자동화\n\n### 3. CI/CD 파이프라인 구조\nCI/CD 파이프라인의 주요 단계는 다음과 같습니다:\n\n1. **소스 코드 관리**: \n   - 개발자들이 Git 저장소에 코드를 커밋\n   - 각 브랜치에 대한 자동 빌드 트리거\n\n2. **빌드 및 테스트**:\n   - Jenkins가 Git 저장소의 변경 사항을 감지하고 자동으로 빌드 프로세스를 시작\n   - 컴파일, 단위 테스트, 통합 테스트 수행\n   - 정적 코드 분석, 취약점 스캔 등 추가 확인 작업 실행\n\n3. **Docker 이미지 빌드 및 배포**:\n   - 빌드 및 테스트가 성공적으로 완료되면 Docker 이미지 빌드\n   - 빌드된 이미지를 AWS ECR(Elastic Container Registry)에 푸시\n\n4. **인프라 프로비저닝**:\n   - Terraform을 사용하여 AWS 리소스(EC2, ECS, RDS 등) 자동 프로비저닝\n   - 테스트 및 운영 환경 인프라를 코드로 정의하고 관리\n\n5. **애플리케이션 배포**:\n   - AWS CodeDeploy를 사용하여 ECS 클러스터에 애플리케이션 배포\n   - 블루/그린 배포 전략 적용으로 무중단 배포 지원\n   - 자동 롤백 기능 구현\n\n6. **모니터링 및 알람**:\n   - CloudWatch, Prometheus, Grafana 등을 활용한 모니터링 시스템 구축\n   - 주요 지표 및 이벤트에 대한 알람 설정\n\n7. **보안 및 규정 준수**:\n   - OWASP 보안 가이드라인 준수\n   - 취약점 스캔 및 보안 점검 자동화\n   - AWS Config, AWS Security Hub 등을 통한 규정 준수 관리\n\n### 4. CI/CD 파이프라인 상세 설계\n각 단계별로 상세한 설계 내용은 다음과 같습니다:\n\n#### 4.1. 소스 코드 관리\n- Git 저장소(예: GitHub, GitLab)를 사용하여 소스 코드 관리\n- 개발, 테스트, 스테이징, 운영 등 환경별 브랜치 전략 수립\n- 브랜치 보호 규칙 설정(필수 승인, 상태 확인 등)\n- 코드 리뷰 프로세스 정립\n\n#### 4.2. 빌드 및 테스트\n- Jenkins를 CI 서버로 사용\n- 각 브랜치에 대한 자동 빌드 트리거 설정\n- 단위 테스트, 통합 테스트, 기능 테스트 자동화\n- 정적 코드 분석(SonarQube), 취약점 스캔(OWASP ZAP) 실행\n- 테스트 결과 reporting 및 히스토리 관리\n\n#### 4.3. Docker 이미지 빌드 및 배포\n- 빌드된 애플리케이션을 Docker 이미지로 생성\n- AWS ECR(Elastic Container Registry)에 이미지 푸시\n- 이미지 버전 관리 및 보안 스캔 자동화\n\n#### 4.4. 인프라 프로비저닝\n- Terraform을 사용하여 AWS 리소스 인프라 코드로 정의\n- 테스트, 스테이징, 운영 환경 인프라를 별도로 관리\n- 인프라 변경 사항에 대한 자동 검증 및 승인 프로세스 수립\n\n#### 4.5. 애플리케이션 배포\n- AWS CodeDeploy를 사용하여 ECS 클러스터에 애플리케이션 배포\n- 블루/그린 배포 전략 적용으로 무중단 배포 지원\n- 배포 단계별 자동 승인 프로세스 수립\n- 배포 이력 및 결과 모니터링\n\n#### 4.6. 모니터링 및 알람\n- CloudWatch, Prometheus, Grafana를 이용한 통합 모니터링 시스템 구축\n- 애플리케이션, 인프라, 보안 등 다양한 지표 모니터링\n- 주요 지표 및 이벤트에 대한 알람 설정 및 알람 대응 프로세스 수립\n\n#### 4.7. 보안 및 규정 준수\n- OWASP 보안 가이드라인 준수\n- 취약점 스캔(OWASP ZAP) 및 정적 코드 분석(SonarQube) 자동화\n- AWS Config, AWS Security Hub 등을 통한 규정 준수 관리\n- 보안 인시던트 대응 프로세스 수립\n\n### 5. 결론\nAI 기반 스마트 물류 플랫폼의 안정적이고 효율적인 배포를 위해 CI/CD 파이프라인을 구축할 것입니다. 이를 통해 신속한 배포, 오류 최소화, 지속적인 품질 관리가 가능할 것으로 기대됩니다. 또한 인프라 및 보안 관리의 자동화로 운영 효율성을 높이고 규정 준수를 강화할 수 있습니다.",
+  "wordCount": 566,
+  "tokens": {
+    "input_tokens": 291,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 2062,
+    "service_tier": "standard",
+    "inference_geo": "not_available"
+  },
+  "generatedAt": "2026-02-06T10:58:09.186Z"
+}

@@ -1,0 +1,75 @@
+/**
+ * Database Schema - Drizzle ORM
+ */
+
+import { pgTable, uuid, varchar, text, timestamp, integer, decimal, jsonb, boolean } from 'drizzle-orm/pg-core';
+
+// Users 테이블
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  passwordHash: varchar('password_hash', { length: 255 }).notNull(),
+  name: varchar('name', { length: 100 }),
+  plan: varchar('plan', { length: 50 }).default('free'), // free, pro, enterprise
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+
+// Projects 테이블
+export const projects = pgTable('projects', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id).notNull(),
+  title: varchar('title', { length: 500 }).notNull(),
+  idea: text('idea').notNull(),
+  status: varchar('status', { length: 50 }).default('draft'), // draft, generating, completed, failed
+  model: varchar('model', { length: 100 }).default('claude-opus-4'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+
+// Documents 테이블
+export const documents = pgTable('documents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  projectId: uuid('project_id').references(() => projects.id).notNull(),
+  contentHtml: text('content_html'),
+  contentPdfUrl: text('content_pdf_url'),
+  qualityScore: decimal('quality_score', { precision: 5, scale: 2 }),
+  sectionCount: integer('section_count'),
+  wordCount: integer('word_count'),
+  imageCount: integer('image_count'),
+  metadata: jsonb('metadata'), // 생성 메타데이터 (토큰, 시간 등)
+  generatedAt: timestamp('generated_at').defaultNow()
+});
+
+// Token Usage 테이블
+export const tokenUsage = pgTable('token_usage', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id).notNull(),
+  projectId: uuid('project_id').references(() => projects.id),
+  model: varchar('model', { length: 100 }).notNull(),
+  inputTokens: integer('input_tokens').notNull(),
+  outputTokens: integer('output_tokens').notNull(),
+  totalTokens: integer('total_tokens').notNull(),
+  costUsd: decimal('cost_usd', { precision: 10, scale: 6 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow()
+});
+
+// API Keys 테이블 (사용자 API 키 관리)
+export const apiKeys = pgTable('api_keys', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id).notNull(),
+  provider: varchar('provider', { length: 50 }).notNull(), // anthropic, openai, unsplash
+  keyHash: varchar('key_hash', { length: 255 }).notNull(),
+  keyPreview: varchar('key_preview', { length: 20 }), // sk-...abc (보안용)
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow()
+});
+
+// Sessions 테이블 (인증 세션)
+export const sessions = pgTable('sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id).notNull(),
+  token: varchar('token', { length: 500 }).notNull().unique(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow()
+});

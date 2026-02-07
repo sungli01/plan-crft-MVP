@@ -1,0 +1,39 @@
+{
+  "totalTime": "1374.3",
+  "tokenUsage": {
+    "architect": {
+      "input": 745,
+      "output": 4772
+    },
+    "writer": {
+      "input": 20697,
+      "output": 32249
+    },
+    "imageCurator": {
+      "input": 0,
+      "output": 0
+    },
+    "reviewer": {
+      "input": 46388,
+      "output": 12280
+    }
+  },
+  "totalTokens": {
+    "input": 67830,
+    "output": 49301,
+    "total": 117131
+  },
+  "estimatedCost": 4.715025,
+  "generatedAt": "2026-02-07T01:16:33.946Z",
+  "projectInfo": {
+    "title": "AI 기반 스마트 물류 플랫폼",
+    "idea": "AI와 IoT를 활용하여 물류 배송을 최적화하고, 실시간 추적 및 예측 배송 시스템을 구축하는 혁신적인 플랫폼입니다. 블록체인 기반 투명한 이력 관리와 머신러닝 기반 수요 예측으로 물류 비용을 30% 절감합니다."
+  },
+  "htmlFile": "./output/AI_기반_스마트_물류_플랫폼_v3_full_2026-02-07T01-16-33.html",
+  "summary": {
+    "sections": 21,
+    "averageQuality": 87.23809523809524,
+    "totalWords": 8859,
+    "totalImages": 93
+  }
+}

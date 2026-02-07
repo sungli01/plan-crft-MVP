@@ -1,0 +1,32 @@
+/**
+ * Database Connection
+ */
+
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import * as schema from './schema.js';
+
+// PostgreSQL 연결 (환경 변수 또는 로컬 기본값)
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/plancraft';
+
+// PostgreSQL 클라이언트
+const client = postgres(connectionString, {
+  max: 10,
+  idle_timeout: 20,
+  connect_timeout: 10
+});
+
+// Drizzle ORM 인스턴스
+export const db = drizzle(client, { schema });
+
+// 헬스 체크
+export async function checkDatabaseConnection() {
+  try {
+    await client`SELECT 1`;
+    console.log('✅ 데이터베이스 연결 성공');
+    return true;
+  } catch (error) {
+    console.error('❌ 데이터베이스 연결 실패:', error.message);
+    return false;
+  }
+}
