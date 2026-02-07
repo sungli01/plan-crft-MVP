@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -61,6 +62,49 @@ export default function DashboardPage() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     router.push('/');
+  };
+
+  const handleCreateProject = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setCreating(true);
+
+    try {
+      const formData = new FormData(e.currentTarget);
+      const title = formData.get('title') as string;
+      const idea = formData.get('idea') as string;
+      const file = formData.get('document') as File;
+
+      let referenceDoc = '';
+      
+      // 파일이 있으면 읽기
+      if (file && file.size > 0) {
+        referenceDoc = await readFileAsText(file);
+      }
+
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_URL}/api/projects`,
+        { title, idea, referenceDoc },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // 프로젝트 생성 후 상세 페이지로 이동
+      router.push(`/project/${response.data.project.id}`);
+    } catch (error) {
+      console.error('프로젝트 생성 실패:', error);
+      alert('프로젝트 생성에 실패했습니다');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const readFileAsText = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = (e) => reject(e);
+      reader.readAsText(file);
+    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -137,11 +181,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
             <h3 className="text-xl font-semibold mb-4">새 프로젝트 만들기</h3>
             <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                router.push(`/create?title=${encodeURIComponent(formData.get('title') as string)}&idea=${encodeURIComponent(formData.get('idea') as string)}`);
-              }}
+              onSubmit={handleCreateProject}
               className="space-y-4"
             >
               <div>
@@ -168,17 +208,52 @@ export default function DashboardPage() {
                   required
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  참고 문서 (선택)
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition">
+                  <input
+                    type="file"
+                    name="document"
+                    accept=".txt,.pdf,.doc,.docx"
+                    className="hidden"
+                    id="document-upload"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      const label = document.getElementById('document-label');
+                      if (label && file) {
+                        label.textContent = file.name;
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor="document-upload"
+                    className="cursor-pointer"
+                  >
+                    <div className="text-4xl mb-2">📎</div>
+                    <p id="document-label" className="text-sm text-gray-600">
+                      클릭하여 파일 선택 (TXT, PDF, DOC)
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      참고할 문서나 자료가 있다면 업로드하세요
+                    </p>
+                  </label>
+                </div>
+              </div>
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+                  disabled={creating}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
-                  생성 시작
+                  {creating ? '생성 중...' : '프로젝트 생성'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowCreateForm(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  disabled={creating}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
                 >
                   취소
                 </button>

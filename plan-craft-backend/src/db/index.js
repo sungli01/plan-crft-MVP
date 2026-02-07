@@ -41,6 +41,7 @@ export async function initializeDatabase() {
         user_id UUID NOT NULL REFERENCES users(id),
         title TEXT NOT NULL,
         idea TEXT NOT NULL,
+        reference_doc TEXT,
         status TEXT DEFAULT 'draft',
         model TEXT DEFAULT 'claude-opus-4',
         created_at TIMESTAMP DEFAULT NOW(),

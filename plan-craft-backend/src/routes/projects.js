@@ -18,7 +18,8 @@ projectsRouter.use('/*', authMiddleware);
 const createProjectSchema = z.object({
   title: z.string().min(5, '제목은 최소 5자 이상이어야 합니다').max(500),
   idea: z.string().min(20, '아이디어는 최소 20자 이상이어야 합니다'),
-  model: z.enum(['claude-opus-4', 'claude-sonnet-4', 'gpt-4-turbo']).optional()
+  model: z.enum(['claude-opus-4', 'claude-sonnet-4', 'gpt-4-turbo']).optional(),
+  referenceDoc: z.string().optional()
 });
 
 const updateProjectSchema = z.object({
@@ -71,6 +72,7 @@ projectsRouter.post('/', async (c) => {
         userId: user.id,
         title: validated.title,
         idea: validated.idea,
+        referenceDoc: validated.referenceDoc || null,
         model: validated.model || 'claude-opus-4',
         status: 'draft'
       })

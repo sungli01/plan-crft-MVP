@@ -21,6 +21,7 @@ export const projects = pgTable('projects', {
   userId: uuid('user_id').notNull().references(() => users.id),
   title: text('title').notNull(),
   idea: text('idea').notNull(),
+  referenceDoc: text('reference_doc'),
   status: text('status').default('draft'),
   model: text('model').default('claude-opus-4'),
   createdAt: timestamp('created_at').defaultNow(),
