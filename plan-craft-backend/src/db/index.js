@@ -17,13 +17,13 @@ const client = postgres(DATABASE_URL);
 const db = drizzle(client, { schema });
 const sqlite = null;
 
-export { db, sqlite };
+export { db, sqlite, client };
 
 // 테이블 생성 (PostgreSQL)
 export async function initializeDatabase() {
   try {
-    // PostgreSQL - Raw SQL로 테이블 생성
-    await db.execute(`
+    // PostgreSQL - Raw SQL로 테이블 생성 (client 직접 사용)
+    await client`
       CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         email TEXT NOT NULL UNIQUE,
@@ -33,9 +33,9 @@ export async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )
-    `);
+    `;
 
-    await db.execute(`
+    await client`
       CREATE TABLE IF NOT EXISTS projects (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id),
@@ -46,9 +46,9 @@ export async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )
-    `);
+    `;
 
-    await db.execute(`
+    await client`
       CREATE TABLE IF NOT EXISTS documents (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         project_id UUID NOT NULL REFERENCES projects(id),
@@ -62,9 +62,9 @@ export async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT NOW(),
         generated_at TIMESTAMP DEFAULT NOW()
       )
-    `);
+    `;
 
-    await db.execute(`
+    await client`
       CREATE TABLE IF NOT EXISTS token_usage (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id),
@@ -76,7 +76,7 @@ export async function initializeDatabase() {
         cost_usd REAL NOT NULL,
         created_at TIMESTAMP DEFAULT NOW()
       )
-    `);
+    `;
 
     console.log('✅ PostgreSQL 데이터베이스 초기화 완료');
     return true;
@@ -89,7 +89,7 @@ export async function initializeDatabase() {
 // 헬스 체크
 export async function checkDatabaseConnection() {
   try {
-    await db.execute('SELECT 1');
+    await client`SELECT 1`;
     console.log('✅ PostgreSQL 연결 성공');
     return true;
   } catch (error) {
