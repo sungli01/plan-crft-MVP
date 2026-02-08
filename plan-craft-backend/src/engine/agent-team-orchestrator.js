@@ -15,7 +15,11 @@ export class AgentTeamOrchestrator {
     
     // 메인 에이전트
     this.architect = new ArchitectAgent(config.apiKey, { model: config.architectModel });
-    this.imageCurator = new ImageCuratorAgent(config.apiKey, { model: config.curatorModel });
+    this.imageCurator = new ImageCuratorAgent(config.apiKey, { 
+      model: config.curatorModel,
+      unsplashKey: config.unsplashKey,
+      openaiKey: config.openaiKey
+    });
     this.reviewer = new ReviewerAgent(config.apiKey, { model: config.reviewerModel });
     
     // Writer 팀 (병렬 실행)

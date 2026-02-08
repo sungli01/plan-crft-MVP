@@ -161,6 +161,19 @@ export class DocumentGeneratorService {
     const { design, sections, images, reviews, metadata } = result;
     const avgQuality = reviews.summary.averageScore;
     const totalWords = sections.reduce((sum, s) => sum + s.wordCount, 0);
+    
+    // Build image map: sectionId → images[]
+    const imageMap = {};
+    if (images && Array.isArray(images)) {
+      for (const imgResult of images) {
+        if (imgResult.sectionId && imgResult.images && imgResult.images.length > 0) {
+          imageMap[imgResult.sectionId] = imgResult.images;
+        }
+      }
+    }
+    const totalImageCount = images
+      ? images.reduce((sum, r) => sum + (r.images ? r.images.length : 0), 0)
+      : 0;
 
     let html = `<!DOCTYPE html>
 <html lang="ko">
@@ -242,6 +255,26 @@ export class DocumentGeneratorService {
     }
     .section { margin-bottom: 40px; }
     .page-break { page-break-after: always; }
+    figure {
+      margin: 28px auto;
+      text-align: center;
+      max-width: 720px;
+    }
+    figure img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+      display: block;
+      margin: 0 auto;
+    }
+    figcaption {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #6b7280;
+      font-style: italic;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -261,6 +294,7 @@ export class DocumentGeneratorService {
       <p><strong>생성 방식:</strong> 멀티 에이전트 시스템 (4개 AI)</p>
       <p><strong>총 섹션:</strong> ${sections.length}개</p>
       <p><strong>총 단어:</strong> ${totalWords.toLocaleString()}단어</p>
+      <p><strong>이미지:</strong> ${totalImageCount}개</p>
       <p><strong>예상 페이지:</strong> 약 ${Math.ceil(totalWords / 500)}페이지</p>
       <p><strong>평균 품질:</strong> ${avgQuality.toFixed(1)}/100점</p>
     </div>
@@ -286,13 +320,45 @@ export class DocumentGeneratorService {
 `;
 
     sections.forEach((section) => {
+      // Embed images into section content
+      const sectionImages = imageMap[section.sectionId] || [];
+      let contentWithImages = section.content;
+      
+      if (sectionImages.length > 0) {
+        const imageHtml = sectionImages.map(img => {
+          const url = img.url || '';
+          const caption = this._escapeHtml(img.caption || img.description || img.alt || '');
+          const alt = this._escapeHtml(img.alt || img.caption || '');
+          const credit = img.credit
+            ? `<span style="display:block;margin-top:4px;font-size:11px;color:#9ca3af;">${this._escapeHtml(img.credit)}</span>`
+            : '';
+          return `
+    <figure>
+      <img src="${url}" alt="${alt}" loading="lazy" />
+      <figcaption>${caption}${credit}</figcaption>
+    </figure>`;
+        }).join('\n');
+        
+        // Insert images before the section content (top position by default)
+        contentWithImages = imageHtml + '\n' + section.content;
+      }
+      
       html += `  <div class="section page-break">
     <h1>${section.sectionId}</h1>
-${section.content}
+${contentWithImages}
   </div>\n\n`;
     });
 
     html += `</body>\n</html>`;
     return html;
+  }
+
+  _escapeHtml(str) {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 }

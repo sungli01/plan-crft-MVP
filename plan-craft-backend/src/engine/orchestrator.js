@@ -20,7 +20,11 @@ export class Orchestrator {
     // 에이전트 초기화
     this.architect = new ArchitectAgent(config.apiKey, { model: config.architectModel });
     this.writer = new WriterAgent(config.apiKey, { model: config.writerModel });
-    this.imageCurator = new ImageCuratorAgent(config.apiKey, { model: config.curatorModel });
+    this.imageCurator = new ImageCuratorAgent(config.apiKey, { 
+      model: config.curatorModel,
+      unsplashKey: config.unsplashKey,
+      openaiKey: config.openaiKey
+    });
     this.reviewer = new ReviewerAgent(config.apiKey, { model: config.reviewerModel });
     
     // 토큰 추적

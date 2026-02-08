@@ -250,7 +250,9 @@ async function generateDocumentBackground(projectId, projectData, userId) {
       writerModel: projectData.model || 'claude-opus-4-6',
       curatorModel: 'claude-sonnet-4-5',
       reviewerModel: 'claude-sonnet-4-5',
-      writerTeamSize: 5 // 병렬 Writer 에이전트 수
+      writerTeamSize: 5, // 병렬 Writer 에이전트 수
+      unsplashKey: process.env.UNSPLASH_ACCESS_KEY,
+      openaiKey: process.env.OPENAI_API_KEY
     };
 
     // 프로젝트 정보
