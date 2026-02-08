@@ -58,6 +58,7 @@ export default function Home() {
   const [isDragging, setIsDragging] = useState(false);
   const [mode, setMode] = useState<'agent' | 'document'>('agent');
   const [showModeMenu, setShowModeMenu] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 자동 로그인 체크
@@ -113,9 +114,7 @@ export default function Home() {
   };
 
   const handleFileSelect = (file: File) => {
-    console.log('파일 선택됨:', file.name);
-    alert(`파일 "${file.name}"이(가) 선택되었습니다.\n프로젝트 생성 시 참고 문서로 사용됩니다.`);
-    // TODO: 파일을 state에 저장하고 프로젝트 생성 시 함께 전송
+    setUploadedFile(file);
   };
 
   const handleFileButtonClick = () => {
@@ -400,6 +399,22 @@ export default function Home() {
                   }}
                 />
               </div>
+
+              {uploadedFile && (
+                <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span>📎</span>
+                    <span className="text-blue-700 font-medium">{uploadedFile.name}</span>
+                    <span className="text-gray-500">({(uploadedFile.size / 1024).toFixed(1)} KB)</span>
+                  </div>
+                  <button
+                    onClick={() => setUploadedFile(null)}
+                    className="text-red-500 hover:text-red-700 text-sm"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
 
               <div className="flex items-center gap-3 text-xs text-gray-500">
                 <button 

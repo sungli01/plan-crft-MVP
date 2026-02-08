@@ -21,33 +21,15 @@ export class ArchitectAgent {
   async designStructure(projectInfo) {
     console.log(`\n📐 [${this.name}] 문서 구조 설계 시작...`);
 
-    const prompt = `당신은 국가 R&D 사업계획서 설계 전문가입니다.
+    const prompt = `사업계획서 구조 설계.
 
-# 프로젝트 정보
-- **과제명**: ${projectInfo.title}
-- **핵심 아이디어**: ${projectInfo.idea}
+과제: ${projectInfo.title}
+아이디어: ${projectInfo.idea}
 
-# 임무
-다음 작업을 수행하세요:
+25개 섹션으로 구성하고 JSON 출력.
+각 섹션: id, title, level(1-3), estimatedWords(500-1000)
 
-1. **문서 구조 설계**
-   - 대제목 (5-7개)
-   - 각 대제목별 중제목 (3-5개)
-   - 각 중제목별 소제목 (2-4개)
-   - 전체 구조를 JSON 형식으로 출력
-
-2. **이미지 필요 영역 식별**
-   - 도식도가 필요한 섹션
-   - 순서도가 필요한 섹션
-   - 그래프가 필요한 섹션
-   - 참고 이미지가 필요한 섹션
-
-3. **작업 우선순위**
-   - 핵심 섹션 (높음)
-   - 보조 섹션 (중간)
-   - 부가 섹션 (낮음)
-
-# 출력 형식
+출력 형식:
 JSON 형식으로 출력하되, 마크다운 코드 블록 없이 순수 JSON만 출력하세요.
 
 \`\`\`json
