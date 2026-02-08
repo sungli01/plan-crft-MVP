@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Plan-Craft Backend API Server",
   "type": "module",
-  "main": "src/index.ts",
+  "main": "start.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "node start.js",
