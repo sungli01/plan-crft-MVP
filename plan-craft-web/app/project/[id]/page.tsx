@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import Header from '../../components/Header';
+import ProLock from '../../components/ProLock';
 import { useToast } from '../../components/Toast';
 import ResearchPanel from '../../components/ResearchPanel';
 import type { ResearchData } from '../../components/ResearchPanel';
@@ -673,6 +675,20 @@ export default function ProjectDetailPage() {
                 고품질 사업계획서가 성공적으로 생성되었습니다. 
                 상단의 다운로드 버튼을 클릭하여 파일을 받으실 수 있습니다.
               </p>
+            </div>
+          )}
+
+          {/* 목업 사이트 빌더 */}
+          {project.status === 'completed' && (
+            <div className="mt-6">
+              <ProLock feature="목업 사이트 빌더" isPro={user?.plan === 'pro' || user?.plan === 'enterprise'}>
+                <Link
+                  href={`/project/${projectId}/mockup`}
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition shadow-lg hover:shadow-xl"
+                >
+                  🎨 목업 사이트 생성
+                </Link>
+              </ProLock>
             </div>
           )}
         </main>
