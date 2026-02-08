@@ -4,7 +4,7 @@
 
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import * as schema from './schema-pg.js';
+import * as schema from './schema-pg';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
@@ -20,7 +20,7 @@ const sqlite = null;
 export { db, sqlite, client };
 
 // 테이블 생성 (PostgreSQL)
-export async function initializeDatabase() {
+export async function initializeDatabase(): Promise<boolean> {
   try {
     // PostgreSQL - Raw SQL로 테이블 생성 (client 직접 사용)
     await client`
@@ -82,19 +82,19 @@ export async function initializeDatabase() {
 
     console.log('✅ PostgreSQL 데이터베이스 초기화 완료');
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ 데이터베이스 초기화 실패:', error.message);
     return false;
   }
 }
 
 // 헬스 체크
-export async function checkDatabaseConnection() {
+export async function checkDatabaseConnection(): Promise<boolean> {
   try {
     await client`SELECT 1`;
     console.log('✅ PostgreSQL 연결 성공');
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ 데이터베이스 연결 실패:', error.message);
     return false;
   }

@@ -2,16 +2,97 @@
  * Token Usage Tracker
  *
  * Tracks per-agent token consumption and cost across a full document generation run.
- * Provides summaries and optimization reports.
  */
 
-import { MODEL_PRICING, MODEL_TIERS } from './model-router.js';
+import { MODEL_PRICING, MODEL_TIERS } from './model-router';
+
+export interface AgentUsageEntry {
+  input: number;
+  output: number;
+  model: string;
+  cost: number;
+}
+
+export interface WriterUsageEntry {
+  sectionTitle: string;
+  input: number;
+  output: number;
+  model: string;
+  cost: number;
+}
+
+export interface UsageData {
+  architect: AgentUsageEntry;
+  writers: WriterUsageEntry[];
+  imageCurator: AgentUsageEntry;
+  reviewer: AgentUsageEntry;
+  total: { input: number; output: number; cost: number };
+}
+
+export interface RecordUsageData {
+  input_tokens?: number;
+  output_tokens?: number;
+  model?: string;
+  sectionTitle?: string;
+}
+
+export type AgentName = 'architect' | 'writer' | 'imageCurator' | 'reviewer';
+
+export interface AgentSummary {
+  model: string;
+  input: number;
+  output: number;
+  total: number;
+  cost: string;
+}
+
+export interface TokenSummary {
+  elapsed: string;
+  agents: {
+    architect: AgentSummary;
+    writer: {
+      sections: number;
+      models: string[];
+      input: number;
+      output: number;
+      total: number;
+      cost: string;
+    };
+    imageCurator: AgentSummary;
+    reviewer: AgentSummary;
+  };
+  total: {
+    input: number;
+    output: number;
+    tokens: number;
+    cost: string;
+  };
+}
+
+export interface OptimizationSuggestion {
+  type: string;
+  message: string;
+  sections?: string[];
+}
+
+export interface OptimizationReport {
+  summary: TokenSummary;
+  suggestions: OptimizationSuggestion[];
+  modelBreakdown: {
+    opus: number;
+    sonnet: number;
+    haiku: number;
+  };
+}
 
 export class TokenTracker {
+  usage: UsageData;
+  private _startTime: number;
+
   constructor() {
     this.usage = {
       architect: { input: 0, output: 0, model: '', cost: 0 },
-      writers: [],          // per-section entries
+      writers: [],
       imageCurator: { input: 0, output: 0, model: '', cost: 0 },
       reviewer: { input: 0, output: 0, model: '', cost: 0 },
       total: { input: 0, output: 0, cost: 0 },
@@ -23,16 +104,7 @@ export class TokenTracker {
   // Record usage
   // ──────────────────────────────────────────────
 
-  /**
-   * Record token usage for an agent call
-   * @param {'architect'|'writer'|'imageCurator'|'reviewer'} agent
-   * @param {object} data
-   * @param {number} data.input_tokens
-   * @param {number} data.output_tokens
-   * @param {string} data.model
-   * @param {string} [data.sectionTitle] - For writer entries
-   */
-  recordUsage(agent, data) {
+  recordUsage(agent: AgentName, data: RecordUsageData): void {
     const inputTokens = data.input_tokens || 0;
     const outputTokens = data.output_tokens || 0;
     const model = data.model || MODEL_TIERS.sonnet;
@@ -63,10 +135,7 @@ export class TokenTracker {
   // Summaries
   // ──────────────────────────────────────────────
 
-  /**
-   * Return a formatted summary of all token usage and costs
-   */
-  getSummary() {
+  getSummary(): TokenSummary {
     const elapsed = ((Date.now() - this._startTime) / 1000).toFixed(1);
 
     const writerTotal = this.usage.writers.reduce(
@@ -110,14 +179,10 @@ export class TokenTracker {
     };
   }
 
-  /**
-   * Compare actual usage vs budget and suggest improvements
-   */
-  getOptimizationReport() {
+  getOptimizationReport(): OptimizationReport {
     const summary = this.getSummary();
-    const suggestions = [];
+    const suggestions: OptimizationSuggestion[] = [];
 
-    // Check if any writer sections used too many tokens
     const overBudgetWriters = this.usage.writers.filter(w => w.output > 2500);
     if (overBudgetWriters.length > 0) {
       suggestions.push({
@@ -127,7 +192,6 @@ export class TokenTracker {
       });
     }
 
-    // Check if Opus was used where Sonnet would suffice
     const opusWriters = this.usage.writers.filter(w => w.model === MODEL_TIERS.opus);
     const sonnetWriters = this.usage.writers.filter(w => w.model === MODEL_TIERS.sonnet);
     if (opusWriters.length > 0) {
@@ -138,7 +202,6 @@ export class TokenTracker {
       });
     }
 
-    // Check if imageCurator could use a cheaper model
     if (this.usage.imageCurator.model && this.usage.imageCurator.model !== MODEL_TIERS.haiku) {
       suggestions.push({
         type: 'downgrade_possible',
@@ -146,7 +209,6 @@ export class TokenTracker {
       });
     }
 
-    // Overall cost assessment
     const totalCost = this.usage.total.cost;
     const target = 0.20;
     if (totalCost > target) {
@@ -177,12 +239,12 @@ export class TokenTracker {
   // Internals
   // ──────────────────────────────────────────────
 
-  _calculateCost(model, inputTokens, outputTokens) {
+  private _calculateCost(model: string, inputTokens: number, outputTokens: number): number {
     const pricing = MODEL_PRICING[model] || MODEL_PRICING[MODEL_TIERS.sonnet];
     return (inputTokens * pricing.input) + (outputTokens * pricing.output);
   }
 
-  _formatAgent(agentData) {
+  private _formatAgent(agentData: AgentUsageEntry): AgentSummary {
     return {
       model: agentData.model || '—',
       input: agentData.input,

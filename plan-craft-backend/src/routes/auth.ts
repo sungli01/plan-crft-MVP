@@ -4,10 +4,10 @@
 
 import { Hono } from 'hono';
 import bcrypt from 'bcryptjs';
-import { db } from '../db/index.js';
-import { users } from '../db/schema-pg.js';
+import { db } from '../db/index';
+import { users } from '../db/schema-pg';
 import { eq } from 'drizzle-orm';
-import { generateToken, authMiddleware } from '../middleware/auth.js';
+import { generateToken, authMiddleware } from '../middleware/auth';
 import { z } from 'zod';
 
 const auth = new Hono();
@@ -135,7 +135,7 @@ auth.post('/login', async (c) => {
 
 // 현재 사용자 정보 조회 (인증 필요)
 auth.get('/me', authMiddleware, async (c) => {
-  const user = c.get('user');
+  const user = c.get('user') as any;
 
   return c.json({
     user: {

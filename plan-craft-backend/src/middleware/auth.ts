@@ -3,33 +3,38 @@
  */
 
 import jwt from 'jsonwebtoken';
-import { db } from '../db/index.js';
-import { users } from '../db/schema-pg.js';
+import type { JwtPayload } from 'jsonwebtoken';
+import { db } from '../db/index';
+import { users } from '../db/schema-pg';
 import { eq } from 'drizzle-orm';
-
+import type { Context, Next } from 'hono';
 import crypto from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET || (() => {
+const JWT_SECRET: string = process.env.JWT_SECRET || (() => {
   console.warn('⚠️  WARNING: JWT_SECRET not set! Using auto-generated secret. Tokens will reset on restart.');
   return crypto.randomBytes(32).toString('hex');
 })();
 
+export interface TokenPayload extends JwtPayload {
+  userId: string;
+}
+
 // JWT 토큰 생성
-export function generateToken(userId) {
+export function generateToken(userId: string): string {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
 }
 
 // JWT 토큰 검증
-export function verifyToken(token) {
+export function verifyToken(token: string): TokenPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET);
+    return jwt.verify(token, JWT_SECRET) as TokenPayload;
   } catch (error) {
     return null;
   }
 }
 
 // 인증 미들웨어
-export async function authMiddleware(c, next) {
+export async function authMiddleware(c: Context, next: Next) {
   const authHeader = c.req.header('Authorization');
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -62,7 +67,7 @@ export async function authMiddleware(c, next) {
 }
 
 // 선택적 인증 (있으면 사용자 정보 추가, 없어도 계속 진행)
-export async function optionalAuth(c, next) {
+export async function optionalAuth(c: Context, next: Next) {
   const authHeader = c.req.header('Authorization');
   
   if (authHeader && authHeader.startsWith('Bearer ')) {

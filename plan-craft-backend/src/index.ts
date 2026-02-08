@@ -8,12 +8,50 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { prettyJSON } from 'hono/pretty-json';
-import { checkDatabaseConnection, initializeDatabase } from './db/index.js';
-import authRoutes from './routes/auth.js';
-import projectsRoutes from './routes/projects.js';
-import generateRoutes from './routes/generate.js';
+import { createNodeWebSocket } from '@hono/node-ws';
+import type { Context, Next } from 'hono';
+import { checkDatabaseConnection, initializeDatabase } from './db/index';
+import authRoutes from './routes/auth';
+import projectsRoutes from './routes/projects';
+import generateRoutes from './routes/generate';
+import { addConnection, removeConnection, getConnectionCount } from './ws/progress-ws';
+import { progressTracker } from './utils/progress-tracker';
+import { getCache } from './cache/redis';
 
 const app = new Hono();
+
+// WebSocket setup
+const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
+
+// WebSocket route for real-time progress updates
+app.get('/ws/progress/:projectId', upgradeWebSocket((c) => {
+  const projectId = c.req.param('projectId');
+
+  return {
+    onOpen(_evt, ws) {
+      addConnection(projectId, ws.raw);
+      // Send current progress state immediately on connect
+      const currentProgress = progressTracker.get(projectId);
+      if (currentProgress) {
+        ws.send(JSON.stringify({
+          type: 'initial_state',
+          phase: currentProgress.phase,
+          agents: currentProgress.agents,
+          logs: currentProgress.logs.slice(-20),
+          overallProgress: progressTracker.calculateOverallProgress(projectId),
+          startedAt: currentProgress.startedAt,
+          updatedAt: currentProgress.updatedAt
+        }));
+      }
+    },
+    onClose(_evt, ws) {
+      removeConnection(projectId, ws.raw);
+    },
+    onError(_evt, ws) {
+      removeConnection(projectId, ws.raw);
+    },
+  };
+}));
 
 // Middleware
 app.use('*', logger());
@@ -27,15 +65,16 @@ app.use('*', cors({
 }));
 
 // Simple rate limiter
-const rateLimitMap = new Map();
-function rateLimit(keyFn, maxRequests, windowMs) {
-  return async (c, next) => {
+const rateLimitMap = new Map<string, number[]>();
+
+function rateLimit(keyFn: (c: Context) => string, maxRequests: number, windowMs: number) {
+  return async (c: Context, next: Next) => {
     const key = keyFn(c);
     const now = Date.now();
     const windowStart = now - windowMs;
     
     if (!rateLimitMap.has(key)) rateLimitMap.set(key, []);
-    const requests = rateLimitMap.get(key).filter(t => t > windowStart);
+    const requests = rateLimitMap.get(key)!.filter(t => t > windowStart);
     rateLimitMap.set(key, requests);
     
     if (requests.length >= maxRequests) {
@@ -68,10 +107,17 @@ app.get('/', (c) => {
 
 app.get('/health', async (c) => {
   const dbConnected = await checkDatabaseConnection();
-  
+  let cacheType = 'initializing';
+  try {
+    const cache = await getCache();
+    cacheType = cache.type;
+  } catch { /* ignore */ }
+
   return c.json({
     status: 'ok',
     database: dbConnected ? 'connected' : 'disconnected',
+    wsConnections: getConnectionCount(),
+    cacheType,
     timestamp: new Date().toISOString()
   });
 });
@@ -104,7 +150,7 @@ initializeDatabase();
 
 console.log(`\n🚀 Starting server on port ${port}...`);
 
-serve({
+const server = serve({
   fetch: app.fetch,
   port
 }, (info) => {
@@ -112,6 +158,7 @@ serve({
   console.log(`\n📚 Available routes:`);
   console.log(`   GET  /                              - API 정보`);
   console.log(`   GET  /health                        - Health check`);
+  console.log(`   WS   /ws/progress/:projectId        - WebSocket 실시간 진행`);
   console.log(`   POST /api/auth/register             - 회원가입`);
   console.log(`   POST /api/auth/login                - 로그인`);
   console.log(`   GET  /api/auth/me                   - 현재 사용자`);
@@ -125,3 +172,6 @@ serve({
   console.log(`   GET  /api/generate/:projectId/download  - HTML 다운로드`);
   console.log('');
 });
+
+// Inject WebSocket handling into the HTTP server
+injectWebSocket(server);

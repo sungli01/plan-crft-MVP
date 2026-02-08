@@ -1,30 +1,58 @@
 /**
  * Writer Agent (작성자 에이전트)
- * 
- * 역할:
- * - 섹션별 내용 생성
- * - 계층 구조 적용
- * - 개조식 표현 사용
- * - 품질 기준 준수
  *
  * Token optimization:
  * - Static system prompt (auto-cached by Anthropic on repeated calls)
  * - User prompt compressed: only current/prev/next section titles, truncated idea
  * - max_tokens set per section importance via ModelRouter budget
- * - Model selected per section via ModelRouter
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 
+export interface WriterConfig {
+  model?: string;
+  name?: string;
+}
+
+export interface SectionInfo {
+  id?: string;
+  title: string;
+  level?: number;
+  estimatedWords?: number;
+  requirements?: string[];
+  importance?: string;
+  model?: string;
+  maxTokens?: number;
+}
+
+export interface WriteContext {
+  prevTitle?: string | null;
+  nextTitle?: string | null;
+}
+
+export interface WriteSectionResult {
+  sectionId: string;
+  content: string;
+  wordCount: number;
+  tokens: any;
+  duration: number;
+  generatedAt: string;
+}
+
 export class WriterAgent {
-  constructor(apiKey, config = {}) {
+  anthropic: Anthropic;
+  model: string;
+  name: string;
+  role: string;
+
+  constructor(apiKey: string, config: WriterConfig = {}) {
     this.anthropic = new Anthropic({ apiKey });
     this.model = config.model || 'claude-sonnet-4-5-20250929';
     this.name = config.name || 'Writer';
     this.role = '내용 작성자';
   }
 
-  getSystemPrompt() {
+  getSystemPrompt(): string {
     return `사업계획서 작성 전문가.
 
 규칙:
@@ -36,18 +64,16 @@ export class WriterAgent {
 출력: Markdown`;
   }
 
-  async writeSection(section, projectInfo, context = {}) {
+  async writeSection(section: SectionInfo, projectInfo: { title: string; idea?: string }, context: WriteContext = {}): Promise<WriteSectionResult> {
     console.log(`\n✍️  [${this.name}] 섹션 작성 중: ${section.title}`);
 
-    // Compressed idea: max 100 chars
-    const ideaSummary = projectInfo.idea?.length > 100
+    const ideaSummary = projectInfo.idea && projectInfo.idea.length > 100
       ? projectInfo.idea.slice(0, 100) + '…'
       : (projectInfo.idea || '');
 
-    // Context-aware: only prev/next section titles (not full outline)
     let contextLine = '';
     if (context.prevTitle || context.nextTitle) {
-      const parts = [];
+      const parts: string[] = [];
       if (context.prevTitle) parts.push(`이전: ${context.prevTitle}`);
       if (context.nextTitle) parts.push(`다음: ${context.nextTitle}`);
       contextLine = `\n흐름: ${parts.join(' → ')}`;
@@ -59,9 +85,7 @@ export class WriterAgent {
 ${section.requirements ? `내용: ${section.requirements.join(', ')}` : ''}
 ${section.estimatedWords ? `목표: ${section.estimatedWords}자 이상` : ''}`;
 
-    // Use per-section model if provided (from ModelRouter), else instance default
     const model = section.model || this.model;
-    // Use per-section maxTokens budget if provided, else default
     const maxTokens = section.maxTokens || 2000;
 
     try {
@@ -75,7 +99,7 @@ ${section.estimatedWords ? `목표: ${section.estimatedWords}자 이상` : ''}`;
         messages: [{ role: 'user', content: userPrompt }]
       });
 
-      const content = message.content[0].text;
+      const content = (message.content[0] as any).text;
       const duration = ((Date.now() - startTime) / 1000).toFixed(1);
       const wordCount = content.split(/\s+/).length;
 
@@ -90,13 +114,13 @@ ${section.estimatedWords ? `목표: ${section.estimatedWords}자 이상` : ''}`;
         generatedAt: new Date().toISOString()
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(`   ❌ 오류: ${error.message}`);
       throw error;
     }
   }
 
-  async writeMultipleSections(sections, projectInfo, options = {}) {
+  async writeMultipleSections(sections: SectionInfo[], projectInfo: { title: string; idea?: string }, options: { context?: WriteContext } = {}): Promise<WriteSectionResult[]> {
     console.log(`\n✍️  [${this.name}] ${sections.length}개 섹션 병렬 작성 시작...`);
 
     const promises = sections.map(section => 
@@ -108,13 +132,13 @@ ${section.estimatedWords ? `목표: ${section.estimatedWords}자 이상` : ''}`;
       console.log(`   ✅ 모든 섹션 작성 완료`);
       return results;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(`   ❌ 병렬 작성 오류: ${error.message}`);
       throw error;
     }
   }
 
-  async improveSection(sectionContent, feedback) {
+  async improveSection(sectionContent: string, feedback: string): Promise<{ content: string; tokens: any }> {
     console.log(`\n✍️  [${this.name}] 섹션 개선 중...`);
 
     const prompt = `기존:\n${sectionContent}\n\n개선 요청: ${feedback}\n\nMarkdown 출력.`;
@@ -127,7 +151,7 @@ ${section.estimatedWords ? `목표: ${section.estimatedWords}자 이상` : ''}`;
       messages: [{ role: 'user', content: prompt }]
     });
 
-    const improvedContent = message.content[0].text;
+    const improvedContent = (message.content[0] as any).text;
     console.log(`   ✅ 개선 완료`);
 
     return {

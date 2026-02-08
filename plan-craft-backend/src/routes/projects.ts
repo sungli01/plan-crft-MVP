@@ -3,12 +3,12 @@
  */
 
 import { Hono } from 'hono';
-import { db } from '../db/index.js';
-import { projects, documents } from '../db/schema-pg.js';
+import { db } from '../db/index';
+import { projects, documents } from '../db/schema-pg';
 import { eq, desc } from 'drizzle-orm';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware } from '../middleware/auth';
 import { z } from 'zod';
-import { maskSensitiveData } from '../utils/data-masking.js';
+import { maskSensitiveData } from '../utils/data-masking';
 
 const projectsRouter = new Hono();
 
@@ -32,7 +32,7 @@ const updateProjectSchema = z.object({
 
 // 프로젝트 목록 조회
 projectsRouter.get('/', async (c) => {
-  const user = c.get('user');
+  const user = c.get('user') as any;
   
   try {
     const userProjects = await db
@@ -61,7 +61,7 @@ projectsRouter.get('/', async (c) => {
 
 // 프로젝트 생성
 projectsRouter.post('/', async (c) => {
-  const user = c.get('user');
+  const user = c.get('user') as any;
   
   try {
     const body = await c.req.json();
@@ -120,7 +120,7 @@ projectsRouter.post('/', async (c) => {
 
 // 프로젝트 상세 조회
 projectsRouter.get('/:id', async (c) => {
-  const user = c.get('user');
+  const user = c.get('user') as any;
   const projectId = c.req.param('id');
 
   try {
@@ -161,7 +161,7 @@ projectsRouter.get('/:id', async (c) => {
 
 // 프로젝트 수정
 projectsRouter.patch('/:id', async (c) => {
-  const user = c.get('user');
+  const user = c.get('user') as any;
   const projectId = c.req.param('id');
 
   try {
@@ -213,7 +213,7 @@ projectsRouter.patch('/:id', async (c) => {
 
 // 프로젝트 삭제
 projectsRouter.delete('/:id', async (c) => {
-  const user = c.get('user');
+  const user = c.get('user') as any;
   const projectId = c.req.param('id');
 
   try {

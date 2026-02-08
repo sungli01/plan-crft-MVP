@@ -1,34 +1,69 @@
 /**
  * Architect Agent (설계자 에이전트)
- * 
- * 역할:
- * - 문서 전체 구조 설계
- * - 섹션 분할 및 우선순위 결정
- * - 이미지 필요 영역 식별
- * - 작업 계획 수립
  *
  * Token optimization:
  * - Static instructions in system prompt (auto-cached by Anthropic)
  * - Compressed user prompt with only dynamic data
- * - max_tokens reduced from 8000 → 4000 (structure JSON doesn't need 8k)
- * - importance field added to output schema for ModelRouter
+ * - max_tokens reduced from 8000 → 4000
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 
+export interface ArchitectConfig {
+  model?: string;
+}
+
+export interface ProjectInfo {
+  title: string;
+  idea?: string;
+  projectId?: string;
+}
+
+export interface DesignSubsection {
+  id?: string;
+  title: string;
+  level: number;
+  importance?: string;
+  needsImage?: boolean;
+  imageType?: string;
+  estimatedWords?: number;
+  requirements?: string[];
+}
+
+export interface DesignSection {
+  level: number;
+  title: string;
+  priority: string;
+  subsections?: DesignSubsection[];
+}
+
+export interface DocumentDesign {
+  documentTitle: string;
+  structure: DesignSection[];
+  imageRequirements?: Array<{ sectionId: string; type: string; description: string }>;
+  estimatedTotalPages: number;
+}
+
+export interface DesignResult {
+  design: DocumentDesign;
+  tokens: any;
+  generatedAt: string;
+}
+
 export class ArchitectAgent {
-  constructor(apiKey, config = {}) {
+  anthropic: Anthropic;
+  model: string;
+  name: string;
+  role: string;
+
+  constructor(apiKey: string, config: ArchitectConfig = {}) {
     this.anthropic = new Anthropic({ apiKey });
     this.model = config.model || 'claude-sonnet-4-5-20250929';
     this.name = 'Architect';
     this.role = '문서 설계자';
   }
 
-  /**
-   * Static system prompt — Anthropic auto-caches system prompts,
-   * so repeated calls only pay for tokens once.
-   */
-  getSystemPrompt() {
+  getSystemPrompt(): string {
     return `사업계획서 구조 설계 전문가. 25개 섹션 구성.
 각 섹션에 importance 분류 필수: core(핵심)/standard(일반)/simple(부록).
 순수 JSON만 출력 (마크다운 코드블록 없이).
@@ -37,11 +72,10 @@ export class ArchitectAgent {
 {"documentTitle":"","structure":[{"level":1,"title":"","priority":"high|medium|low","subsections":[{"level":2,"title":"","importance":"core|standard|simple","needsImage":true,"imageType":"diagram|flowchart|chart|photo","estimatedWords":500}]}],"imageRequirements":[{"sectionId":"","type":"diagram","description":""}],"estimatedTotalPages":200}`;
   }
 
-  async designStructure(projectInfo) {
+  async designStructure(projectInfo: ProjectInfo): Promise<DesignResult> {
     console.log(`\n📐 [${this.name}] 문서 구조 설계 시작...`);
 
-    // Compressed: only send title + truncated idea (100 chars)
-    const ideaSummary = projectInfo.idea?.length > 100
+    const ideaSummary = projectInfo.idea && projectInfo.idea.length > 100
       ? projectInfo.idea.slice(0, 100) + '…'
       : projectInfo.idea;
 
@@ -56,7 +90,7 @@ export class ArchitectAgent {
         messages: [{ role: 'user', content: userPrompt }]
       });
 
-      const content = message.content[0].text;
+      const content = (message.content[0] as any).text;
       
       // JSON 추출 (코드 블록 제거)
       let jsonStr = content;
@@ -66,7 +100,7 @@ export class ArchitectAgent {
         jsonStr = content.match(/```\n([\s\S]*?)\n```/)?.[1] || content;
       }
       
-      const design = JSON.parse(jsonStr);
+      const design: DocumentDesign = JSON.parse(jsonStr);
 
       console.log(`   ✅ 설계 완료`);
       console.log(`   📊 대제목: ${design.structure.length}개`);
@@ -79,16 +113,15 @@ export class ArchitectAgent {
         generatedAt: new Date().toISOString()
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(`   ❌ 오류: ${error.message}`);
       throw error;
     }
   }
 
-  async refineStructure(design, feedback) {
+  async refineStructure(design: DocumentDesign, feedback: string): Promise<{ design: DocumentDesign; tokens: any }> {
     console.log(`\n📐 [${this.name}] 구조 개선 중...`);
 
-    // Compact JSON (no pretty-print) to save input tokens
     const prompt = `기존 설계:\n${JSON.stringify(design)}\n\n피드백: ${feedback}\n\n위 피드백 반영하여 개선. 순수 JSON 출력.`;
 
     const message = await this.anthropic.messages.create({
@@ -99,9 +132,9 @@ export class ArchitectAgent {
       messages: [{ role: 'user', content: prompt }]
     });
 
-    const content = message.content[0].text;
+    const content = (message.content[0] as any).text;
     let jsonStr = content.match(/```json\n([\s\S]*?)\n```/)?.[1] || content;
-    const refinedDesign = JSON.parse(jsonStr);
+    const refinedDesign: DocumentDesign = JSON.parse(jsonStr);
 
     console.log(`   ✅ 개선 완료`);
 

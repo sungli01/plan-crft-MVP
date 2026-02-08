@@ -1,7 +1,10 @@
 /**
  * Progress Tracker
  * 프로젝트 생성 진행 상황을 메모리에 저장하고 추적
+ * WebSocket을 통해 실시간으로 클라이언트에 브로드캐스트
  */
+
+import { broadcastProgress } from '../ws/progress-ws';
 
 class ProgressTracker {
   constructor() {
@@ -41,6 +44,15 @@ class ProgressTracker {
         updatedAt: Date.now()
       };
       progress.updatedAt = Date.now();
+
+      // Broadcast to WebSocket clients
+      broadcastProgress(projectId, {
+        type: 'agent_update',
+        phase: progress.phase,
+        agents: progress.agents,
+        overallProgress: this.calculateOverallProgress(projectId),
+        updatedAt: progress.updatedAt
+      });
     }
   }
 
@@ -63,6 +75,15 @@ class ProgressTracker {
     }
 
     progress.updatedAt = Date.now();
+
+    // Broadcast log to WebSocket clients
+    broadcastProgress(projectId, {
+      type: 'log',
+      log: progress.logs[progress.logs.length - 1],
+      phase: progress.phase,
+      overallProgress: this.calculateOverallProgress(projectId),
+      updatedAt: progress.updatedAt
+    });
   }
 
   /**
@@ -74,6 +95,15 @@ class ProgressTracker {
 
     progress.phase = phase;
     progress.updatedAt = Date.now();
+
+    // Broadcast phase change to WebSocket clients
+    broadcastProgress(projectId, {
+      type: 'phase_update',
+      phase: progress.phase,
+      agents: progress.agents,
+      overallProgress: this.calculateOverallProgress(projectId),
+      updatedAt: progress.updatedAt
+    });
   }
 
   /**

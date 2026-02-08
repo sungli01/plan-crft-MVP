@@ -1,18 +1,18 @@
 import { Hono } from 'hono';
-import { authMiddleware, verifyToken } from '../middleware/auth.js';
-import { db } from '../db/index.js';
-import { projects, documents, tokenUsage } from '../db/schema-pg.js';
+import { authMiddleware, verifyToken } from '../middleware/auth';
+import { db } from '../db/index';
+import { projects, documents, tokenUsage } from '../db/schema-pg';
 import { eq, and, desc } from 'drizzle-orm';
-import { AgentTeamOrchestrator } from '../engine/agent-team-orchestrator.js';
-import { generateHTML, extractSummary } from '../utils/html-generator.js';
-import { progressTracker } from '../utils/progress-tracker.js';
+import { AgentTeamOrchestrator } from '../engine/agent-team-orchestrator';
+import { generateHTML, extractSummary } from '../utils/html-generator';
+import { progressTracker } from '../utils/progress-tracker';
 
 const generate = new Hono();
 
 // POST /api/generate/:projectId - 문서 생성
 generate.post('/:projectId', authMiddleware, async (c) => {
   try {
-    const userId = c.get('userId');
+    const userId = c.get('userId') as string;
     const projectId = c.req.param('projectId');
 
     console.log('[Generate] userId:', userId, 'projectId:', projectId);
@@ -58,7 +58,7 @@ generate.post('/:projectId', authMiddleware, async (c) => {
 // GET /api/generate/:projectId/status - 생성 상태 확인
 generate.get('/:projectId/status', authMiddleware, async (c) => {
   try {
-    const userId = c.get('userId');
+    const userId = c.get('userId') as string;
     const projectId = c.req.param('projectId');
 
     // 프로젝트 조회
@@ -104,7 +104,7 @@ generate.get('/:projectId/status', authMiddleware, async (c) => {
 generate.get('/:projectId/download/pdf', async (c) => {
   try {
     // Support both Authorization header and ?token= query param (for new-tab opens)
-    let userId;
+    let userId: string | undefined;
     const authHeader = c.req.header('Authorization');
     const tokenParam = c.req.query('token');
 
@@ -201,7 +201,7 @@ generate.get('/:projectId/download/pdf', async (c) => {
 // GET /api/generate/:projectId/download - 문서 다운로드
 generate.get('/:projectId/download', authMiddleware, async (c) => {
   try {
-    const userId = c.get('userId');
+    const userId = c.get('userId') as string;
     const projectId = c.req.param('projectId');
 
     // 프로젝트 권한 확인
@@ -224,7 +224,7 @@ generate.get('/:projectId/download', authMiddleware, async (c) => {
     c.header('Content-Type', 'text/html; charset=utf-8');
     c.header('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
     
-    return c.body(document.contentHtml);
+    return c.body(document.contentHtml!);
   } catch (error) {
     console.error('Download error:', error);
     return c.json({ error: 'Failed to download document' }, 500);
@@ -232,7 +232,7 @@ generate.get('/:projectId/download', authMiddleware, async (c) => {
 });
 
 // 백그라운드 문서 생성 함수
-async function generateDocumentBackground(projectId, projectData, userId) {
+async function generateDocumentBackground(projectId: string, projectData: any, userId: string) {
   try {
     console.log(`[Background] Starting generation for project ${projectId}`);
 
@@ -245,7 +245,7 @@ async function generateDocumentBackground(projectId, projectData, userId) {
 
     // Agent Team Orchestrator 설정
     const config = {
-      apiKey: process.env.ANTHROPIC_API_KEY,
+      apiKey: process.env.ANTHROPIC_API_KEY!,
       architectModel: projectData.model || 'claude-opus-4-6',
       writerModel: projectData.model || 'claude-opus-4-6',
       curatorModel: 'claude-sonnet-4-5',
@@ -329,7 +329,7 @@ async function generateDocumentBackground(projectId, projectData, userId) {
     setTimeout(() => {
       progressTracker.clear(projectId);
     }, 60000);
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[Background] Generation failed for project ${projectId}:`, error);
 
     // 프로젝트 상태 업데이트: failed (with error message)
