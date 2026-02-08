@@ -187,11 +187,11 @@ export class AgentTeamOrchestrator {
       });
       
       // Attach model and maxTokens per section via ModelRouter
-      const totalSections = sections.length;
-      for (let i = 0; i < totalSections; i++) {
+      const sectionCount = sections.length;
+      for (let i = 0; i < sectionCount; i++) {
         const s = sections[i];
-        s.model = this.modelRouter.getWriterModel(s.title, i, totalSections);
-        const budget = this.modelRouter.getTokenBudget(s.title, i, totalSections);
+        s.model = this.modelRouter.getWriterModel(s.title, i, sectionCount);
+        const budget = this.modelRouter.getTokenBudget(s.title, i, sectionCount);
         s.maxTokens = budget.maxTokens;
       }
       
@@ -320,7 +320,7 @@ export class AgentTeamOrchestrator {
       
       reviewResult.reviews.forEach(review => {
         if (review.tokens) {
-          this.updateTokenUsage('reviewer', review.tokens);
+          this.updateTokenUsage('reviewer', review.tokens, { model: this.reviewer.model });
         }
       });
       
@@ -357,6 +357,17 @@ export class AgentTeamOrchestrator {
       console.log(`🖼️  이미지: ${totalImages}개`);
       console.log(`💰 토큰 사용: ${totalTokens.total.toLocaleString()} (입력: ${totalTokens.input.toLocaleString()}, 출력: ${totalTokens.output.toLocaleString()})`);
       
+      // Token optimization report
+      const tokenSummary = this.tokenTracker.getSummary();
+      const optimizationReport = this.tokenTracker.getOptimizationReport();
+      
+      console.log(`\n📊 Token Optimization Report:`);
+      console.log(`   총 비용: ${tokenSummary.total.cost}`);
+      optimizationReport.suggestions.forEach(s => {
+        console.log(`   ${s.type === 'cost_ok' ? '✅' : '⚠️'}  ${s.message}`);
+      });
+      console.log(`   모델 분포: Opus=${optimizationReport.modelBreakdown.opus}, Sonnet=${optimizationReport.modelBreakdown.sonnet}, Haiku=${optimizationReport.modelBreakdown.haiku}`);
+      
       return {
         design,
         sections: writtenSections,
@@ -365,7 +376,9 @@ export class AgentTeamOrchestrator {
         metadata: {
           totalTime: elapsed,
           tokenUsage: totalTokens,
-          agentTeamSize: this.writerTeamSize
+          agentTeamSize: this.writerTeamSize,
+          tokenSummary,
+          optimizationReport,
         }
       };
 
@@ -405,19 +418,27 @@ export class AgentTeamOrchestrator {
       const chunk = chunks[round];
       console.log(`\n   라운드 ${round + 1}/${chunks.length}: ${chunk.length}개 섹션 동시 작성`);
       
-      // 병렬 실행
+      // 병렬 실행 — pass prev/next context for each section
       const promises = chunk.map((section, idx) => {
         const writer = this.writerTeam[idx];
-        console.log(`      → ${writer.name}: "${section.title}"`);
-        return writer.writeSection(section, projectInfo);
+        const globalIdx = round * this.writerTeamSize + idx;
+        const prevTitle = globalIdx > 0 ? sections[globalIdx - 1]?.title : null;
+        const nextTitle = globalIdx < sections.length - 1 ? sections[globalIdx + 1]?.title : null;
+        console.log(`      → ${writer.name}: "${section.title}" [${section.model?.split('-').slice(-1)}] max=${section.maxTokens}`);
+        return writer.writeSection(section, projectInfo, { prevTitle, nextTitle });
       });
       
       const roundResults = await Promise.all(promises);
       
       // 결과 수집
       roundResults.forEach((result, idx) => {
+        const globalIdx = round * this.writerTeamSize + idx;
+        const section = chunk[idx];
         results.push(result);
-        this.updateTokenUsage('writerTeam', result.tokens);
+        this.updateTokenUsage('writerTeam', result.tokens, {
+          model: section.model || this.writerTeam[idx].model,
+          sectionTitle: section.title,
+        });
         completedSections++;
         
         const progress = Math.round((completedSections / totalSections) * 100);

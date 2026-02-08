@@ -6,26 +6,42 @@
  * - 작업 스케줄링
  * - 진행 상황 관리
  * - 토큰 추적
+ *
+ * Token optimization (v3.1):
+ * - ModelRouter: per-section model routing
+ * - TokenTracker: cost tracking and optimization reports
  */
 
 import { ArchitectAgent } from './agents/architect.js';
 import { WriterAgent } from './agents/writer.js';
 import { ImageCuratorAgent } from './agents/image-curator.js';
 import { ReviewerAgent } from './agents/reviewer.js';
+import { ModelRouter } from './model-router.js';
+import { TokenTracker } from './token-tracker.js';
 
 export class Orchestrator {
   constructor(config) {
     this.config = config;
     
-    // 에이전트 초기화
-    this.architect = new ArchitectAgent(config.apiKey, { model: config.architectModel });
-    this.writer = new WriterAgent(config.apiKey, { model: config.writerModel });
+    // Model router + token tracker
+    this.modelRouter = new ModelRouter({ proMode: config.proMode || false });
+    this.tokenTracker = new TokenTracker();
+    
+    // 에이전트 초기화 (models selected by router)
+    this.architect = new ArchitectAgent(config.apiKey, {
+      model: config.architectModel || this.modelRouter.getArchitectModel()
+    });
+    this.writer = new WriterAgent(config.apiKey, {
+      model: config.writerModel || this.modelRouter.defaultModel
+    });
     this.imageCurator = new ImageCuratorAgent(config.apiKey, { 
-      model: config.curatorModel,
+      model: config.curatorModel || this.modelRouter.getImageCuratorModel(),
       unsplashKey: config.unsplashKey,
       openaiKey: config.openaiKey
     });
-    this.reviewer = new ReviewerAgent(config.apiKey, { model: config.reviewerModel });
+    this.reviewer = new ReviewerAgent(config.apiKey, {
+      model: config.reviewerModel || this.modelRouter.getReviewerModel()
+    });
     
     // 토큰 추적
     this.tokenUsage = {
@@ -68,16 +84,7 @@ export class Orchestrator {
   }
 
   calculateCost(model, tokens) {
-    const costs = {
-      'claude-opus-4-6': { input: 0.000005, output: 0.000025 },
-      'claude-sonnet-4-5': { input: 0.000003, output: 0.000015 },
-      'claude-opus-4-20250514': { input: 0.000015, output: 0.000075 },
-      'claude-sonnet-4-20250514': { input: 0.000003, output: 0.000015 },
-      'gpt-4-turbo': { input: 0.00001, output: 0.00003 }
-    };
-    
-    const cost = costs[model] || costs['claude-opus-4-6'];
-    return (tokens.input * cost.input) + (tokens.output * cost.output);
+    return ModelRouter.estimateCost(model, tokens.input || 0, tokens.output || 0);
   }
 
   updateProgress(phase, step, total) {
@@ -104,6 +111,11 @@ export class Orchestrator {
       
       const designResult = await this.architect.designStructure(projectInfo);
       this.updateTokenUsage('architect', designResult.tokens);
+      this.tokenTracker.recordUsage('architect', {
+        input_tokens: designResult.tokens?.input_tokens || 0,
+        output_tokens: designResult.tokens?.output_tokens || 0,
+        model: this.architect.model,
+      });
       
       const design = designResult.design;
       console.log(`\n✅ Phase 1 완료: 문서 설계`);
@@ -123,17 +135,36 @@ export class Orchestrator {
             title: sub.title,
             level: sub.level,
             estimatedWords: sub.estimatedWords || 500,
-            requirements: sub.requirements
+            requirements: sub.requirements,
+            importance: sub.importance || this.modelRouter.classifySection(sub.title),
           });
         });
       });
+      
+      // Attach model and maxTokens per section via ModelRouter
+      const totalSections = sections.length;
+      for (let i = 0; i < totalSections; i++) {
+        const s = sections[i];
+        s.model = this.modelRouter.getWriterModel(s.title, i, totalSections);
+        const budget = this.modelRouter.getTokenBudget(s.title, i, totalSections);
+        s.maxTokens = budget.maxTokens;
+      }
       
       console.log(`\n✍️  Phase 2 시작: ${sections.length}개 섹션 작성`);
       
       const writtenSections = [];
       for (let i = 0; i < sections.length; i++) {
-        const result = await this.writer.writeSection(sections[i], projectInfo);
+        const section = sections[i];
+        const prevTitle = i > 0 ? sections[i - 1].title : null;
+        const nextTitle = i < sections.length - 1 ? sections[i + 1].title : null;
+        const result = await this.writer.writeSection(section, projectInfo, { prevTitle, nextTitle });
         this.updateTokenUsage('writer', result.tokens);
+        this.tokenTracker.recordUsage('writer', {
+          input_tokens: result.tokens?.input_tokens || 0,
+          output_tokens: result.tokens?.output_tokens || 0,
+          model: section.model || this.writer.model,
+          sectionTitle: section.title,
+        });
         writtenSections.push(result);
         
         this.updateProgress('작성', 1 + (i / sections.length) * 0.5, 4);
@@ -163,6 +194,11 @@ export class Orchestrator {
       imageResults.forEach(result => {
         if (result.totalTokens) {
           this.updateTokenUsage('imageCurator', result.totalTokens);
+          this.tokenTracker.recordUsage('imageCurator', {
+            input_tokens: result.totalTokens?.input_tokens || 0,
+            output_tokens: result.totalTokens?.output_tokens || 0,
+            model: this.imageCurator.model,
+          });
         }
       });
       
@@ -185,6 +221,11 @@ export class Orchestrator {
       reviewResult.reviews.forEach(review => {
         if (review.tokens) {
           this.updateTokenUsage('reviewer', review.tokens);
+          this.tokenTracker.recordUsage('reviewer', {
+            input_tokens: review.tokens?.input_tokens || 0,
+            output_tokens: review.tokens?.output_tokens || 0,
+            model: this.reviewer.model,
+          });
         }
       });
       
@@ -199,7 +240,10 @@ export class Orchestrator {
       
       const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
       const totalTokens = this.getTotalTokenUsage();
-      const totalCost = this.calculateCost(this.config.writerModel, totalTokens);
+      // Token optimization report
+      const tokenSummary = this.tokenTracker.getSummary();
+      const optimizationReport = this.tokenTracker.getOptimizationReport();
+      const totalCost = this.tokenTracker.usage.total.cost;
 
       console.log('\n╔═══════════════════════════════════════════════════════════╗');
       console.log('║  ✅ 문서 생성 완료!                                       ║');
@@ -212,6 +256,12 @@ export class Orchestrator {
       console.log(`   - Reviewer: ${this.tokenUsage.reviewer.input + this.tokenUsage.reviewer.output} tokens`);
       console.log(`   - 총합: ${totalTokens.total} tokens`);
       console.log(`💰 예상 비용: $${totalCost.toFixed(4)}`);
+      
+      console.log(`\n📊 Token Optimization Report:`);
+      console.log(`   총 비용: ${tokenSummary.total.cost}`);
+      optimizationReport.suggestions.forEach(s => {
+        console.log(`   ${s.type === 'cost_ok' ? '✅' : '⚠️'}  ${s.message}`);
+      });
 
       return {
         design,
@@ -223,6 +273,8 @@ export class Orchestrator {
           tokenUsage: this.tokenUsage,
           totalTokens,
           estimatedCost: totalCost,
+          tokenSummary,
+          optimizationReport,
           generatedAt: new Date().toISOString()
         }
       };
