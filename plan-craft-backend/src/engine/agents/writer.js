@@ -19,17 +19,32 @@ export class WriterAgent {
   }
 
   getSystemPrompt() {
-    return `사업계획서 작성 전문가. 개조식, 구체적 수치, 계층구조(##/###), 500-1000자.`;
+    return `사업계획서 작성 전문가.
+
+규칙:
+- 개조식 작성 (번호/불릿)
+- 계층 구조 (## / ###)
+- 구체적 수치 포함
+- 500-1000자
+
+출력: Markdown`;
   }
 
   async writeSection(section, projectInfo, context = {}) {
     console.log(`\n✍️  [${this.name}] 섹션 작성 중: ${section.title}`);
 
     const userPrompt = `섹션: ${section.title}
-과제: ${projectInfo.title}
-${projectInfo.idea}
 
-개조식 작성. 500-1000자.`;
+과제: ${projectInfo.title}
+개요: ${projectInfo.idea}
+
+요구사항:
+- 개조식 작성
+- 구체적 내용
+- 500-1000자
+${section.requirements ? `\n내용: ${section.requirements.join(', ')}` : ''}
+
+출력:`;
 
 위 지침에 따라 **${section.title}** 섹션을 작성해주세요.
 

@@ -21,15 +21,21 @@ export class ArchitectAgent {
   async designStructure(projectInfo) {
     console.log(`\n📐 [${this.name}] 문서 구조 설계 시작...`);
 
-    const prompt = `사업계획서 구조 설계.
+    const prompt = `사업계획서 구조 설계 전문가. 25개 섹션 구성.
 
 과제: ${projectInfo.title}
 아이디어: ${projectInfo.idea}
 
-25개 섹션으로 구성하고 JSON 출력.
-각 섹션: id, title, level(1-3), estimatedWords(500-1000)
+JSON 형식으로 출력:
+{
+  "structure": [
+    {"title": "대제목", "subsections": [
+      {"id": "s1", "title": "중제목", "level": 2, "estimatedWords": 800}
+    ]}
+  ]
+}
 
-출력 형식:
+출력:
 JSON 형식으로 출력하되, 마크다운 코드 블록 없이 순수 JSON만 출력하세요.
 
 \`\`\`json
