@@ -3,9 +3,9 @@
  * Plan-Craft v3.0 엔진 통합
  */
 
-import { Orchestrator } from '../../../plan-craft-v3/orchestrator.js';
-import { db } from '../db/index.js';
-import { projects, documents, tokenUsage } from '../db/schema-pg.js';
+import { Orchestrator } from '../engine/orchestrator';
+import { db } from '../db/index';
+import { projects, documents, tokenUsage } from '../db/schema-pg';
 import { eq } from 'drizzle-orm';
 
 export class DocumentGeneratorService {
