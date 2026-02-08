@@ -1,9 +1,11 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import type { User } from '../types';
 import UsageBadge from './UsageBadge';
+import { SUPPORTED_LOCALES, getLocale, setLocale as setI18nLocale, initLocale } from '../lib/i18n';
+import type { Locale } from '../lib/i18n';
 
 export default function Header() {
   const router = useRouter();
@@ -12,6 +14,9 @@ export default function Header() {
   const [user, setUser] = useState<User | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const [currentLang, setCurrentLang] = useState<Locale>('ko');
+  const langMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -21,7 +26,31 @@ export default function Header() {
       setIsLoggedIn(true);
       setUser(JSON.parse(userData));
     }
+    // Initialize locale
+    initLocale();
+    setCurrentLang(getLocale());
   }, []);
+
+  // Close language menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(e.target as Node)) {
+        setLangMenuOpen(false);
+      }
+    };
+    window.document.addEventListener('mousedown', handleClickOutside);
+    return () => window.document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLanguageChange = (locale: Locale) => {
+    setI18nLocale(locale);
+    setCurrentLang(locale);
+    setLangMenuOpen(false);
+    // Reload to apply translations
+    window.location.reload();
+  };
+
+  const currentLocaleInfo = SUPPORTED_LOCALES.find((l) => l.code === currentLang) || SUPPORTED_LOCALES[0];
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -58,6 +87,40 @@ export default function Header() {
 
         {/* Desktop auth buttons */}
         <div className="hidden md:flex items-center gap-3">
+          {/* Language Switcher */}
+          {mounted && (
+            <div className="relative" ref={langMenuRef}>
+              <button
+                onClick={() => setLangMenuOpen(!langMenuOpen)}
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm"
+                title="Language"
+              >
+                <span>{currentLocaleInfo.flag}</span>
+                <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {langMenuOpen && (
+                <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50 py-1">
+                  {SUPPORTED_LOCALES.map((locale) => (
+                    <button
+                      key={locale.code}
+                      onClick={() => handleLanguageChange(locale.code)}
+                      className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-600 transition ${
+                        currentLang === locale.code
+                          ? 'text-blue-600 dark:text-blue-400 font-semibold bg-blue-50 dark:bg-blue-900/20'
+                          : 'text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      <span>{locale.flag}</span>
+                      <span>{locale.name}</span>
+                      {currentLang === locale.code && <span className="ml-auto">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {mounted && (
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}

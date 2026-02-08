@@ -8,6 +8,9 @@ import ProLock from '../../components/ProLock';
 import { useToast } from '../../components/Toast';
 import ResearchPanel from '../../components/ResearchPanel';
 import type { ResearchData } from '../../components/ResearchPanel';
+import ShareModal from '../../components/ShareModal';
+import CommentPanel from '../../components/CommentPanel';
+import VersionHistory from '../../components/VersionHistory';
 import api from '../../lib/api';
 import type { Document as DocType, AgentProgress, ProgressLog, RealtimeProgress, Message } from '../../types';
 
@@ -43,6 +46,11 @@ export default function ProjectDetailPage() {
 
   // 연구 데이터
   const [researchData, setResearchData] = useState<ResearchData | null>(null);
+
+  // Collaboration panels
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showCommentPanel, setShowCommentPanel] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
 
   // WebSocket 진행 상황
   const [wsProgress, setWsProgress] = useState<string | null>(null);
@@ -594,6 +602,30 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
+          {/* Collaboration Toolbar */}
+          {project.status === 'completed' && (
+            <div className="flex items-center gap-2 mb-6">
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition shadow-sm"
+              >
+                🔗 공유
+              </button>
+              <button
+                onClick={() => setShowCommentPanel(true)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-amber-300 dark:hover:border-amber-600 transition shadow-sm"
+              >
+                💬 댓글
+              </button>
+              <button
+                onClick={() => setShowVersionHistory(true)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-purple-300 dark:hover:border-purple-600 transition shadow-sm"
+              >
+                📋 버전
+              </button>
+            </div>
+          )}
+
           {/* Research Panel - shown above document when data exists */}
           <ResearchPanel data={researchData} />
 
@@ -693,6 +725,23 @@ export default function ProjectDetailPage() {
           )}
         </main>
       </div>
+
+      {/* Collaboration Panels */}
+      <ShareModal
+        projectId={projectId}
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+      />
+      <CommentPanel
+        projectId={projectId}
+        isOpen={showCommentPanel}
+        onClose={() => setShowCommentPanel(false)}
+      />
+      <VersionHistory
+        projectId={projectId}
+        isOpen={showVersionHistory}
+        onClose={() => setShowVersionHistory(false)}
+      />
     </div>
   );
 }

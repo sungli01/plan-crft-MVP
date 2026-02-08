@@ -1,0 +1,208 @@
+type Locale = 'ko' | 'en' | 'ja';
+
+const translations: Record<Locale, Record<string, string>> = {
+  ko: {
+    'nav.home': '홈',
+    'nav.dashboard': '대시보드',
+    'nav.projects': '내 프로젝트',
+    'nav.templates': '템플릿',
+    'nav.pricing': '요금제',
+    'nav.login': '로그인',
+    'nav.register': '회원가입',
+    'nav.logout': '로그아웃',
+    'nav.freeStart': '무료 시작하기',
+    'hero.title': '멀티에이전트 오토리밸런싱 오케스트라를 통한 문서 생성',
+    'hero.subtitle': '4개의 전문 AI 에이전트가 자율적으로 역할을 분배하고, 실시간 품질 피드백 루프를 통해 최적의 결과물을 생성합니다.',
+    'hero.cta': '무료로 시작하기',
+    'templates.title': '템플릿',
+    'pricing.free': '무료',
+    'pricing.pro': 'Pro',
+    'pricing.monthly': '월',
+    'share.title': '문서 공유',
+    'share.permission': '권한 설정',
+    'share.view': '보기',
+    'share.edit': '편집',
+    'share.comment': '댓글',
+    'share.password': '비밀번호 보호',
+    'share.passwordPlaceholder': '공유 비밀번호 입력',
+    'share.expiry': '만료 기한',
+    'share.expiry7': '7일',
+    'share.expiry30': '30일',
+    'share.expiryNone': '무제한',
+    'share.generate': '공유 링크 생성',
+    'share.generating': '생성 중...',
+    'share.copy': '링크 복사',
+    'share.copied': '복사됨!',
+    'share.close': '닫기',
+    'comments.title': '댓글',
+    'comments.add': '댓글 작성',
+    'comments.placeholder': '의견을 남겨주세요...',
+    'comments.reply': '답글',
+    'comments.replyPlaceholder': '답글을 입력하세요...',
+    'comments.delete': '삭제',
+    'comments.noComments': '아직 댓글이 없습니다',
+    'comments.firstComment': '첫 번째 의견을 남겨보세요!',
+    'versions.title': '버전 히스토리',
+    'versions.restore': '복원',
+    'versions.current': '현재',
+    'versions.restoring': '복원 중...',
+    'versions.noVersions': '버전 기록이 없습니다',
+    'versions.quality': '품질',
+    'versions.words': '단어',
+    'mockup.title': '목업 사이트 빌더',
+    'mockup.generate': '목업 사이트 생성',
+    'research.title': '심층 연구 결과',
+    'theme.light': '라이트 모드',
+    'theme.dark': '다크 모드',
+    'common.loading': '로딩 중...',
+    'common.close': '닫기',
+  },
+  en: {
+    'nav.home': 'Home',
+    'nav.dashboard': 'Dashboard',
+    'nav.projects': 'My Projects',
+    'nav.templates': 'Templates',
+    'nav.pricing': 'Pricing',
+    'nav.login': 'Login',
+    'nav.register': 'Sign Up',
+    'nav.logout': 'Logout',
+    'nav.freeStart': 'Get Started Free',
+    'hero.title': 'Document Generation via Multi-Agent Auto-Rebalancing Orchestra',
+    'hero.subtitle': 'Four specialized AI agents autonomously distribute tasks and generate optimal results through real-time quality feedback loops.',
+    'hero.cta': 'Get Started Free',
+    'templates.title': 'Templates',
+    'pricing.free': 'Free',
+    'pricing.pro': 'Pro',
+    'pricing.monthly': '/mo',
+    'share.title': 'Share Document',
+    'share.permission': 'Permission',
+    'share.view': 'View',
+    'share.edit': 'Edit',
+    'share.comment': 'Comment',
+    'share.password': 'Password Protection',
+    'share.passwordPlaceholder': 'Enter share password',
+    'share.expiry': 'Expiry',
+    'share.expiry7': '7 days',
+    'share.expiry30': '30 days',
+    'share.expiryNone': 'No expiry',
+    'share.generate': 'Generate Share Link',
+    'share.generating': 'Generating...',
+    'share.copy': 'Copy Link',
+    'share.copied': 'Copied!',
+    'share.close': 'Close',
+    'comments.title': 'Comments',
+    'comments.add': 'Add Comment',
+    'comments.placeholder': 'Leave your feedback...',
+    'comments.reply': 'Reply',
+    'comments.replyPlaceholder': 'Write a reply...',
+    'comments.delete': 'Delete',
+    'comments.noComments': 'No comments yet',
+    'comments.firstComment': 'Be the first to leave feedback!',
+    'versions.title': 'Version History',
+    'versions.restore': 'Restore',
+    'versions.current': 'Current',
+    'versions.restoring': 'Restoring...',
+    'versions.noVersions': 'No version history',
+    'versions.quality': 'Quality',
+    'versions.words': 'Words',
+    'mockup.title': 'Mockup Site Builder',
+    'mockup.generate': 'Generate Mockup',
+    'research.title': 'Deep Research Results',
+    'theme.light': 'Light Mode',
+    'theme.dark': 'Dark Mode',
+    'common.loading': 'Loading...',
+    'common.close': 'Close',
+  },
+  ja: {
+    'nav.home': 'ホーム',
+    'nav.dashboard': 'ダッシュボード',
+    'nav.projects': 'マイプロジェクト',
+    'nav.templates': 'テンプレート',
+    'nav.pricing': '料金',
+    'nav.login': 'ログイン',
+    'nav.register': '新規登録',
+    'nav.logout': 'ログアウト',
+    'nav.freeStart': '無料で始める',
+    'hero.title': 'マルチエージェント自動リバランシングオーケストラによる文書生成',
+    'hero.subtitle': '4つの専門AIエージェントが自律的に役割を分配し、リアルタイムの品質フィードバックループで最適な成果物を生成します。',
+    'hero.cta': '無料で始める',
+    'templates.title': 'テンプレート',
+    'pricing.free': '無料',
+    'pricing.pro': 'Pro',
+    'pricing.monthly': '/月',
+    'share.title': 'ドキュメント共有',
+    'share.permission': '権限設定',
+    'share.view': '閲覧',
+    'share.edit': '編集',
+    'share.comment': 'コメント',
+    'share.password': 'パスワード保護',
+    'share.passwordPlaceholder': '共有パスワードを入力',
+    'share.expiry': '有効期限',
+    'share.expiry7': '7日間',
+    'share.expiry30': '30日間',
+    'share.expiryNone': '無制限',
+    'share.generate': '共有リンク生成',
+    'share.generating': '生成中...',
+    'share.copy': 'リンクコピー',
+    'share.copied': 'コピー済み！',
+    'share.close': '閉じる',
+    'comments.title': 'コメント',
+    'comments.add': 'コメント追加',
+    'comments.placeholder': 'フィードバックをどうぞ...',
+    'comments.reply': '返信',
+    'comments.replyPlaceholder': '返信を入力...',
+    'comments.delete': '削除',
+    'comments.noComments': 'まだコメントがありません',
+    'comments.firstComment': '最初のコメントを残しましょう！',
+    'versions.title': 'バージョン履歴',
+    'versions.restore': '復元',
+    'versions.current': '現在',
+    'versions.restoring': '復元中...',
+    'versions.noVersions': 'バージョン履歴がありません',
+    'versions.quality': '品質',
+    'versions.words': '単語',
+    'mockup.title': 'モックアップサイトビルダー',
+    'mockup.generate': 'モックアップ生成',
+    'research.title': '深層研究結果',
+    'theme.light': 'ライトモード',
+    'theme.dark': 'ダークモード',
+    'common.loading': '読み込み中...',
+    'common.close': '閉じる',
+  },
+};
+
+let currentLocale: Locale = 'ko';
+
+export function setLocale(locale: Locale) {
+  currentLocale = locale;
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('locale', locale);
+  }
+}
+
+export function getLocale(): Locale {
+  if (typeof window !== 'undefined') {
+    return (localStorage.getItem('locale') as Locale) || 'ko';
+  }
+  return 'ko';
+}
+
+export function initLocale() {
+  currentLocale = getLocale();
+}
+
+export function t(key: string): string {
+  return translations[currentLocale]?.[key] || translations.ko[key] || key;
+}
+
+export function useTranslation() {
+  return { t, locale: currentLocale, setLocale };
+}
+
+export type { Locale };
+
+export const SUPPORTED_LOCALES: { code: Locale; name: string; flag: string }[] = [
+  { code: 'ko', name: '한국어', flag: '🇰🇷' },
+  { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'ja', name: '日本語', flag: '🇯🇵' },
+];
