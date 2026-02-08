@@ -1,145 +1,239 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-function CreateProjectForm() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [formData, setFormData] = useState({
-    title: searchParams.get('title') || '',
-    idea: searchParams.get('idea') || ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  plan: string;
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
+export default function CreatePage() {
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, [router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    router.push('/');
+  };
+
+  const handleCreateProject = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
+    setCreating(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const formData = new FormData(e.currentTarget);
+      const title = formData.get('title') as string;
+      const idea = formData.get('idea') as string;
+      const file = formData.get('document') as File;
+
+      let referenceDoc = '';
       
-      // 프로젝트 생성
-      const projectResponse = await axios.post(
+      // 파일이 있으면 읽기
+      if (file && file.size > 0) {
+        referenceDoc = await readFileAsText(file);
+      }
+
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
         `${API_URL}/api/projects`,
-        formData,
+        { title, idea, referenceDoc },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const projectId = projectResponse.data.project.id;
-
-      // 문서 생성 시작
-      await axios.post(
-        `${API_URL}/api/generate/${projectId}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      // 프로젝트 상세 페이지로 이동
-      router.push(`/project/${projectId}`);
-    } catch (err: any) {
-      setError(err.response?.data?.error || '프로젝트 생성에 실패했습니다');
-      setLoading(false);
+      // 프로젝트 생성 후 상세 페이지로 이동
+      router.push(`/project/${response.data.project.id}`);
+    } catch (error) {
+      console.error('프로젝트 생성 실패:', error);
+      alert('프로젝트 생성에 실패했습니다');
+    } finally {
+      setCreating(false);
     }
   };
 
+  const readFileAsText = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = (e) => reject(e);
+      reader.readAsText(file);
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            프로젝트 생성
-          </h1>
-          <p className="text-gray-600 mb-8">
-            프로젝트 정보를 입력하고 AI가 사업계획서를 생성합니다
-          </p>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-              {error}
+    <div className="min-h-screen bg-gray-50">
+      {/* 헤더 */}
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-6 py-3 flex justify-between items-center">
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push('/')}>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <span className="text-white text-lg font-bold">P</span>
+              </div>
+              <span className="text-lg font-semibold text-gray-900">Plan-Craft</span>
             </div>
-          )}
+            <nav className="hidden md:flex items-center gap-6">
+              <button 
+                onClick={() => router.push('/')}
+                className="text-sm text-gray-600 hover:text-gray-900"
+              >
+                홈
+              </button>
+              <button 
+                onClick={() => router.push('/projects')}
+                className="text-sm text-gray-600 hover:text-gray-900"
+              >
+                내 프로젝트
+              </button>
+              <button className="text-sm text-gray-600 hover:text-gray-900">사용자 사례</button>
+            </nav>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-700">{user?.name}</span>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-1.5 text-sm text-gray-600 hover:text-gray-900"
+            >
+              로그아웃
+            </button>
+          </div>
+        </div>
+      </header>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+      {/* 메인 컨텐츠 */}
+      <main className="max-w-3xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-900">새 프로젝트 만들기</h2>
+          <p className="text-gray-600 mt-1">프로젝트 정보를 입력하여 사업계획서를 생성하세요</p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <form onSubmit={handleCreateProject} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                프로젝트 제목 <span className="text-red-500">*</span>
+                프로젝트 제목 *
               </label>
               <input
                 type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                name="title"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="예: AI 기반 스마트 물류 플랫폼"
                 required
-                disabled={loading}
               />
-              <p className="text-sm text-gray-500 mt-1">
-                간결하고 명확한 제목을 입력하세요
-              </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                핵심 아이디어 <span className="text-red-500">*</span>
+                핵심 아이디어 *
               </label>
               <textarea
-                value={formData.idea}
-                onChange={(e) => setFormData({ ...formData, idea: e.target.value })}
-                rows={8}
+                name="idea"
+                rows={6}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="프로젝트의 핵심 아이디어와 목표를 자세히 설명해주세요.&#10;&#10;예:&#10;AI와 IoT를 활용하여 물류 배송을 최적화하고, 실시간 추적 및 예측 배송 시스템을 구축하는 혁신적인 플랫폼입니다. 블록체인 기반 투명한 이력 관리와 머신러닝 기반 수요 예측으로 물류 비용을 30% 절감합니다."
+                placeholder="프로젝트의 핵심 아이디어를 자세히 설명해주세요...
+
+예시:
+- 해결하려는 문제
+- 제공하는 솔루션
+- 타겟 고객
+- 주요 기능
+- 예상 비즈니스 모델"
                 required
-                disabled={loading}
               />
-              <p className="text-sm text-gray-500 mt-1">
-                최소 50자 이상 입력하시면 더 정확한 문서가 생성됩니다
-              </p>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-semibold text-blue-900 mb-2">📌 생성 안내</h3>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• 문서 생성은 약 20-30분 소요됩니다</li>
-                <li>• 4개의 AI 에이전트가 협업하여 고품질 문서를 생성합니다</li>
-                <li>• 생성 비용은 약 $4-5 정도입니다</li>
-                <li>• 생성 중에도 다른 작업이 가능합니다</li>
-              </ul>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                참고 문서 (선택)
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition">
+                <input
+                  type="file"
+                  name="document"
+                  accept=".txt,.pdf,.doc,.docx"
+                  className="hidden"
+                  id="document-upload"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    const label = document.getElementById('document-label');
+                    if (label && file) {
+                      label.textContent = `📎 ${file.name}`;
+                      label.classList.add('text-blue-600', 'font-semibold');
+                    }
+                  }}
+                />
+                <label htmlFor="document-upload" className="cursor-pointer block">
+                  <div className="text-5xl mb-3">📎</div>
+                  <p id="document-label" className="text-sm text-gray-600 mb-2">
+                    클릭하여 파일 선택
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    지원 형식: TXT, PDF, DOC, DOCX
+                  </p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    참고할 문서나 자료가 있다면 업로드하세요
+                  </p>
+                </label>
+              </div>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex gap-4 pt-4">
               <button
                 type="submit"
-                disabled={loading}
-                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={creating}
+                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
               >
-                {loading ? '생성 중...' : '문서 생성 시작'}
+                {creating ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="animate-spin">⏳</span>
+                    생성 중...
+                  </span>
+                ) : (
+                  '프로젝트 생성'
+                )}
               </button>
               <button
                 type="button"
-                onClick={() => router.push('/dashboard')}
-                disabled={loading}
-                className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+                onClick={() => router.push('/projects')}
+                disabled={creating}
+                className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition"
               >
                 취소
               </button>
             </div>
           </form>
         </div>
-      </div>
-    </div>
-  );
-}
 
-export default function CreatePage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <CreateProjectForm />
-    </Suspense>
+        {/* 안내 사항 */}
+        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <h3 className="font-semibold text-blue-900 mb-2">💡 생성 소요 시간</h3>
+          <p className="text-sm text-blue-800">
+            AI 에이전트가 고품질 사업계획서를 작성하는 데 약 <strong>15-25분</strong>이 소요됩니다.
+            생성이 시작되면 프로젝트 상세 페이지에서 실시간으로 진행 상황을 확인하실 수 있습니다.
+          </p>
+        </div>
+      </main>
+    </div>
   );
 }

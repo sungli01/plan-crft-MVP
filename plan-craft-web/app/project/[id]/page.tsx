@@ -128,16 +128,30 @@ export default function ProjectDetailPage() {
     );
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    router.push('/');
+  };
+
+  const getUser = () => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
   if (!project) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-xl text-gray-600 mb-4">프로젝트를 찾을 수 없습니다</p>
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/projects')}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            대시보드로 이동
+            프로젝트 목록으로 이동
           </button>
         </div>
       </div>
@@ -145,21 +159,57 @@ export default function ProjectDetailPage() {
   }
 
   const statusDisplay = getStatusDisplay(project.status);
+  const user = getUser();
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* 헤더 */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="text-blue-600 hover:text-blue-700 mb-2"
-          >
-            ← 대시보드로 돌아가기
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900">{project.title}</h1>
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-6 py-3 flex justify-between items-center">
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push('/')}>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <span className="text-white text-lg font-bold">P</span>
+              </div>
+              <span className="text-lg font-semibold text-gray-900">Plan-Craft</span>
+            </div>
+            <nav className="hidden md:flex items-center gap-6">
+              <button 
+                onClick={() => router.push('/')}
+                className="text-sm text-gray-600 hover:text-gray-900"
+              >
+                홈
+              </button>
+              <button 
+                onClick={() => router.push('/projects')}
+                className="text-sm text-gray-600 hover:text-gray-900"
+              >
+                내 프로젝트
+              </button>
+              <button className="text-sm text-gray-600 hover:text-gray-900">사용자 사례</button>
+            </nav>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-700">{user?.name}</span>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-1.5 text-sm text-gray-600 hover:text-gray-900"
+            >
+              로그아웃
+            </button>
+          </div>
         </div>
       </header>
+
+      {/* 브레드크럼 */}
+      <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+        <button
+          onClick={() => router.push('/projects')}
+          className="text-blue-600 hover:text-blue-700 text-sm"
+        >
+          ← 프로젝트 목록으로 돌아가기
+        </button>
+      </div>
 
       {/* 메인 컨텐츠 */}
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
