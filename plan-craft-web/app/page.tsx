@@ -6,6 +6,7 @@ import Header from './components/Header';
 import { useToast } from './components/Toast';
 import api from './lib/api';
 import type { Project } from './types';
+import TEMPLATES, { type RichTemplate } from './data/templates';
 import {
   GovernmentIcon,
   DevIcon,
@@ -35,9 +36,11 @@ const DOCUMENT_TYPES: { icon: (props: { className?: string }) => ReactNode; labe
 
 const TEMPLATE_CATEGORIES = ['전체', '국가 사업', '개발 기획', '연구 보고', '비즈니스', '마케팅', '투자 유치', '기술 문서'];
 
-/* ── 80+ Templates (10+ per category) ── */
-const SAMPLE_TEMPLATES = [
-  // ── 국가 사업 (12) ──
+/* ── Rich Templates from data file (70+ with sections, keywords, overview) ── */
+const SAMPLE_TEMPLATES = TEMPLATES;
+
+// Old inline templates removed — now imported from data/templates.ts
+const _OLD_TEMPLATES_REMOVED = [
   { title: '스마트팜 자동화 시스템', subtitle: '국가 사업계획서', desc: '노지·시설원예 환경 자동제어 및 AI 생육 모니터링 플랫폼 구축', category: '국가 사업' },
   { title: 'AI 의료 영상 진단', subtitle: '국가 사업계획서', desc: 'CT/MRI 기반 딥러닝 의료영상 분석 솔루션 개발', category: '국가 사업' },
   { title: '디지털 트윈 스마트공장', subtitle: '국가 사업계획서', desc: '제조 공정 실시간 시뮬레이션 및 예측 정비 시스템 구축', category: '국가 사업' },
@@ -303,11 +306,13 @@ export default function Home() {
     }
   };
 
-  const createProjectFromTemplate = async (template: { title: string; subtitle: string; desc: string }) => {
+  const createProjectFromTemplate = async (template: any) => {
     try {
+      // Use rich overview if available, fall back to desc
+      const idea = template.overview || template.desc;
       const response = await api.post('/api/projects', { 
         title: template.title,
-        idea: template.desc
+        idea: idea
       });
 
       router.push(`/project/${response.data.project.id}`);
@@ -681,15 +686,32 @@ export default function Home() {
                         <div className="text-xs text-gray-500 line-clamp-2 mb-3">
                           {template.desc}
                         </div>
-                        <div className="mt-auto space-y-1">
-                          <div className="h-1 bg-gray-200 rounded"></div>
-                          <div className="h-1 bg-gray-200 rounded w-4/5"></div>
-                          <div className="h-1 bg-gray-200 rounded w-3/5"></div>
-                        </div>
+                        {/* Section preview for rich templates */}
+                        {template.sections && template.sections.length > 0 && (
+                          <div className="mt-2 space-y-0.5 text-[10px] text-gray-400">
+                            {template.sections.slice(0, 3).map((s: string, i: number) => (
+                              <div key={i} className="truncate">• {s}</div>
+                            ))}
+                            {template.sections.length > 3 && (
+                              <div className="text-gray-300">... 외 {template.sections.length - 3}개 섹션</div>
+                            )}
+                          </div>
+                        )}
+                        {!template.sections && (
+                          <div className="mt-auto space-y-1">
+                            <div className="h-1 bg-gray-200 rounded"></div>
+                            <div className="h-1 bg-gray-200 rounded w-4/5"></div>
+                            <div className="h-1 bg-gray-200 rounded w-3/5"></div>
+                          </div>
+                        )}
                       </div>
                       
                       <div className="mt-2 flex items-center justify-between">
-                        <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">87+ 품질</span>
+                        {template.sections ? (
+                          <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded font-medium">{template.sections.length}개 섹션</span>
+                        ) : (
+                          <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">87+ 품질</span>
+                        )}
                         <span className="text-xs text-gray-500">8-10분</span>
                       </div>
                     </div>
