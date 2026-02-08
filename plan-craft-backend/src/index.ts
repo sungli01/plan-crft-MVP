@@ -2,7 +2,9 @@
  * Plan-Craft Backend API Server
  */
 
-import 'dotenv/config';
+import { config } from 'dotenv';
+// dotenv: 기존 환경변수를 덮어쓰지 않도록 override: false
+config({ override: false });
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
