@@ -44,7 +44,7 @@ export class WriterAgent {
 - 500-1000자
 ${section.requirements ? `\n내용: ${section.requirements.join(', ')}` : ''}
 
-출력:`;
+출력:
 
 위 지침에 따라 **${section.title}** 섹션을 작성해주세요.
 
