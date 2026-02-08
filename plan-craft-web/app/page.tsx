@@ -41,10 +41,18 @@ interface User {
   plan: string;
 }
 
+interface Project {
+  id: string;
+  title: string;
+  status: string;
+  createdAt: string;
+}
+
 export default function Home() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('전체');
   const [isDragging, setIsDragging] = useState(false);
@@ -57,8 +65,21 @@ export default function Home() {
     if (token && userData) {
       setIsLoggedIn(true);
       setUser(JSON.parse(userData));
+      loadProjects(token);
     }
   }, []);
+
+  const loadProjects = async (token: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/api/projects`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // 최근 10개만 표시
+      setProjects((response.data.projects || []).slice(0, 10));
+    } catch (error) {
+      console.error('프로젝트 로딩 실패:', error);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -141,11 +162,21 @@ export default function Home() {
     }
   };
 
+  const getStatusIcon = (status: string) => {
+    const icons = {
+      draft: '📝',
+      generating: '⏳',
+      completed: '✅',
+      failed: '❌'
+    };
+    return icons[status as keyof typeof icons] || '📄';
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* 헤더 */}
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex justify-between items-center">
+        <div className="max-w-full mx-auto px-6 py-3 flex justify-between items-center">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
@@ -202,7 +233,51 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      {/* 메인 레이아웃: 사이드바 + 컨텐츠 */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* 좌측 사이드바 (로그인 시에만 표시) */}
+        {isLoggedIn && (
+          <aside className="w-64 bg-white border-r border-gray-200 overflow-y-auto">
+            <div className="p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">최근 프로젝트</h3>
+              {projects.length === 0 ? (
+                <p className="text-xs text-gray-500 text-center py-8">
+                  아직 프로젝트가 없습니다
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {projects.map((project) => (
+                    <button
+                      key={project.id}
+                      onClick={() => router.push(`/project/${project.id}`)}
+                      className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 transition"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">{getStatusIcon(project.status)}</span>
+                        <span className="text-sm font-medium text-gray-900 truncate flex-1">
+                          {project.title}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {new Date(project.createdAt).toLocaleDateString('ko-KR')}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={() => router.push('/projects')}
+                className="w-full mt-4 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition"
+              >
+                전체 프로젝트 보기 →
+              </button>
+            </div>
+          </aside>
+        )}
+
+        {/* 메인 컨텐츠 */}
+        <main className="flex-1 overflow-y-auto">
+          <div className={`${isLoggedIn ? 'max-w-5xl' : 'max-w-6xl'} mx-auto px-6 py-8`}>
         {/* 타이틀 */}
         <h1 className="text-4xl font-bold text-center mb-8">
           고급 지능으로 <span className="text-blue-600">문서 생성</span>
@@ -355,21 +430,23 @@ export default function Home() {
           </div>
         </div>
 
-        {/* CTA */}
-        {!isLoggedIn && (
-          <div className="mt-12 text-center">
-            <button
-              onClick={() => router.push('/register')}
-              className="px-8 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 shadow-lg"
-            >
-              Plan-Craft에 가입하여 무료로 시작하기 →
-            </button>
+            {/* CTA */}
+            {!isLoggedIn && (
+              <div className="mt-12 text-center">
+                <button
+                  onClick={() => router.push('/register')}
+                  className="px-8 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 shadow-lg"
+                >
+                  Plan-Craft에 가입하여 무료로 시작하기 →
+                </button>
+              </div>
+            )}
           </div>
-        )}
+        </main>
       </div>
 
       {/* 푸터 */}
-      <footer className="border-t border-gray-200 mt-16 py-8 bg-white">
+      <footer className="border-t border-gray-200 py-8 bg-white">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center text-sm text-gray-500">
             <p className="font-semibold text-gray-900 mb-2">Plan-Craft v3.0</p>

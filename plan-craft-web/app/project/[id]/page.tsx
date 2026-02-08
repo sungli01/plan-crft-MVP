@@ -304,9 +304,9 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
-          {/* 진행 상황 */}
+          {/* 진행 상황 대시보드 */}
           <div className="p-4 border-b border-gray-200">
-            <h3 className="font-semibold text-sm text-gray-900 mb-3">📊 진행 상황</h3>
+            <h3 className="font-semibold text-sm text-gray-900 mb-3">📊 진행 현황</h3>
             <div className="space-y-3">
               {progressSteps.map((step, idx) => (
                 <div key={idx} className="space-y-1">
@@ -338,39 +338,63 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
+          {/* 실시간 작업 로그 */}
+          <div className="flex-1 flex flex-col overflow-hidden border-b border-gray-200">
+            <div className="p-4 border-b border-gray-100">
+              <h3 className="font-semibold text-sm text-gray-900">🔄 실시간 작업 로그</h3>
+              <p className="text-xs text-gray-500 mt-1">AI 에이전트가 수행 중인 작업</p>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="space-y-2 font-mono text-xs">
+                <div className="flex items-start gap-2 text-green-600">
+                  <span className="mt-0.5">✓</span>
+                  <div className="flex-1">
+                    <span className="font-semibold">[10:01:23]</span> Architect: 문서 구조 설계 완료 (25개 섹션)
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 text-blue-600 animate-pulse">
+                  <span className="mt-0.5">⏳</span>
+                  <div className="flex-1">
+                    <span className="font-semibold">[10:05:41]</span> Writer: "시장 분석 및 경쟁 현황" 섹션 작성 중...
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 text-blue-600">
+                  <span className="mt-0.5">⏳</span>
+                  <div className="flex-1">
+                    <span className="font-semibold">[10:04:12]</span> Writer: "비즈니스 모델" 섹션 완료 (1,240자)
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 text-green-600">
+                  <span className="mt-0.5">✓</span>
+                  <div className="flex-1">
+                    <span className="font-semibold">[10:03:05]</span> Writer: "프로젝트 개요" 섹션 완료 (890자)
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 text-gray-400">
+                  <span className="mt-0.5">○</span>
+                  <div className="flex-1">
+                    <span className="font-semibold">[대기]</span> Image Curator: 이미지 수집 대기 중...
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 text-gray-400">
+                  <span className="mt-0.5">○</span>
+                  <div className="flex-1">
+                    <span className="font-semibold">[대기]</span> Reviewer: 품질 검토 대기 중...
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* 소통 영역 */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-shrink-0">
             <div className="p-4 border-b border-gray-200">
               <h3 className="font-semibold text-sm text-gray-900">💬 AI와 소통</h3>
-              <p className="text-xs text-gray-500 mt-1">추가 요청이나 질문을 입력하세요</p>
-            </div>
-
-            {/* 메시지 목록 */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {messages.length === 0 ? (
-                <div className="text-center text-sm text-gray-400 mt-8">
-                  아직 메시지가 없습니다
-                </div>
-              ) : (
-                messages.map(msg => (
-                  <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
-                      msg.type === 'user' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-gray-100 text-gray-900'
-                    }`}>
-                      <p>{msg.content}</p>
-                      <span className="text-xs opacity-70 mt-1 block">
-                        {msg.timestamp.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              )}
+              <p className="text-xs text-gray-500 mt-1">추가 요청이나 자료를 전달하세요</p>
             </div>
 
             {/* 입력 영역 */}
-            <div className="p-4 border-t border-gray-200 space-y-2">
+            <div className="p-4 space-y-2">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -407,6 +431,20 @@ export default function ProjectDetailPage() {
                 </label>
               </div>
             </div>
+
+            {/* 최근 메시지 */}
+            {messages.length > 0 && (
+              <div className="px-4 pb-2 max-h-32 overflow-y-auto">
+                {messages.slice(-3).map(msg => (
+                  <div key={msg.id} className="text-xs mb-2">
+                    <span className={`font-semibold ${msg.type === 'user' ? 'text-blue-600' : 'text-gray-600'}`}>
+                      {msg.type === 'user' ? '👤' : '🤖'}
+                    </span>
+                    <span className="text-gray-700 ml-1">{msg.content}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </aside>
 
