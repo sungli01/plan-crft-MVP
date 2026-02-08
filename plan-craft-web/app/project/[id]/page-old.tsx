@@ -30,20 +30,12 @@ interface Message {
   timestamp: Date;
 }
 
-interface AgentProgress {
+interface ProgressStep {
+  agent: string;
+  step: string;
   status: 'pending' | 'running' | 'completed';
   progress: number;
   detail: string;
-  currentSection?: number;
-  totalSections?: number;
-}
-
-interface ProgressLog {
-  timestamp: number;
-  time: string;
-  agent: string;
-  level: string;
-  message: string;
 }
 
 export default function ProjectDetailPage() {
@@ -59,10 +51,13 @@ export default function ProjectDetailPage() {
   const [inputMessage, setInputMessage] = useState('');
   const [uploadingFile, setUploadingFile] = useState(false);
   
-  // 실시간 진행 상황
-  const [realtimeProgress, setRealtimeProgress] = useState<any>(null);
-  const [startTime, setStartTime] = useState<number>(Date.now());
-  const [estimatedDuration] = useState<number>(20 * 60 * 1000); // 20분 (밀리초)
+  // 진행 상황 (임시 데이터)
+  const [progressSteps, setProgressSteps] = useState<ProgressStep[]>([
+    { agent: 'Architect', step: '문서 구조 설계', status: 'completed', progress: 100, detail: '25개 섹션 구조 완료' },
+    { agent: 'Writer', step: '본문 작성', status: 'running', progress: 65, detail: '16/25 섹션 작성 중...' },
+    { agent: 'Image Curator', step: '이미지 선별', status: 'pending', progress: 0, detail: '대기 중' },
+    { agent: 'Reviewer', step: '품질 검토', status: 'pending', progress: 0, detail: '대기 중' }
+  ]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -73,12 +68,14 @@ export default function ProjectDetailPage() {
 
     loadProjectData(token);
     
-    // 생성 중이면 1초마다 상태 확인
+    // 생성 중이면 5초마다 상태 확인
     const interval = setInterval(() => {
       if (project?.status === 'generating') {
         loadProjectData(token);
+        // 임시: 진행률 업데이트 시뮬레이션
+        simulateProgress();
       }
-    }, 1000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [projectId, project?.status, router]);
@@ -92,18 +89,11 @@ export default function ProjectDetailPage() {
       );
       setProject(projectResponse.data.project);
 
-      // 생성 상태 확인 (실시간 진행 상황 포함)
+      // 생성 상태 확인
       const statusResponse = await axios.get(
         `${API_URL}/api/generate/${projectId}/status`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
-      if (statusResponse.data.progress) {
-        setRealtimeProgress(statusResponse.data.progress);
-        if (!startTime && statusResponse.data.progress.startedAt) {
-          setStartTime(statusResponse.data.progress.startedAt);
-        }
-      }
       
       if (statusResponse.data.document) {
         setDocument(statusResponse.data.document);
@@ -115,25 +105,14 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const calculateTimeProgress = () => {
-    if (!realtimeProgress) return 0;
-    const elapsed = Date.now() - startTime;
-    const progress = Math.min((elapsed / estimatedDuration) * 100, 99);
-    return Math.round(progress);
-  };
-
-  const getElapsedTime = () => {
-    const elapsed = Date.now() - startTime;
-    const minutes = Math.floor(elapsed / 60000);
-    const seconds = Math.floor((elapsed % 60000) / 1000);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const getEstimatedRemaining = () => {
-    const elapsed = Date.now() - startTime;
-    const remaining = Math.max(estimatedDuration - elapsed, 0);
-    const minutes = Math.floor(remaining / 60000);
-    return `약 ${minutes}분`;
+  const simulateProgress = () => {
+    // 임시: 진행 상황 시뮬레이션
+    setProgressSteps(prev => prev.map(step => {
+      if (step.status === 'running' && step.progress < 100) {
+        return { ...step, progress: Math.min(step.progress + 5, 100) };
+      }
+      return step;
+    }));
   };
 
   const handleDownload = async () => {
@@ -148,6 +127,7 @@ export default function ProjectDetailPage() {
         }
       );
 
+      // 파일 다운로드
       if (typeof window !== 'undefined') {
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = window.document.createElement('a');
@@ -178,6 +158,7 @@ export default function ProjectDetailPage() {
     setMessages([...messages, newMessage]);
     setInputMessage('');
 
+    // 임시: 시스템 응답 시뮬레이션
     setTimeout(() => {
       const systemMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -195,6 +176,7 @@ export default function ProjectDetailPage() {
 
     setUploadingFile(true);
     
+    // 임시: 파일 업로드 시뮬레이션
     setTimeout(() => {
       const systemMessage: Message = {
         id: Date.now().toString(),
@@ -260,7 +242,6 @@ export default function ProjectDetailPage() {
 
   const statusDisplay = getStatusDisplay(project.status);
   const user = getUser();
-  const timeProgress = calculateTimeProgress();
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -314,107 +295,93 @@ export default function ProjectDetailPage() {
             >
               ← 프로젝트 목록
             </button>
-            <h2 className="font-semibold text-base text-gray-900">{project.title}</h2>
+            <h2 className="font-bold text-lg text-gray-900">{project.title}</h2>
             <div className="flex items-center gap-2 mt-2">
-              <span className="text-xl">{statusDisplay.icon}</span>
+              <span className="text-2xl">{statusDisplay.icon}</span>
               <span className={`text-sm font-semibold text-${statusDisplay.color}-700`}>
                 {statusDisplay.text}
               </span>
             </div>
           </div>
 
-          {/* 진행 시간 (시간 기반) */}
-          {project.status === 'generating' && (
-            <div className="p-4 border-b border-gray-200">
-              <h3 className="font-semibold text-sm text-gray-900 mb-3">⏱️ 진행 시간</h3>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-600">경과 시간</span>
-                  <span className="font-semibold text-blue-600">{getElapsedTime()}</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="h-2 rounded-full bg-blue-600 transition-all"
-                    style={{ width: `${timeProgress}%` }}
-                  ></div>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-600">예상 소요: 20분</span>
-                  <span className="text-gray-600">남은 시간: {getEstimatedRemaining()}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* AI 에이전트 진행 현황 */}
-          {realtimeProgress && (
-            <div className="p-4 border-b border-gray-200">
-              <h3 className="font-semibold text-sm text-gray-900 mb-3">🤖 AI 에이전트</h3>
-              <div className="space-y-3">
-                {Object.entries(realtimeProgress.agents).map(([key, agent]: [string, any]) => (
-                  <div key={key} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-gray-700 capitalize">
-                        {key === 'architect' ? 'Architect' :
-                         key === 'writer' ? 'Writer' :
-                         key === 'imageCurator' ? 'Image Curator' :
-                         key === 'reviewer' ? 'Reviewer' : key}
-                      </span>
-                      <span className={`font-semibold ${
-                        agent.status === 'completed' ? 'text-green-600' :
-                        agent.status === 'running' ? 'text-blue-600' :
-                        'text-gray-400'
-                      }`}>
-                        {agent.progress}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5">
-                      <div 
-                        className={`h-1.5 rounded-full transition-all ${
-                          agent.status === 'completed' ? 'bg-green-600' :
-                          agent.status === 'running' ? 'bg-blue-600' :
-                          'bg-gray-300'
-                        }`}
-                        style={{ width: `${agent.progress}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-gray-500">{agent.detail}</p>
+          {/* 진행 상황 대시보드 */}
+          <div className="p-4 border-b border-gray-200">
+            <h3 className="font-semibold text-sm text-gray-900 mb-3">📊 진행 현황</h3>
+            <div className="space-y-3">
+              {progressSteps.map((step, idx) => (
+                <div key={idx} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-gray-700">
+                      {step.agent}
+                    </span>
+                    <span className={`font-semibold ${
+                      step.status === 'completed' ? 'text-green-600' :
+                      step.status === 'running' ? 'text-blue-600' :
+                      'text-gray-400'
+                    }`}>
+                      {step.progress}%
+                    </span>
                   </div>
-                ))}
-              </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                    <div 
+                      className={`h-1.5 rounded-full transition-all ${
+                        step.status === 'completed' ? 'bg-green-600' :
+                        step.status === 'running' ? 'bg-blue-600' :
+                        'bg-gray-300'
+                      }`}
+                      style={{ width: `${step.progress}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-500">{step.detail}</p>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
 
           {/* 실시간 작업 로그 */}
           <div className="flex-1 flex flex-col overflow-hidden border-b border-gray-200">
             <div className="p-4 border-b border-gray-100">
-              <h3 className="font-semibold text-sm text-gray-900">🔄 실시간 로그</h3>
+              <h3 className="font-semibold text-sm text-gray-900">🔄 실시간 작업 로그</h3>
+              <p className="text-xs text-gray-500 mt-1">AI 에이전트가 수행 중인 작업</p>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               <div className="space-y-2 font-mono text-xs">
-                {realtimeProgress?.logs?.length > 0 ? (
-                  realtimeProgress.logs.slice().reverse().map((log: ProgressLog, idx: number) => (
-                    <div key={idx} className={`flex items-start gap-2 ${
-                      log.level === 'success' ? 'text-green-600' :
-                      log.level === 'error' ? 'text-red-600' :
-                      log.level === 'info' ? 'text-blue-600' :
-                      'text-gray-600'
-                    }`}>
-                      <span className="mt-0.5">
-                        {log.level === 'success' ? '✓' :
-                         log.level === 'error' ? '✗' :
-                         log.level === 'info' ? '⏳' : '○'}
-                      </span>
-                      <div className="flex-1">
-                        <span className="font-semibold">[{log.time}]</span> {log.message}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-gray-400 text-center py-4">
-                    작업 대기 중...
+                <div className="flex items-start gap-2 text-green-600">
+                  <span className="mt-0.5">✓</span>
+                  <div className="flex-1">
+                    <span className="font-semibold">[10:01:23]</span> Architect: 문서 구조 설계 완료 (25개 섹션)
                   </div>
-                )}
+                </div>
+                <div className="flex items-start gap-2 text-blue-600 animate-pulse">
+                  <span className="mt-0.5">⏳</span>
+                  <div className="flex-1">
+                    <span className="font-semibold">[10:05:41]</span> Writer: "시장 분석 및 경쟁 현황" 섹션 작성 중...
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 text-blue-600">
+                  <span className="mt-0.5">⏳</span>
+                  <div className="flex-1">
+                    <span className="font-semibold">[10:04:12]</span> Writer: "비즈니스 모델" 섹션 완료 (1,240자)
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 text-green-600">
+                  <span className="mt-0.5">✓</span>
+                  <div className="flex-1">
+                    <span className="font-semibold">[10:03:05]</span> Writer: "프로젝트 개요" 섹션 완료 (890자)
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 text-gray-400">
+                  <span className="mt-0.5">○</span>
+                  <div className="flex-1">
+                    <span className="font-semibold">[대기]</span> Image Curator: 이미지 수집 대기 중...
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 text-gray-400">
+                  <span className="mt-0.5">○</span>
+                  <div className="flex-1">
+                    <span className="font-semibold">[대기]</span> Reviewer: 품질 검토 대기 중...
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -423,8 +390,10 @@ export default function ProjectDetailPage() {
           <div className="flex-shrink-0">
             <div className="p-4 border-b border-gray-200">
               <h3 className="font-semibold text-sm text-gray-900">💬 AI와 소통</h3>
+              <p className="text-xs text-gray-500 mt-1">추가 요청이나 자료를 전달하세요</p>
             </div>
 
+            {/* 입력 영역 */}
             <div className="p-4 space-y-2">
               <div className="flex gap-2">
                 <input
@@ -432,7 +401,7 @@ export default function ProjectDetailPage() {
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="추가 요청..."
+                  placeholder="추가 요청이나 질문 입력..."
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <button
@@ -458,13 +427,14 @@ export default function ProjectDetailPage() {
                   }`}
                 >
                   <span>📎</span>
-                  <span>{uploadingFile ? '업로드 중...' : '파일 추가'}</span>
+                  <span>{uploadingFile ? '업로드 중...' : '추가 자료 업로드'}</span>
                 </label>
               </div>
             </div>
 
+            {/* 최근 메시지 */}
             {messages.length > 0 && (
-              <div className="px-4 pb-4 max-h-32 overflow-y-auto border-t border-gray-200 pt-2">
+              <div className="px-4 pb-2 max-h-32 overflow-y-auto">
                 {messages.slice(-3).map(msg => (
                   <div key={msg.id} className="text-xs mb-2">
                     <span className={`font-semibold ${msg.type === 'user' ? 'text-blue-600' : 'text-gray-600'}`}>
@@ -480,55 +450,28 @@ export default function ProjectDetailPage() {
 
         {/* 메인 컨텐츠 */}
         <main className="flex-1 overflow-y-auto p-8">
-          {/* 프로젝트 정보 - 단순화 */}
-          <div className="bg-white rounded-lg shadow px-6 py-4 mb-6">
+          {/* 상태 헤더 */}
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
             <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-lg font-bold text-gray-900">{project.title}</h1>
-                  {project.status === 'completed' && (
-                    <button
-                      onClick={handleDownload}
-                      disabled={downloading}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50"
-                    >
-                      {downloading ? '다운로드 중...' : '📥 다운로드'}
-                    </button>
-                  )}
-                </div>
-                <p className="text-sm text-gray-600 mt-1">{project.idea}</p>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">{project.title}</h1>
+                <p className="text-gray-600">{project.idea}</p>
               </div>
+              {project.status === 'completed' && (
+                <button
+                  onClick={handleDownload}
+                  disabled={downloading}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+                >
+                  {downloading ? '다운로드 중...' : '📥 HTML 다운로드'}
+                </button>
+              )}
             </div>
           </div>
 
-          {/* 실시간 생성 문서 내용 */}
-          {project.status === 'generating' && realtimeProgress && (
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">📝 생성 중인 문서</h3>
-              <div className="space-y-4">
-                {realtimeProgress.agents.writer.currentSection && (
-                  <div className="border-l-4 border-blue-500 pl-4">
-                    <h4 className="font-semibold text-gray-900">
-                      섹션 {realtimeProgress.agents.writer.currentSection}/{realtimeProgress.agents.writer.totalSections}
-                    </h4>
-                    <p className="text-sm text-gray-600 mt-1">
-                      현재 작성 중: {realtimeProgress.agents.writer.detail}
-                    </p>
-                    <div className="mt-2 bg-gray-50 p-3 rounded text-sm text-gray-700">
-                      <p>AI가 문서를 작성하고 있습니다...</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        * 실시간 내용은 완료 후 확인하실 수 있습니다
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* 문서 통계 (완료 시) */}
           {document && (
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">📈 문서 통계</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="text-center">
@@ -559,9 +502,42 @@ export default function ProjectDetailPage() {
             </div>
           )}
 
+          {/* 상세 진행 로그 */}
+          {project.status === 'generating' && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">🔄 실시간 작업 로그</h3>
+              <div className="space-y-3 font-mono text-sm">
+                <div className="flex items-start gap-3 text-green-600">
+                  <span className="text-xs">✓</span>
+                  <div>
+                    <span className="font-semibold">[Architect]</span> 문서 구조 설계 완료: 25개 섹션
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 text-blue-600 animate-pulse">
+                  <span className="text-xs">⏳</span>
+                  <div>
+                    <span className="font-semibold">[Writer]</span> 섹션 16/25 작성 중: "시장 분석 및 경쟁 현황"
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 text-gray-400">
+                  <span className="text-xs">○</span>
+                  <div>
+                    <span className="font-semibold">[Image Curator]</span> 대기 중...
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 text-gray-400">
+                  <span className="text-xs">○</span>
+                  <div>
+                    <span className="font-semibold">[Reviewer]</span> 대기 중...
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 완료 안내 */}
           {project.status === 'completed' && (
-            <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-6">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-green-900 mb-2">
                 ✅ 문서 생성 완료!
               </h3>
