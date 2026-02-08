@@ -13,42 +13,47 @@ const usageRouter = new Hono();
 
 // GET /api/usage — user's usage stats
 usageRouter.get('/', authMiddleware, async (c) => {
-  const user = c.get('user') as any;
+  try {
+    const user = c.get('user') as any;
 
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
 
-  const monthlyProjects = await db
-    .select()
-    .from(projects)
-    .where(
-      and(
-        eq(projects.userId, user.id),
-        gte(projects.createdAt, startOfMonth.toISOString())
-      )
-    );
+    const monthlyProjects = await db
+      .select()
+      .from(projects)
+      .where(
+        and(
+          eq(projects.userId, user.id),
+          gte(projects.createdAt, startOfMonth.toISOString())
+        )
+      );
 
-  const tier = (user.plan || 'free') as keyof typeof TIER_LIMITS;
-  const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
+    const tier = (user.plan || 'free') as keyof typeof TIER_LIMITS;
+    const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
 
-  return c.json({
-    tier,
-    usage: {
-      monthly: monthlyProjects.length,
-      limit: limits.monthlyGenerations,
-      remaining:
-        limits.monthlyGenerations > 0
-          ? Math.max(0, limits.monthlyGenerations - monthlyProjects.length)
-          : -1,
-    },
-    features: {
-      maxSections: limits.maxSections,
-      model: limits.model,
-      deepResearch: tier === 'pro',
-      priorityQueue: tier === 'pro',
-    },
-  });
+    return c.json({
+      tier,
+      usage: {
+        monthly: monthlyProjects.length,
+        limit: limits.monthlyGenerations,
+        remaining:
+          limits.monthlyGenerations > 0
+            ? Math.max(0, limits.monthlyGenerations - monthlyProjects.length)
+            : -1,
+      },
+      features: {
+        maxSections: limits.maxSections,
+        model: limits.model,
+        deepResearch: tier === 'pro',
+        priorityQueue: tier === 'pro',
+      },
+    });
+  } catch (error: any) {
+    console.error('사용량 조회 오류:', error);
+    return c.json({ error: 'Internal Server Error', detail: error?.message || String(error) }, 500);
+  }
 });
 
 export default usageRouter;

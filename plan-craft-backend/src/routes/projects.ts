@@ -53,9 +53,9 @@ projectsRouter.get('/', async (c) => {
       }))
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('프로젝트 목록 조회 오류:', error);
-    return c.json({ error: '서버 오류가 발생했습니다' }, 500);
+    return c.json({ error: '서버 오류가 발생했습니다', detail: error?.message || String(error) }, 500);
   }
 });
 
@@ -105,7 +105,7 @@ projectsRouter.post('/', async (c) => {
       }
     }, 201);
 
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return c.json({ 
         error: '입력 값이 유효하지 않습니다', 
@@ -114,7 +114,7 @@ projectsRouter.post('/', async (c) => {
     }
 
     console.error('프로젝트 생성 오류:', error);
-    return c.json({ error: '서버 오류가 발생했습니다' }, 500);
+    return c.json({ error: '서버 오류가 발생했습니다', detail: error?.message || String(error) }), 500);
   }
 });
 
@@ -153,9 +153,9 @@ projectsRouter.get('/:id', async (c) => {
       }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('프로젝트 조회 오류:', error);
-    return c.json({ error: '서버 오류가 발생했습니다' }, 500);
+    return c.json({ error: '서버 오류가 발생했습니다', detail: error?.message || String(error) }), 500);
   }
 });
 
@@ -198,7 +198,7 @@ projectsRouter.patch('/:id', async (c) => {
       project: updatedProject
     });
 
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return c.json({ 
         error: '입력 값이 유효하지 않습니다', 
@@ -207,7 +207,7 @@ projectsRouter.patch('/:id', async (c) => {
     }
 
     console.error('프로젝트 수정 오류:', error);
-    return c.json({ error: '서버 오류가 발생했습니다' }, 500);
+    return c.json({ error: '서버 오류가 발생했습니다', detail: error?.message || String(error) }), 500);
   }
 });
 
@@ -241,9 +241,9 @@ projectsRouter.delete('/:id', async (c) => {
       message: '프로젝트가 삭제되었습니다'
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('프로젝트 삭제 오류:', error);
-    return c.json({ error: '서버 오류가 발생했습니다' }, 500);
+    return c.json({ error: '서버 오류가 발생했습니다', detail: error?.message || String(error) }), 500);
   }
 });
 
