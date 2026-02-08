@@ -17,7 +17,7 @@ export default function LoginPage() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      router.push('/dashboard');
+      router.push('/');
     }
   }, [router]);
 
@@ -35,7 +35,7 @@ export default function LoginPage() {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
       
-      router.push('/dashboard');
+      router.push('/');
     } catch (err: any) {
       setError(err.response?.data?.error || '로그인에 실패했습니다');
     } finally {

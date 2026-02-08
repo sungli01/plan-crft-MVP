@@ -21,7 +21,7 @@ export default function RegisterPage() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      router.push('/dashboard');
+      router.push('/');
     }
   }, [router]);
 
@@ -58,7 +58,7 @@ export default function RegisterPage() {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
       
-      router.push('/dashboard');
+      router.push('/');
     } catch (err: any) {
       setError(err.response?.data?.error || '회원가입에 실패했습니다');
     } finally {
