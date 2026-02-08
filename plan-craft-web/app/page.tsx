@@ -310,15 +310,17 @@ export default function Home() {
     try {
       // Use rich overview if available, fall back to desc
       const idea = template.overview || template.desc;
+      console.log('Creating project:', { title: template.title, ideaLength: idea?.length });
       const response = await api.post('/api/projects', { 
         title: template.title,
         idea: idea
       });
 
       router.push(`/project/${response.data.project.id}`);
-    } catch (error) {
-      console.error('프로젝트 생성 실패:', error);
-      showToast('프로젝트 생성에 실패했습니다', 'error');
+    } catch (error: any) {
+      console.error('프로젝트 생성 실패:', error?.response?.data || error);
+      const msg = error?.response?.data?.error || error?.message || '알 수 없는 오류';
+      showToast(`프로젝트 생성 실패: ${msg}`, 'error');
     }
   };
 
