@@ -2,6 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import axios from 'axios';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 const DOCUMENT_TYPES = [
   { icon: '🏛️', label: '국가\n사업계획서', color: 'bg-blue-500' },
@@ -81,12 +84,60 @@ export default function Home() {
     }
   };
 
-  const handleCreateClick = () => {
+  const handleCreateClick = async (template?: { title: string; subtitle: string; desc: string }) => {
     if (!isLoggedIn) {
       router.push('/register');
+      return;
+    }
+
+    // 로그인된 경우: 바로 프로젝트 생성
+    if (template) {
+      await createProjectFromTemplate(template);
+    } else if (searchText) {
+      await createProjectFromSearch(searchText);
     } else {
-      // 로그인된 경우 프로젝트 생성 페이지로 이동
+      // 아무것도 입력 안 했으면 생성 페이지로
       router.push('/create');
+    }
+  };
+
+  const createProjectFromTemplate = async (template: { title: string; subtitle: string; desc: string }) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_URL}/api/projects`,
+        { 
+          title: template.title,
+          idea: template.desc
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // 프로젝트 생성 후 상세 페이지로 이동
+      router.push(`/project/${response.data.project.id}`);
+    } catch (error) {
+      console.error('프로젝트 생성 실패:', error);
+      alert('프로젝트 생성에 실패했습니다');
+    }
+  };
+
+  const createProjectFromSearch = async (text: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_URL}/api/projects`,
+        { 
+          title: text.substring(0, 50), // 첫 50자를 제목으로
+          idea: text
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // 프로젝트 생성 후 상세 페이지로 이동
+      router.push(`/project/${response.data.project.id}`);
+    } catch (error) {
+      console.error('프로젝트 생성 실패:', error);
+      alert('프로젝트 생성에 실패했습니다');
     }
   };
 
@@ -213,7 +264,7 @@ export default function Home() {
             <span className="text-gray-400">|</span>
             <span>드래그앤드롭으로 파일을 추가하세요</span>
             <button 
-              onClick={handleCreateClick}
+              onClick={() => handleCreateClick()}
               className="ml-auto px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               생성 →
@@ -226,7 +277,11 @@ export default function Home() {
           {DOCUMENT_TYPES.map((type, index) => (
             <button
               key={index}
-              onClick={handleCreateClick}
+              onClick={() => handleCreateClick({
+                title: type.label.replace(/\n/g, ' '),
+                subtitle: type.label.replace(/\n/g, ' '),
+                desc: `${type.label.replace(/\n/g, ' ')}를 생성합니다. 프로젝트의 핵심 아이디어와 목표를 입력해주세요.`
+              })}
               className="group flex flex-col items-center gap-2"
             >
               <div className={`w-16 h-16 ${type.color} rounded-2xl flex items-center justify-center text-3xl shadow-md group-hover:scale-110 transition-transform`}>
@@ -267,7 +322,7 @@ export default function Home() {
             {SAMPLE_TEMPLATES.map((template, index) => (
               <button
                 key={index}
-                onClick={handleCreateClick}
+                onClick={() => handleCreateClick(template)}
                 className="group bg-white rounded-xl border border-gray-200 hover:shadow-xl transition overflow-hidden"
               >
                 <div className="aspect-[3/4] bg-gradient-to-br from-blue-50 via-white to-purple-50 relative p-4 flex flex-col justify-between">
