@@ -13,7 +13,7 @@ import Anthropic from '@anthropic-ai/sdk';
 export class ArchitectAgent {
   constructor(apiKey, config = {}) {
     this.anthropic = new Anthropic({ apiKey });
-    this.model = config.model || 'claude-opus-4-20250514';
+    this.model = config.model || 'claude-opus-4-6';
     this.name = 'Architect';
     this.role = '문서 설계자';
   }

@@ -65,12 +65,14 @@ export class Orchestrator {
 
   calculateCost(model, tokens) {
     const costs = {
+      'claude-opus-4-6': { input: 0.000005, output: 0.000025 },
+      'claude-sonnet-4-5': { input: 0.000003, output: 0.000015 },
       'claude-opus-4-20250514': { input: 0.000015, output: 0.000075 },
       'claude-sonnet-4-20250514': { input: 0.000003, output: 0.000015 },
       'gpt-4-turbo': { input: 0.00001, output: 0.00003 }
     };
     
-    const cost = costs[model] || costs['claude-opus-4-20250514'];
+    const cost = costs[model] || costs['claude-opus-4-6'];
     return (tokens.input * cost.input) + (tokens.output * cost.output);
   }
 

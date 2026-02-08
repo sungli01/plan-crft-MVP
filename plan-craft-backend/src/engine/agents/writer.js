@@ -13,7 +13,7 @@ import Anthropic from '@anthropic-ai/sdk';
 export class WriterAgent {
   constructor(apiKey, config = {}) {
     this.anthropic = new Anthropic({ apiKey });
-    this.model = config.model || 'claude-opus-4-20250514';
+    this.model = config.model || 'claude-opus-4-6';
     this.name = 'Writer';
     this.role = '내용 작성자';
   }

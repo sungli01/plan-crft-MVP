@@ -13,7 +13,7 @@ import Anthropic from '@anthropic-ai/sdk';
 export class ReviewerAgent {
   constructor(apiKey, config = {}) {
     this.anthropic = new Anthropic({ apiKey });
-    this.model = config.model || 'claude-sonnet-4-20250514'; // Reviewer는 Sonnet으로도 충분
+    this.model = config.model || 'claude-sonnet-4-5'; // Reviewer는 Sonnet으로도 충분
     this.name = 'Reviewer';
     this.role = '품질 검수자';
   }

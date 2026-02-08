@@ -8,6 +8,7 @@ import { projects, documents } from '../db/schema.js';
 import { eq, desc } from 'drizzle-orm';
 import { authMiddleware } from '../middleware/auth.js';
 import { z } from 'zod';
+import { maskSensitiveData } from '../utils/data-masking.js';
 
 const projectsRouter = new Hono();
 
@@ -66,13 +67,27 @@ projectsRouter.post('/', async (c) => {
     const body = await c.req.json();
     const validated = createProjectSchema.parse(body);
 
+    // 민감정보 마스킹
+    const titleMasked = maskSensitiveData(validated.title);
+    const ideaMasked = maskSensitiveData(validated.idea);
+    const refDocMasked = validated.referenceDoc 
+      ? maskSensitiveData(validated.referenceDoc)
+      : null;
+
+    // 민감정보 감지 시 로그
+    if (titleMasked.hasSensitiveData || ideaMasked.hasSensitiveData) {
+      console.warn(`[보안] 프로젝트 생성 시 민감정보 감지 (user: ${user.id})`);
+      console.warn(`  - 제목: ${titleMasked.detections.length}건`);
+      console.warn(`  - 아이디어: ${ideaMasked.detections.length}건`);
+    }
+
     const [newProject] = await db
       .insert(projects)
       .values({
         userId: user.id,
-        title: validated.title,
-        idea: validated.idea,
-        referenceDoc: validated.referenceDoc || null,
+        title: titleMasked.masked,
+        idea: ideaMasked.masked,
+        referenceDoc: refDocMasked?.masked || null,
         model: validated.model || 'claude-opus-4',
         status: 'draft'
       })
@@ -80,7 +95,14 @@ projectsRouter.post('/', async (c) => {
 
     return c.json({
       message: '프로젝트가 생성되었습니다',
-      project: newProject
+      project: newProject,
+      security: {
+        maskedData: titleMasked.hasSensitiveData || ideaMasked.hasSensitiveData,
+        detections: [
+          ...titleMasked.detections.map(d => ({ field: 'title', type: d.type })),
+          ...ideaMasked.detections.map(d => ({ field: 'idea', type: d.type }))
+        ]
+      }
     }, 201);
 
   } catch (error) {

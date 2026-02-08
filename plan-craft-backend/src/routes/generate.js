@@ -158,10 +158,10 @@ async function generateDocumentBackground(projectId, projectData, userId) {
     // Orchestrator 설정
     const config = {
       apiKey: process.env.ANTHROPIC_API_KEY,
-      architectModel: projectData.model || 'claude-opus-4-20250514',
-      writerModel: projectData.model || 'claude-opus-4-20250514',
-      curatorModel: 'claude-sonnet-4-20250514',
-      reviewerModel: 'claude-sonnet-4-20250514'
+      architectModel: projectData.model || 'claude-opus-4-6',
+      writerModel: projectData.model || 'claude-opus-4-6',
+      curatorModel: 'claude-sonnet-4-5',
+      reviewerModel: 'claude-sonnet-4-5'
     };
 
     // 프로젝트 정보
@@ -235,7 +235,7 @@ async function generateDocumentBackground(projectId, projectData, userId) {
       tokenId,
       userId,
       projectId,
-      projectData.model || 'claude-opus-4-20250514',
+      projectData.model || 'claude-opus-4-6',
       summary.tokenUsage.input,
       summary.tokenUsage.output,
       summary.tokenUsage.total,
