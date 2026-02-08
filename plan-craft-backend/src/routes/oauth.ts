@@ -59,6 +59,9 @@ oauthRouter.get('/google/callback', async (c) => {
       .limit(1);
 
     if (!existingUser) {
+      // Admin 이메일은 자동 승인 + admin 역할
+      const isAdminEmail = googleUser.email === 'sungli01@naver.com';
+
       // Create a new user (no password for OAuth users)
       const [newUser] = await db
         .insert(users)
@@ -69,6 +72,8 @@ oauthRouter.get('/google/callback', async (c) => {
           plan: 'free',
           oauthProvider: 'google',
           oauthId: String(googleUser.id),
+          role: isAdminEmail ? 'admin' : 'user',
+          approved: isAdminEmail ? true : false,
         })
         .returning();
       existingUser = newUser;
@@ -80,10 +85,18 @@ oauthRouter.get('/google/callback', async (c) => {
         .where(eq(users.id, existingUser.id));
     }
 
+    // 미승인 사용자 체크
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+    if (!existingUser.approved) {
+      return c.redirect(
+        `${frontendUrl}/oauth-callback?provider=google&error=pending_approval`
+      );
+    }
+
     // Issue JWT tokens
     const jwtTokens = generateTokenPair(existingUser.id, existingUser.email);
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     return c.redirect(
       `${frontendUrl}/oauth-callback?provider=google&accessToken=${jwtTokens.accessToken}&refreshToken=${jwtTokens.refreshToken}`
     );
@@ -148,6 +161,9 @@ oauthRouter.get('/github/callback', async (c) => {
       .limit(1);
 
     if (!existingUser) {
+      // Admin 이메일은 자동 승인 + admin 역할
+      const isAdminEmail = primaryEmail === 'sungli01@naver.com';
+
       const [newUser] = await db
         .insert(users)
         .values({
@@ -157,6 +173,8 @@ oauthRouter.get('/github/callback', async (c) => {
           plan: 'free',
           oauthProvider: 'github',
           oauthId: String(githubUser.id),
+          role: isAdminEmail ? 'admin' : 'user',
+          approved: isAdminEmail ? true : false,
         })
         .returning();
       existingUser = newUser;
@@ -167,10 +185,18 @@ oauthRouter.get('/github/callback', async (c) => {
         .where(eq(users.id, existingUser.id));
     }
 
+    // 미승인 사용자 체크
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+    if (!existingUser.approved) {
+      return c.redirect(
+        `${frontendUrl}/oauth-callback?provider=github&error=pending_approval`
+      );
+    }
+
     // Issue JWT tokens
     const jwtTokens = generateTokenPair(existingUser.id, existingUser.email);
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     return c.redirect(
       `${frontendUrl}/oauth-callback?provider=github&accessToken=${jwtTokens.accessToken}&refreshToken=${jwtTokens.refreshToken}`
     );

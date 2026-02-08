@@ -48,8 +48,17 @@ export async function initializeDatabase(): Promise<boolean> {
         ALTER TABLE users ADD COLUMN IF NOT EXISTS tier TEXT DEFAULT 'free';
         ALTER TABLE users ADD COLUMN IF NOT EXISTS login_attempts INTEGER DEFAULT 0;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user';
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS approved BOOLEAN DEFAULT false;
       EXCEPTION WHEN OTHERS THEN NULL;
       END $$
+    `;
+
+    // Auto-set admin user (sungli01@naver.com)
+    await client`
+      UPDATE users
+      SET role = 'admin', approved = true
+      WHERE email = 'sungli01@naver.com' AND (role != 'admin' OR approved != true)
     `;
 
     await client`

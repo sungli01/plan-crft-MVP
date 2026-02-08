@@ -20,6 +20,7 @@ import mockupRouter from './routes/mockup';
 import sharingRouter from './routes/sharing';
 import versionsRouter from './routes/versions';
 import commentsRouter from './routes/comments';
+import adminRouter from './routes/admin';
 import { addConnection, removeConnection, getConnectionCount } from './ws/progress-ws';
 import { progressTracker } from './utils/progress-tracker';
 import { getCache } from './cache/redis';
@@ -151,6 +152,7 @@ app.route('/api/mockup', mockupRouter);
 app.route('/api/share', sharingRouter);
 app.route('/api/versions', versionsRouter);
 app.route('/api/comments', commentsRouter);
+app.route('/api/admin', adminRouter);
 
 // Performance metrics endpoint
 app.get('/metrics', (c) => {
@@ -232,6 +234,12 @@ const server = serve({
   console.log(`   GET  /api/comments/:projectId                - 댓글 목록`);
   console.log(`   POST /api/comments/:projectId/:commentId/reply - 답글`);
   console.log(`   DELETE /api/comments/:projectId/:commentId   - 댓글 삭제`);
+  console.log(`   GET  /api/admin/users                       - [Admin] 사용자 목록`);
+  console.log(`   PATCH /api/admin/users/:id                  - [Admin] 플랜 변경`);
+  console.log(`   PATCH /api/admin/users/:id/approve          - [Admin] 사용자 승인`);
+  console.log(`   DELETE /api/admin/users/:id                 - [Admin] 사용자 삭제`);
+  console.log(`   GET  /api/admin/stats                       - [Admin] 전체 통계`);
+  console.log(`   GET  /api/admin/stats/tokens                - [Admin] 토큰 상세`);
   console.log('');
 });
 

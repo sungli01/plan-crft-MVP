@@ -1,5 +1,9 @@
 /**
- * Tier Check Middleware — Free/Pro usage limits
+ * Tier Check Middleware — Free/Pro usage limits (Admin-managed)
+ *
+ * Pro tier is granted by Admin, not by payment.
+ * Free tier: 10 generations/month (private service, generous limit)
+ * Pro tier: unlimited
  */
 
 import type { Context, Next } from 'hono';
@@ -9,7 +13,7 @@ import { eq, and, gte } from 'drizzle-orm';
 
 // Monthly generation limits
 const TIER_LIMITS = {
-  free: { monthlyGenerations: 3, maxSections: 15, model: 'sonnet' },
+  free: { monthlyGenerations: 10, maxSections: 15, model: 'sonnet' },
   pro: { monthlyGenerations: -1, maxSections: 30, model: 'opus' },
 };
 
@@ -38,7 +42,7 @@ export function tierCheck() {
       if (monthlyCount.length >= limits.monthlyGenerations) {
         return c.json(
           {
-            error: `무료 플랜은 월 ${limits.monthlyGenerations}회까지 생성 가능합니다. Pro로 업그레이드하세요!`,
+            error: `무료 플랜은 월 ${limits.monthlyGenerations}회까지 생성 가능합니다. 관리자에게 Pro 권한을 요청하세요.`,
             code: 'TIER_LIMIT_REACHED',
             currentCount: monthlyCount.length,
             limit: limits.monthlyGenerations,

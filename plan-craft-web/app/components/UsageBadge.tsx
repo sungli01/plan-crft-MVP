@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import api from '../lib/api';
 
 interface UsageData {
@@ -20,7 +19,6 @@ interface UsageData {
 }
 
 export default function UsageBadge() {
-  const router = useRouter();
   const [data, setData] = useState<UsageData | null>(null);
 
   useEffect(() => {
@@ -46,21 +44,9 @@ export default function UsageBadge() {
 
   return (
     <div className="flex items-center gap-2">
-      <button
-        onClick={() => router.push('/pricing')}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600"
+      <div
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 dark:border-gray-600"
       >
-        {/* Tier badge */}
-        <span
-          className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
-            isPro
-              ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
-              : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
-          }`}
-        >
-          {data.tier}
-        </span>
-
         {/* Usage text */}
         {isUnlimited ? (
           <span className="text-gray-600 dark:text-gray-300">무제한</span>
@@ -80,12 +66,7 @@ export default function UsageBadge() {
             </span>
           </>
         )}
-
-        {/* Upgrade nudge */}
-        {nearLimit && (
-          <span className="text-red-500 text-[10px] font-semibold">업그레이드</span>
-        )}
-      </button>
+      </div>
     </div>
   );
 }

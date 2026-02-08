@@ -2,7 +2,7 @@
  * Database Schema - PostgreSQL
  */
 
-import { pgTable, text, integer, real, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, real, timestamp, uuid, boolean } from 'drizzle-orm/pg-core';
 
 // Users 테이블
 export const users = pgTable('users', {
@@ -14,6 +14,8 @@ export const users = pgTable('users', {
   oauthProvider: text('oauth_provider'),   // 'google' | 'github' | null
   oauthId: text('oauth_id'),
   tier: text('tier').default('free'),       // 'free' | 'pro'
+  role: text('role').default('user'),        // 'user' | 'admin'
+  approved: boolean('approved').default(false),
   loginAttempts: integer('login_attempts').default(0),
   lockedUntil: text('locked_until'),
   createdAt: timestamp('created_at').defaultNow(),

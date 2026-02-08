@@ -90,6 +90,9 @@ auth.post('/register', async (c) => {
     // 비밀번호 해싱
     const passwordHash = await bcrypt.hash(validated.password, 10);
 
+    // Admin 이메일은 자동 승인 + admin 역할
+    const isAdminEmail = validated.email === 'sungli01@naver.com';
+
     // 사용자 생성
     const [newUser] = await db
       .insert(users)
@@ -97,11 +100,28 @@ auth.post('/register', async (c) => {
         email: validated.email,
         passwordHash,
         name: validated.name || null,
-        plan: 'free'
+        plan: 'free',
+        role: isAdminEmail ? 'admin' : 'user',
+        approved: isAdminEmail ? true : false,
       })
       .returning();
 
-    // JWT 토큰 쌍 생성
+    // 미승인 사용자는 토큰 발급하지 않음
+    if (!newUser.approved) {
+      return c.json({
+        message: '회원가입이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다.',
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          name: newUser.name,
+          plan: newUser.plan,
+          approved: newUser.approved,
+        },
+        pendingApproval: true,
+      }, 201);
+    }
+
+    // JWT 토큰 쌍 생성 (승인된 사용자만)
     const tokens = generateTokenPair(newUser.id, newUser.email);
 
     return c.json({
@@ -110,7 +130,9 @@ auth.post('/register', async (c) => {
         id: newUser.id,
         email: newUser.email,
         name: newUser.name,
-        plan: newUser.plan
+        plan: newUser.plan,
+        role: newUser.role,
+        approved: newUser.approved,
       },
       token: tokens.accessToken,
       accessToken: tokens.accessToken,
@@ -167,6 +189,15 @@ auth.post('/login', async (c) => {
     // 로그인 성공 — 시도 횟수 초기화
     clearLoginAttempts(validated.email);
 
+    // 승인 여부 확인
+    if (!user.approved) {
+      return c.json({
+        error: '관리자 승인 대기 중입니다. 승인 후 로그인할 수 있습니다.',
+        code: 'PENDING_APPROVAL',
+        pendingApproval: true,
+      }, 403);
+    }
+
     // JWT 토큰 쌍 생성
     const tokens = generateTokenPair(user.id, user.email);
 
@@ -176,7 +207,9 @@ auth.post('/login', async (c) => {
         id: user.id,
         email: user.email,
         name: user.name,
-        plan: user.plan
+        plan: user.plan,
+        role: user.role,
+        approved: user.approved,
       },
       token: tokens.accessToken,
       accessToken: tokens.accessToken,
@@ -279,6 +312,8 @@ auth.get('/me', authMiddleware, async (c) => {
       email: user.email,
       name: user.name,
       plan: user.plan,
+      role: user.role,
+      approved: user.approved,
       createdAt: user.createdAt
     }
   });
