@@ -40,3 +40,24 @@
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
 }
+
+/* Subtle pulse for orchestrator agent card */
+@keyframes pulse-subtle {
+  0%, 100% { box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.2); }
+  50% { box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.35); }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
+}
+
+/* Slow ping for status indicators */
+@keyframes ping-slow {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-ping-slow {
+  animation: ping-slow 2s ease-in-out infinite;
+}

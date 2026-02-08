@@ -39,105 +39,21 @@ const TEMPLATE_CATEGORIES = ['전체', '국가 사업', '개발 기획', '연구
 /* ── Rich Templates from data file (70+ with sections, keywords, overview) ── */
 const SAMPLE_TEMPLATES = TEMPLATES;
 
-// Old inline templates removed — now imported from data/templates.ts
-const _OLD_TEMPLATES_REMOVED = [
-  { title: '스마트팜 자동화 시스템', subtitle: '국가 사업계획서', desc: '노지·시설원예 환경 자동제어 및 AI 생육 모니터링 플랫폼 구축', category: '국가 사업' },
-  { title: 'AI 의료 영상 진단', subtitle: '국가 사업계획서', desc: 'CT/MRI 기반 딥러닝 의료영상 분석 솔루션 개발', category: '국가 사업' },
-  { title: '디지털 트윈 스마트공장', subtitle: '국가 사업계획서', desc: '제조 공정 실시간 시뮬레이션 및 예측 정비 시스템 구축', category: '국가 사업' },
-  { title: '탄소중립 에너지 전환', subtitle: '국가 사업계획서', desc: '그린수소 생산·저장·활용 밸류체인 구축 실증사업', category: '국가 사업' },
-  { title: '드론 기반 도심 물류', subtitle: '국가 사업계획서', desc: 'UAM 연계 라스트마일 배송 실증 및 비행경로 최적화', category: '국가 사업' },
-  { title: '자율주행 셔틀 서비스', subtitle: '국가 사업계획서', desc: '레벨4 자율주행 공유셔틀 상용화 및 규제 샌드박스 신청', category: '국가 사업' },
-  { title: '스마트시티 통합 플랫폼', subtitle: '국가 사업계획서', desc: '도시 데이터 통합·분석을 통한 교통·에너지·안전 최적화', category: '국가 사업' },
-  { title: '차세대 반도체 R&D', subtitle: '국가 사업계획서', desc: 'GAA 3nm 이하 파운드리 공정 기술 연구개발 사업', category: '국가 사업' },
-  { title: '양자컴퓨팅 원천기술', subtitle: '국가 사업계획서', desc: '양자 오류 보정 알고리즘 및 초전도 큐비트 확장 연구', category: '국가 사업' },
-  { title: 'K-콘텐츠 글로벌 수출', subtitle: '국가 사업계획서', desc: 'AI 기반 자동 더빙·자막 및 글로벌 OTT 유통 플랫폼', category: '국가 사업' },
-  { title: '디지털 헬스케어 플랫폼', subtitle: '국가 사업계획서', desc: 'PHR 기반 맞춤형 건강관리 및 원격진료 통합 시스템', category: '국가 사업' },
-  { title: '지능형 로봇 공학 실증', subtitle: '국가 사업계획서', desc: '협동로봇 기반 중소제조 스마트화 및 물류 자동화 실증', category: '국가 사업' },
+/* ── Category Gradient Colors for Premium Template Cards ── */
+const CATEGORY_GRADIENTS: Record<string, { from: string; to: string; badge: string; badgeText: string; icon: string }> = {
+  '국가 사업': { from: 'from-blue-400', to: 'to-blue-600', badge: 'bg-blue-100 dark:bg-blue-900/50', badgeText: 'text-blue-700 dark:text-blue-300', icon: '🏛️' },
+  '개발 기획': { from: 'from-purple-400', to: 'to-purple-600', badge: 'bg-purple-100 dark:bg-purple-900/50', badgeText: 'text-purple-700 dark:text-purple-300', icon: '💻' },
+  '연구 보고': { from: 'from-green-400', to: 'to-green-600', badge: 'bg-green-100 dark:bg-green-900/50', badgeText: 'text-green-700 dark:text-green-300', icon: '🔬' },
+  '비즈니스': { from: 'from-orange-400', to: 'to-orange-600', badge: 'bg-orange-100 dark:bg-orange-900/50', badgeText: 'text-orange-700 dark:text-orange-300', icon: '📈' },
+  '마케팅': { from: 'from-pink-400', to: 'to-pink-600', badge: 'bg-pink-100 dark:bg-pink-900/50', badgeText: 'text-pink-700 dark:text-pink-300', icon: '📣' },
+  '투자 유치': { from: 'from-indigo-400', to: 'to-indigo-600', badge: 'bg-indigo-100 dark:bg-indigo-900/50', badgeText: 'text-indigo-700 dark:text-indigo-300', icon: '💰' },
+  '기술 문서': { from: 'from-teal-400', to: 'to-teal-600', badge: 'bg-teal-100 dark:bg-teal-900/50', badgeText: 'text-teal-700 dark:text-teal-300', icon: '⚙️' },
+};
 
-  // ── 개발 기획 (12) ──
-  { title: 'SaaS 프로젝트 관리 플랫폼', subtitle: '개발 기획서', desc: 'Jira 대체 클라우드 네이티브 애자일 프로젝트 관리 도구', category: '개발 기획' },
-  { title: 'AI 고객 상담 챗봇', subtitle: '개발 기획서', desc: 'RAG 기반 사내 지식 연동 멀티턴 고객 응대 챗봇 개발', category: '개발 기획' },
-  { title: '차세대 ERP 시스템', subtitle: '개발 기획서', desc: '마이크로서비스 기반 클라우드 ERP 재구축 프로젝트', category: '개발 기획' },
-  { title: '클라우드 마이그레이션', subtitle: '개발 기획서', desc: '온프레미스 레거시 시스템의 AWS/GCP 하이브리드 전환', category: '개발 기획' },
-  { title: 'API 게이트웨이 플랫폼', subtitle: '개발 기획서', desc: 'GraphQL 통합 API 관리·모니터링·버저닝 플랫폼', category: '개발 기획' },
-  { title: '실시간 빅데이터 파이프라인', subtitle: '개발 기획서', desc: 'Kafka + Spark 기반 실시간 데이터 수집·분석 아키텍처', category: '개발 기획' },
-  { title: 'DevOps CI/CD 자동화', subtitle: '개발 기획서', desc: 'GitOps 기반 배포 파이프라인 및 인프라 자동화 구축', category: '개발 기획' },
-  { title: 'IoT 디바이스 관리 플랫폼', subtitle: '개발 기획서', desc: '10만+ 디바이스 원격 관리·OTA·데이터 수집 시스템', category: '개발 기획' },
-  { title: '마이크로서비스 전환 프로젝트', subtitle: '개발 기획서', desc: '모놀리식 → 도메인 기반 마이크로서비스 아키텍처 전환', category: '개발 기획' },
-  { title: '모바일 슈퍼앱 개발', subtitle: '개발 기획서', desc: 'Flutter 기반 결제·쇼핑·금융 통합 슈퍼앱 MVP 개발', category: '개발 기획' },
-  { title: '데이터 웨어하우스 구축', subtitle: '개발 기획서', desc: 'Snowflake/BigQuery 기반 사내 통합 데이터 분석 환경', category: '개발 기획' },
-  { title: 'MLOps 플랫폼 구축', subtitle: '개발 기획서', desc: 'Kubeflow 기반 ML 모델 학습·배포·모니터링 자동화', category: '개발 기획' },
+const DEFAULT_GRADIENT = { from: 'from-gray-400', to: 'to-gray-600', badge: 'bg-gray-100 dark:bg-gray-800', badgeText: 'text-gray-700 dark:text-gray-300', icon: '📄' };
 
-  // ── 연구 보고 (12) ──
-  { title: 'mRNA 신약 개발 보고', subtitle: '연구 보고서', desc: 'mRNA 기반 항암 치료제 전임상 연구 결과 보고서', category: '연구 보고' },
-  { title: '전고체 배터리 기술', subtitle: '연구 보고서', desc: '황화물계 전고체 배터리 소재·공정 핵심기술 연구', category: '연구 보고' },
-  { title: '생성형 AI 모델 연구', subtitle: '연구 보고서', desc: 'LLM 미세조정 및 한국어 특화 Foundation Model 개발', category: '연구 보고' },
-  { title: '합성 바이오 플랫폼', subtitle: '연구 보고서', desc: '유전자 편집 기반 바이오 파운드리 구축 연구', category: '연구 보고' },
-  { title: '나노 소재 응용 연구', subtitle: '연구 보고서', desc: '2D 나노소재 기반 차세대 반도체 채널 소재 연구', category: '연구 보고' },
-  { title: '소형 발사체 기술', subtitle: '연구 보고서', desc: '재사용 가능 소형 위성 발사체 엔진 핵심기술 개발', category: '연구 보고' },
-  { title: '해양 에너지 하베스팅', subtitle: '연구 보고서', desc: '파력·조류 발전 하이브리드 에너지 변환 시스템 연구', category: '연구 보고' },
-  { title: '고엔트로피 합금 신소재', subtitle: '연구 보고서', desc: '극한 환경용 고엔트로피 합금 설계·제조·특성 평가', category: '연구 보고' },
-  { title: '유전체 빅데이터 분석', subtitle: '연구 보고서', desc: '한국인 유전체 코호트 기반 질환 연관성 대규모 분석', category: '연구 보고' },
-  { title: '기후변화 예측 모델', subtitle: '연구 보고서', desc: 'AI 기반 한반도 기후변화 시나리오 고해상도 예측 연구', category: '연구 보고' },
-  { title: '뇌-컴퓨터 인터페이스', subtitle: '연구 보고서', desc: '비침습 BCI 기반 의사소통 보조장치 원천기술 연구', category: '연구 보고' },
-  { title: '페로브스카이트 태양전지', subtitle: '연구 보고서', desc: '대면적 페로브스카이트 탠덤 태양전지 효율 30% 돌파 연구', category: '연구 보고' },
-
-  // ── 비즈니스 (12) ──
-  { title: '프리미엄 커피 프랜차이즈', subtitle: '비즈니스 계획서', desc: '스페셜티 원두 로스팅 카페 100호점 확장 전략', category: '비즈니스' },
-  { title: '크로스보더 이커머스', subtitle: '비즈니스 로드맵', desc: 'K-뷰티·K-푸드 동남아 역직구 플랫폼 사업 계획', category: '비즈니스' },
-  { title: '모빌리티 공유 플랫폼', subtitle: '비즈니스 계획서', desc: '전기 킥보드·자전거·스쿠터 통합 공유 모빌리티 서비스', category: '비즈니스' },
-  { title: 'O2O 반려동물 케어', subtitle: '비즈니스 로드맵', desc: '반려동물 병원·미용·호텔·산책 O2O 통합 매칭 플랫폼', category: '비즈니스' },
-  { title: '밀키트 구독 서비스', subtitle: '비즈니스 계획서', desc: '셰프 레시피 기반 맞춤 밀키트 정기배송 D2C 서비스', category: '비즈니스' },
-  { title: '풀필먼트 물류 혁신', subtitle: '비즈니스 로드맵', desc: 'AI 수요예측 기반 당일배송 풀필먼트 센터 운영 전략', category: '비즈니스' },
-  { title: '대체식품 푸드테크', subtitle: '비즈니스 계획서', desc: '세포배양육 및 식물성 대체 단백질 상용화 사업 계획', category: '비즈니스' },
-  { title: 'AI 맞춤 학습 에듀테크', subtitle: '비즈니스 로드맵', desc: '적응형 학습 알고리즘 기반 K-12 에듀테크 플랫폼', category: '비즈니스' },
-  { title: 'AI 계약서 분석 리걸테크', subtitle: '비즈니스 계획서', desc: 'NLP 기반 계약서 자동 분석·리스크 탐지 SaaS', category: '비즈니스' },
-  { title: '부동산 프롭테크 플랫폼', subtitle: '비즈니스 로드맵', desc: 'AI 시세 예측·VR 투어·분양 정보 통합 부동산 플랫폼', category: '비즈니스' },
-  { title: 'ESG 경영 컨설팅', subtitle: '비즈니스 계획서', desc: '탄소배출 측정·감축 컨설팅 및 ESG 보고서 자동화 서비스', category: '비즈니스' },
-  { title: '시니어 헬스케어 서비스', subtitle: '비즈니스 로드맵', desc: 'IoT 기반 독거 고령자 건강관리·긴급알림 통합 서비스', category: '비즈니스' },
-
-  // ── 마케팅 (12) ──
-  { title: '인플루언서 마케팅 전략', subtitle: '마케팅 전략서', desc: '마이크로 인플루언서 500명 네트워크 기반 브랜드 캠페인', category: '마케팅' },
-  { title: 'SEO 검색 최적화 전략', subtitle: '마케팅 전략서', desc: '키워드 클러스터링 및 토피컬 오소리티 확보 로드맵', category: '마케팅' },
-  { title: '브랜디드 콘텐츠 전략', subtitle: '마케팅 전략서', desc: '유튜브·인스타·TikTok 멀티 채널 콘텐츠 마케팅 계획', category: '마케팅' },
-  { title: '퍼포먼스 마케팅 플랜', subtitle: '마케팅 전략서', desc: 'Meta·Google·네이버 SA 통합 ROAS 최적화 캠페인 설계', category: '마케팅' },
-  { title: 'CRM 고객 리텐션 전략', subtitle: '마케팅 전략서', desc: 'RFM 분석 기반 고객 세분화 및 맞춤 리텐션 시나리오', category: '마케팅' },
-  { title: '브랜드 리뉴얼 전략', subtitle: '마케팅 전략서', desc: '브랜드 아이덴티티 재정립 및 리포지셔닝 통합 전략', category: '마케팅' },
-  { title: '바이럴 마케팅 캠페인', subtitle: '마케팅 전략서', desc: 'UGC 기반 챌린지·밈 마케팅 바이럴 확산 전략', category: '마케팅' },
-  { title: '글로벌 시장 진출 마케팅', subtitle: '마케팅 전략서', desc: '북미·동남아 시장 현지화 GTM 및 미디어 믹스 전략', category: '마케팅' },
-  { title: '데이터 드리븐 마케팅', subtitle: '마케팅 전략서', desc: 'CDP 기반 고객 행동 분석 및 AI 개인화 마케팅 자동화', category: '마케팅' },
-  { title: '커뮤니티 마케팅 전략', subtitle: '마케팅 전략서', desc: '브랜드 팬덤 커뮤니티 구축 및 앰배서더 프로그램 설계', category: '마케팅' },
-  { title: '옴니채널 마케팅 플랜', subtitle: '마케팅 전략서', desc: '온·오프라인 통합 고객 여정 설계 및 터치포인트 최적화', category: '마케팅' },
-  { title: '리브랜딩 런칭 캠페인', subtitle: '마케팅 전략서', desc: '신규 브랜드 런칭 D-90 통합 IMC 캠페인 실행 계획', category: '마케팅' },
-
-  // ── 투자 유치 (12) ──
-  { title: '시드라운드 IR 자료', subtitle: '투자 유치서', desc: 'Pre-Seed/Seed 3억원 규모 엔젤투자 유치 피치덱', category: '투자 유치' },
-  { title: '시리즈 A IR 피치덱', subtitle: '투자 유치서', desc: 'PMF 달성 후 시리즈A 50억원 VC 투자유치 IR자료', category: '투자 유치' },
-  { title: '시리즈 B 투자 제안서', subtitle: '투자 유치서', desc: '스케일업 단계 시리즈B 200억원 성장투자 유치 자료', category: '투자 유치' },
-  { title: 'ICO/IEO 백서', subtitle: '투자 유치서', desc: '토큰 이코노미 설계 및 글로벌 ICO 발행 투자 유치', category: '투자 유치' },
-  { title: '리워드형 크라우드펀딩', subtitle: '투자 유치서', desc: '와디즈·텀블벅 리워드형 크라우드펀딩 캠페인 기획서', category: '투자 유치' },
-  { title: '엔젤투자 유치 계획서', subtitle: '투자 유치서', desc: '초기 스타트업 엔젤투자자 대상 5천만원~2억원 유치 계획', category: '투자 유치' },
-  { title: 'CVC 전략적 투자 유치', subtitle: '투자 유치서', desc: '대기업 CVC 시너지 기반 전략적 투자 유치 제안서', category: '투자 유치' },
-  { title: '정부 보조금 신청서', subtitle: '투자 유치서', desc: 'TIPS·창업성장기술개발 정부 R&D 보조금 사업 신청', category: '투자 유치' },
-  { title: '기술보증기금 투자 연계', subtitle: '투자 유치서', desc: '기보·신보 기술평가 기반 투자연계 보증 신청서', category: '투자 유치' },
-  { title: '임팩트 투자 유치서', subtitle: '투자 유치서', desc: 'ESG·소셜 임팩트 측정 기반 임팩트 펀드 투자 유치', category: '투자 유치' },
-  { title: '프리 시리즈A 브릿지', subtitle: '투자 유치서', desc: '시드~시리즈A 사이 브릿지 라운드 10억원 유치 계획', category: '투자 유치' },
-  { title: 'IPO 준비 IR 자료', subtitle: '투자 유치서', desc: '코스닥 상장 준비를 위한 기관투자자 IR 프레젠테이션', category: '투자 유치' },
-
-  // ── 기술 문서 (12) ──
-  { title: 'DeFi 프로토콜 백서', subtitle: '기술 백서', desc: '탈중앙화 대출·스테이킹 프로토콜 기술 아키텍처 문서', category: '기술 문서' },
-  { title: 'AI/ML 모델 기술 문서', subtitle: '기술 백서', desc: 'Transformer 기반 추천 시스템 모델 설계·학습·배포 문서', category: '기술 문서' },
-  { title: '양자 암호화 기술 백서', subtitle: '기술 백서', desc: 'QKD 양자 키 분배 프로토콜 기술 사양 및 구현 가이드', category: '기술 문서' },
-  { title: '5G/6G 통신 기술 문서', subtitle: '기술 백서', desc: 'Open RAN 기반 6G 테라헤르츠 통신 핵심기술 문서', category: '기술 문서' },
-  { title: '제로트러스트 보안 백서', subtitle: '기술 백서', desc: '제로트러스트 아키텍처 설계 및 SASE 통합 보안 가이드', category: '기술 문서' },
-  { title: '클라우드 네이티브 아키텍처', subtitle: '기술 백서', desc: 'K8s 기반 멀티클라우드 아키텍처 설계 및 운영 가이드', category: '기술 문서' },
-  { title: '엣지 컴퓨팅 플랫폼', subtitle: '기술 백서', desc: 'MEC 기반 초저지연 엣지 AI 추론 플랫폼 기술 문서', category: '기술 문서' },
-  { title: 'AR/VR 렌더링 엔진', subtitle: '기술 백서', desc: 'Foveated Rendering 기반 실시간 XR 렌더링 엔진 기술서', category: '기술 문서' },
-  { title: '산업용 디지털 트윈', subtitle: '기술 백서', desc: '물리 시뮬레이션 기반 제조 디지털 트윈 플랫폼 기술 문서', category: '기술 문서' },
-  { title: 'REST/GraphQL API 스펙', subtitle: '기술 백서', desc: 'OpenAPI 3.0 기반 통합 API 설계 및 인증·레이트리밋 명세', category: '기술 문서' },
-  { title: 'WASM 런타임 기술 문서', subtitle: '기술 백서', desc: 'WebAssembly 기반 서버리스 엣지 런타임 아키텍처 문서', category: '기술 문서' },
-  { title: 'LLM 파인튜닝 가이드', subtitle: '기술 백서', desc: 'LoRA/QLoRA 기반 도메인 특화 LLM 파인튜닝 기술 가이드', category: '기술 문서' },
-];
+// Dead code removed — templates imported from data/templates.ts
+// _OLD_TEMPLATES_REMOVED was here
 
 /* ── Process Steps with technical details ── */
 const PROCESS_STEPS = [
@@ -228,6 +144,7 @@ export default function Home() {
   const [mode, setMode] = useState<'agent' | 'document'>('agent');
   const [showModeMenu, setShowModeMenu] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [activeInfoTab, setActiveInfoTab] = useState<'agent' | 'document'>('agent');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 자동 로그인 체크
@@ -416,7 +333,7 @@ export default function Home() {
             <div className="text-center mb-6">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 border border-blue-200 rounded-full text-sm text-blue-700 font-medium mb-4">
                 <span>🤖</span>
-                <span>4개의 AI 에이전트가 협력하여 문서를 생성합니다</span>
+                <span>멀티에이전트 오토리밸런싱 오케스트라를 통한 문서 생성</span>
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
                 전문가급 사업계획서를<br />
@@ -425,9 +342,9 @@ export default function Home() {
                 </span>
               </h1>
               <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed">
-                Architect가 구조를 설계하고, Writer가 콘텐츠를 작성하고,<br className="hidden sm:block" />
-                Image Curator가 이미지를 큐레이션하고, Reviewer가 품질을 검수합니다.<br className="hidden sm:block" />
-                <span className="font-medium text-gray-700">아이디어만 입력하면 8-10분 내에 고품질 문서가 완성됩니다.</span>
+                4개의 전문 AI 에이전트가 자율적으로 역할을 분배하고,<br className="hidden sm:block" />
+                실시간 품질 피드백 루프를 통해 최적의 결과물을 생성합니다.<br className="hidden sm:block" />
+                <span className="font-medium text-gray-700 dark:text-gray-300">아이디어만 입력하면 8-10분 내에 전문가 수준 문서가 완성됩니다.</span>
               </p>
             </div>
 
@@ -646,6 +563,250 @@ export default function Home() {
               </div>
             </div>
 
+            {/* ===== AGENT & DOCUMENT REFERENCE TABS ===== */}
+            <div className="mb-12">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">AI 시스템 아키텍처</h2>
+                <p className="text-gray-600 dark:text-gray-400">멀티에이전트 오케스트레이션과 문서 레퍼런스를 확인하세요</p>
+              </div>
+
+              {/* Tab buttons */}
+              <div className="flex justify-center gap-2 mb-8">
+                <button
+                  onClick={() => setActiveInfoTab('agent')}
+                  className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    activeInfoTab === 'agent'
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25'
+                      : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  🤖 에이전트
+                </button>
+                <button
+                  onClick={() => setActiveInfoTab('document')}
+                  className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    activeInfoTab === 'document'
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25'
+                      : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  📋 문서 레퍼런스
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              {activeInfoTab === 'agent' ? (
+                /* ── Agent Architecture Diagram ── */
+                <div className="max-w-3xl mx-auto">
+                  {/* Orchestrator */}
+                  <div className="relative">
+                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white shadow-xl shadow-blue-500/20 animate-pulse-subtle">
+                      <div className="flex items-center justify-center gap-3 mb-2">
+                        <span className="w-3 h-3 rounded-full bg-green-400 animate-ping-slow inline-block shadow-lg shadow-green-400/50"></span>
+                        <span className="text-lg font-bold">🎯 Orchestrator</span>
+                        <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">메인</span>
+                      </div>
+                      <p className="text-center text-sm text-blue-100">오토리밸런싱 &amp; 태스크 분배</p>
+                      <div className="text-center mt-2">
+                        <span className="text-xs bg-white/15 px-3 py-1 rounded-full">Claude Opus 4.6 · 1M Context</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Connector: Orchestrator → Sub-agents */}
+                  <div className="flex justify-center">
+                    <div className="w-px h-8 bg-gradient-to-b from-blue-500 to-blue-300 dark:to-blue-700"></div>
+                  </div>
+                  <div className="flex justify-center mb-1">
+                    <div className="relative w-1/2 h-px">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-300 dark:via-blue-600 to-transparent"></div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between max-w-2xl mx-auto px-8 mb-1">
+                    <div className="w-px h-6 bg-blue-300 dark:bg-blue-600"></div>
+                    <div className="w-px h-6 bg-blue-300 dark:bg-blue-600"></div>
+                    <div className="w-px h-6 bg-blue-300 dark:bg-blue-600"></div>
+                  </div>
+
+                  {/* Sub-agents */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-1">
+                    {/* Architect */}
+                    <div className="bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-center shadow-md hover:shadow-lg transition-shadow">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <span className="w-2 h-2 rounded-full bg-green-400 inline-block"></span>
+                        <span className="font-bold text-gray-900 dark:text-white text-sm">🏗️ Architect</span>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">구조 설계</p>
+                      <span className="text-[10px] bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 px-2 py-0.5 rounded-full">Claude Opus 4.6</span>
+                    </div>
+                    {/* Writer */}
+                    <div className="bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-800 rounded-xl p-4 text-center shadow-md hover:shadow-lg transition-shadow">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <span className="w-2 h-2 rounded-full bg-green-400 inline-block"></span>
+                        <span className="font-bold text-gray-900 dark:text-white text-sm">✍️ Writer ×5</span>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">콘텐츠 작성</p>
+                      <span className="text-[10px] bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 px-2 py-0.5 rounded-full">Claude Opus 4.6 · 병렬</span>
+                    </div>
+                    {/* Image Curator */}
+                    <div className="bg-white dark:bg-gray-800 border border-orange-200 dark:border-orange-800 rounded-xl p-4 text-center shadow-md hover:shadow-lg transition-shadow">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <span className="w-2 h-2 rounded-full bg-green-400 inline-block"></span>
+                        <span className="font-bold text-gray-900 dark:text-white text-sm">🖼️ Image Curator</span>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">이미지 큐레이션</p>
+                      <span className="text-[10px] bg-orange-50 dark:bg-orange-900/40 text-orange-600 dark:text-orange-300 px-2 py-0.5 rounded-full">Sonnet 4.5 + Unsplash</span>
+                    </div>
+                  </div>
+
+                  {/* Connector: Sub-agents → Reviewer */}
+                  <div className="flex justify-between max-w-2xl mx-auto px-8 mb-1">
+                    <div className="w-px h-6 bg-green-300 dark:bg-green-700"></div>
+                    <div className="w-px h-6 bg-green-300 dark:bg-green-700"></div>
+                    <div className="w-px h-6 bg-green-300 dark:bg-green-700"></div>
+                  </div>
+                  <div className="flex justify-center mb-1">
+                    <div className="relative w-1/2 h-px">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-green-300 dark:via-green-700 to-transparent"></div>
+                    </div>
+                  </div>
+                  <div className="flex justify-center">
+                    <div className="w-px h-8 bg-gradient-to-b from-green-300 dark:from-green-700 to-green-500"></div>
+                  </div>
+
+                  {/* Reviewer */}
+                  <div className="relative">
+                    <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-5 text-white shadow-xl shadow-green-500/20">
+                      <div className="flex items-center justify-center gap-3 mb-2">
+                        <span className="w-3 h-3 rounded-full bg-yellow-300 inline-block animate-pulse"></span>
+                        <span className="text-lg font-bold">🔍 Reviewer</span>
+                        <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">품질 검수</span>
+                      </div>
+                      <p className="text-center text-sm text-green-100">실시간 피드백 루프 · 87+/100 품질 보장</p>
+                      <div className="text-center mt-2">
+                        <span className="text-xs bg-white/15 px-3 py-1 rounded-full">Claude Sonnet 4.5 · 자동 QA</span>
+                      </div>
+                    </div>
+                    {/* Feedback loop arrow */}
+                    <div className="absolute -right-2 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center">
+                      <div className="w-12 h-px bg-yellow-400"></div>
+                      <div className="w-px h-24 bg-gradient-to-t from-yellow-400 to-transparent -mt-px ml-12 absolute right-0 -top-12"></div>
+                      <span className="text-[10px] text-yellow-600 dark:text-yellow-400 absolute -top-16 right-0 whitespace-nowrap bg-yellow-50 dark:bg-yellow-900/30 px-1.5 py-0.5 rounded">↻ 피드백</span>
+                    </div>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="flex justify-center gap-6 mt-6 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-green-400 inline-block"></span>
+                      <span>활성</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-yellow-300 inline-block animate-pulse"></span>
+                      <span>검수 중</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-4 h-px bg-blue-400 inline-block"></span>
+                      <span>데이터 흐름</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* ── Document References Tab ── */
+                <div className="max-w-4xl mx-auto">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Left: Document Types */}
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">📚 생성 가능한 문서 유형</h3>
+                      <div className="space-y-3">
+                        {[
+                          { icon: '🏛️', name: '국가 사업계획서', count: '12 템플릿' },
+                          { icon: '💻', name: '개발 기획서', count: '12 템플릿' },
+                          { icon: '🔬', name: '연구 보고서', count: '12 템플릿' },
+                          { icon: '📈', name: '비즈니스 계획서', count: '12 템플릿' },
+                          { icon: '📣', name: '마케팅 전략서', count: '12 템플릿' },
+                          { icon: '💰', name: '투자 유치서', count: '12 템플릿' },
+                          { icon: '⚙️', name: '기술 백서', count: '12 템플릿' },
+                        ].map((doc, i) => (
+                          <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                            <span className="text-xl">{doc.icon}</span>
+                            <div className="flex-1">
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">{doc.name}</span>
+                            </div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">{doc.count}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Format support */}
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">출력 포맷</h4>
+                        <div className="flex gap-2">
+                          <span className="px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-medium rounded-lg border border-red-200 dark:border-red-800">PDF</span>
+                          <span className="px-3 py-1.5 bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-xs font-medium rounded-lg border border-orange-200 dark:border-orange-800">HTML</span>
+                          <span className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-medium rounded-lg border border-blue-200 dark:border-blue-800">웹 뷰어</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Quality Metrics + Sample Output */}
+                    <div className="space-y-6">
+                      {/* Quality Metrics */}
+                      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">📊 품질 점수 분석</h3>
+                        <div className="space-y-3">
+                          {[
+                            { label: '논리적 구조', score: 92, color: 'bg-blue-500' },
+                            { label: '콘텐츠 깊이', score: 89, color: 'bg-purple-500' },
+                            { label: '전문성·정확도', score: 88, color: 'bg-green-500' },
+                            { label: '문서 완결성', score: 91, color: 'bg-orange-500' },
+                            { label: '가독성·포맷', score: 87, color: 'bg-pink-500' },
+                          ].map((metric, i) => (
+                            <div key={i}>
+                              <div className="flex justify-between text-sm mb-1">
+                                <span className="text-gray-700 dark:text-gray-300">{metric.label}</span>
+                                <span className="font-bold text-gray-900 dark:text-white">{metric.score}/100</span>
+                              </div>
+                              <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                                <div className={`h-full ${metric.color} rounded-full transition-all`} style={{ width: `${metric.score}%` }}></div>
+                              </div>
+                            </div>
+                          ))}
+                          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between">
+                            <span className="font-semibold text-gray-900 dark:text-white">종합 품질 점수</span>
+                            <span className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">87+ / 100</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Sample Output Sections */}
+                      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">📝 샘플 섹션 구조</h3>
+                        <div className="space-y-2">
+                          {[
+                            '1. 사업 개요 및 배경',
+                            '2. 시장 분석 및 경쟁 환경',
+                            '3. 기술 아키텍처 설계',
+                            '4. 세부 추진 전략',
+                            '5. 소요 예산 및 재원 조달',
+                            '⋯ 총 20~30개 섹션 자동 생성',
+                          ].map((section, i) => (
+                            <div key={i} className={`flex items-center gap-2 text-sm ${i === 5 ? 'text-gray-400 dark:text-gray-500 italic' : 'text-gray-700 dark:text-gray-300'}`}>
+                              {i < 5 && <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0"></span>}
+                              <span>{section}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">
+                          각 섹션은 500~1,000자의 전문 콘텐츠로 구성되며, AI 이미지 큐레이션 및 차트가 자동 포함됩니다.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* 템플릿 섹션 */}
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -669,56 +830,106 @@ export default function Home() {
                 ))}
               </div>
 
-              {/* 템플릿 그리드 — mobile responsive */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                {filteredTemplates.map((template, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleCreateClick(template)}
-                    className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-xl transition overflow-hidden"
-                  >
-                    <div className="aspect-[3/4] bg-gradient-to-br from-blue-50 via-white to-purple-50 relative p-4 flex flex-col justify-between">
-                      <div className="bg-white rounded-lg shadow-sm p-3 flex-1 flex flex-col">
-                        <div className="text-xs text-blue-600 font-semibold mb-2">
-                          {template.subtitle}
+              {/* 템플릿 그리드 — Skywork-level premium cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {filteredTemplates.map((template, index) => {
+                  const grad = CATEGORY_GRADIENTS[template.category] || DEFAULT_GRADIENT;
+                  const sectionCount = template.sections?.length || 20;
+                  const estTime = sectionCount > 20 ? '10-12분' : '8-10분';
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => handleCreateClick(template)}
+                      className="group relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-transparent hover:shadow-2xl hover:shadow-blue-500/10 dark:hover:shadow-blue-500/5 hover:-translate-y-1 transition-all duration-300 overflow-hidden text-left"
+                    >
+                      {/* Gradient Document Preview Thumbnail */}
+                      <div className={`relative h-36 bg-gradient-to-br ${grad.from} ${grad.to} p-4 overflow-hidden`}>
+                        {/* Faint document lines effect */}
+                        <div className="absolute inset-0 opacity-10">
+                          <div className="mt-6 ml-4 mr-4 space-y-2">
+                            <div className="h-1.5 bg-white rounded w-3/4"></div>
+                            <div className="h-1 bg-white rounded w-full"></div>
+                            <div className="h-1 bg-white rounded w-5/6"></div>
+                            <div className="h-1 bg-white rounded w-full"></div>
+                            <div className="h-1 bg-white rounded w-2/3"></div>
+                            <div className="h-1 bg-white rounded w-full"></div>
+                            <div className="h-1 bg-white rounded w-4/5"></div>
+                          </div>
                         </div>
-                        <div className="text-sm font-bold text-gray-900 leading-tight mb-2">
+                        {/* Category icon */}
+                        <div className="absolute top-3 right-3 text-2xl opacity-30 group-hover:opacity-60 transition-opacity">
+                          {grad.icon}
+                        </div>
+                        {/* Mini paper preview */}
+                        <div className="relative bg-white/95 dark:bg-gray-900/80 backdrop-blur-sm rounded-lg shadow-lg p-3 w-full h-full flex flex-col">
+                          <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 mb-1 uppercase tracking-wide">{template.subtitle}</div>
+                          <div className="text-xs font-bold text-gray-800 dark:text-gray-200 leading-snug line-clamp-2">{template.title}</div>
+                          <div className="mt-auto space-y-1 pt-2">
+                            <div className="h-[3px] bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                            <div className="h-[3px] bg-gray-200 dark:bg-gray-700 rounded w-4/5"></div>
+                            <div className="h-[3px] bg-gray-200 dark:bg-gray-700 rounded w-3/5"></div>
+                          </div>
+                        </div>
+                        {/* Hover CTA overlay */}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center">
+                          <span className="text-white font-semibold text-sm opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
+                            시작하기 →
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Card Body */}
+                      <div className="p-4">
+                        {/* Category pill badge */}
+                        <div className="mb-2">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${grad.badge} ${grad.badgeText}`}>
+                            <span>{grad.icon}</span>
+                            {template.category}
+                          </span>
+                        </div>
+
+                        {/* Title */}
+                        <h3 className="text-sm font-bold text-gray-900 dark:text-white leading-snug mb-1.5 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                           {template.title}
-                        </div>
-                        <div className="text-xs text-gray-500 line-clamp-2 mb-3">
+                        </h3>
+
+                        {/* Description (2 lines max) */}
+                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed mb-3">
                           {template.desc}
-                        </div>
-                        {/* Section preview for rich templates */}
+                        </p>
+
+                        {/* Section preview (first 2-3 section titles) */}
                         {template.sections && template.sections.length > 0 && (
-                          <div className="mt-2 space-y-0.5 text-[10px] text-gray-400">
-                            {template.sections.slice(0, 3).map((s: string, i: number) => (
-                              <div key={i} className="truncate">• {s}</div>
+                          <div className="mb-3 space-y-0.5">
+                            {template.sections.slice(0, 2).map((s: string, i: number) => (
+                              <div key={i} className="flex items-center gap-1.5 text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                                <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600 flex-shrink-0"></span>
+                                <span className="truncate">{s}</span>
+                              </div>
                             ))}
-                            {template.sections.length > 3 && (
-                              <div className="text-gray-300">... 외 {template.sections.length - 3}개 섹션</div>
+                            {template.sections.length > 2 && (
+                              <div className="text-[10px] text-gray-300 dark:text-gray-600 pl-2.5">
+                                +{template.sections.length - 2}개 섹션
+                              </div>
                             )}
                           </div>
                         )}
-                        {!template.sections && (
-                          <div className="mt-auto space-y-1">
-                            <div className="h-1 bg-gray-200 rounded"></div>
-                            <div className="h-1 bg-gray-200 rounded w-4/5"></div>
-                            <div className="h-1 bg-gray-200 rounded w-3/5"></div>
+
+                        {/* Footer: section count + estimated time */}
+                        <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-gray-500 dark:text-gray-400">📑</span>
+                            <span className="text-[11px] font-medium text-gray-600 dark:text-gray-400">{sectionCount}개 섹션</span>
                           </div>
-                        )}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-gray-500 dark:text-gray-400">⏱️</span>
+                            <span className="text-[11px] text-gray-500 dark:text-gray-400">{estTime}</span>
+                          </div>
+                        </div>
                       </div>
-                      
-                      <div className="mt-2 flex items-center justify-between">
-                        {template.sections ? (
-                          <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded font-medium">{template.sections.length}개 섹션</span>
-                        ) : (
-                          <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">87+ 품질</span>
-                        )}
-                        <span className="text-xs text-gray-500">8-10분</span>
-                      </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
