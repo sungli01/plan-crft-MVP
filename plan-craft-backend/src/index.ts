@@ -2,10 +2,7 @@
  * Plan-Craft Backend API Server
  */
 
-// dotenv: Railway/production에서는 로드하지 않음
-if (!process.env.RAILWAY_ENVIRONMENT && !process.env.RAILWAY_SERVICE_NAME) {
-  try { require('dotenv').config(); } catch {}
-}
+import 'dotenv/config';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
