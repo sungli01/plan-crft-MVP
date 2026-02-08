@@ -13,7 +13,7 @@ import { eq, and, gte } from 'drizzle-orm';
 
 // Monthly generation limits
 const TIER_LIMITS = {
-  free: { monthlyGenerations: 10, maxSections: 15, model: 'sonnet' },
+  free: { monthlyGenerations: 50, maxSections: 15, model: 'sonnet' },
   pro: { monthlyGenerations: -1, maxSections: 30, model: 'opus' },
 };
 
