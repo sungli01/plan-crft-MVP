@@ -54,10 +54,9 @@ export async function initializeDatabase(): Promise<boolean> {
       END $$
     `;
 
-    // Auto-approve existing users (pre-v5 migration)
-    await client`
-      UPDATE users SET approved = true WHERE approved IS NULL OR approved = false
-    `;
+    // Auto-approve ALL users + reset monthly usage
+    await client`UPDATE users SET approved = true WHERE approved IS NULL OR approved = false`;
+    await client`DELETE FROM token_usage WHERE created_at < NOW() - INTERVAL '1 day'`;
 
     // Auto-set admin user (sungli01@naver.com)
     await client`
