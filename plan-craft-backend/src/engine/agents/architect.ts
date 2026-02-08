@@ -84,7 +84,7 @@ export class ArchitectAgent {
     try {
       const message = await this.anthropic.messages.create({
         model: this.model,
-        max_tokens: 4000,
+        max_tokens: 8000,
         temperature: 0.7,
         system: this.getSystemPrompt(),
         messages: [{ role: 'user', content: userPrompt }]
@@ -100,7 +100,17 @@ export class ArchitectAgent {
         jsonStr = content.match(/```\n([\s\S]*?)\n```/)?.[1] || content;
       }
       
-      const design: DocumentDesign = JSON.parse(jsonStr);
+      let design: DocumentDesign;
+      try {
+        design = JSON.parse(jsonStr);
+      } catch (parseErr) {
+        // JSON이 잘린 경우 닫는 괄호 추가 시도
+        const fixed = jsonStr.replace(/,?\s*$/, '') + ']}';
+        try { design = JSON.parse(fixed); } catch {
+          const fixed2 = jsonStr.replace(/,?\s*$/, '') + '"]}]}';
+          design = JSON.parse(fixed2);
+        }
+      }
 
       console.log(`   ✅ 설계 완료`);
       console.log(`   📊 대제목: ${design.structure.length}개`);
@@ -126,7 +136,7 @@ export class ArchitectAgent {
 
     const message = await this.anthropic.messages.create({
       model: this.model,
-      max_tokens: 4000,
+      max_tokens: 8000,
       temperature: 0.7,
       system: this.getSystemPrompt(),
       messages: [{ role: 'user', content: prompt }]
