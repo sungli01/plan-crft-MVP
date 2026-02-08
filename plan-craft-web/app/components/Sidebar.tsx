@@ -113,14 +113,16 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
               <span className="text-white text-sm font-bold">P</span>
             </button>
           )}
-          <button
-            onClick={onToggle}
-            className={`hidden lg:flex items-center justify-center w-7 h-7 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors ${collapsed ? 'absolute -right-3 top-5 bg-white dark:bg-[#0d1117] border border-gray-200 dark:border-gray-700 shadow-sm z-10' : ''}`}
-          >
-            <svg className={`w-4 h-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
+          {!collapsed && (
+            <button
+              onClick={onToggle}
+              className="hidden lg:flex items-center justify-center w-7 h-7 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
           {/* Mobile close */}
           <button
             onClick={onMobileClose}
@@ -247,6 +249,29 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
             </button>
           ))}
         </nav>
+
+        {/* ── Floating collapse/expand toggle (mid-height) ── */}
+        <button
+          onClick={onToggle}
+          className={`
+            hidden lg:flex items-center justify-center
+            absolute -right-4 top-1/2 -translate-y-1/2 z-20
+            w-8 h-8 rounded-full
+            bg-white dark:bg-[#161b22]
+            border-2 border-gray-200 dark:border-gray-600
+            shadow-lg shadow-gray-300/40 dark:shadow-black/40
+            text-gray-500 dark:text-gray-400
+            hover:text-blue-600 dark:hover:text-blue-400
+            hover:border-blue-300 dark:hover:border-blue-500
+            hover:shadow-xl hover:scale-110
+            active:scale-95
+            transition-all duration-200
+          `}
+        >
+          <svg className={`w-4 h-4 transition-transform duration-200 ${collapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
 
         {/* ── Bottom: User Info ── */}
         <div className="border-t border-gray-100 dark:border-gray-800 p-2">
