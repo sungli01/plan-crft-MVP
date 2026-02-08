@@ -14,7 +14,7 @@ export class WriterAgent {
   constructor(apiKey, config = {}) {
     this.anthropic = new Anthropic({ apiKey });
     this.model = config.model || 'claude-opus-4-6';
-    this.name = 'Writer';
+    this.name = config.name || 'Writer';
     this.role = '내용 작성자';
   }
 

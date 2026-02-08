@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
 import { sqlite } from '../db/index.js';
 import { Orchestrator } from '../engine/orchestrator.js';
+import { AgentTeamOrchestrator } from '../engine/agent-team-orchestrator.js';
 import { generateHTML, extractSummary } from '../utils/html-generator.js';
 import { progressTracker } from '../utils/progress-tracker.js';
 
@@ -155,19 +156,21 @@ async function generateDocumentBackground(projectId, projectData, userId) {
       message: 'Orchestrator 초기화 중...'
     });
 
-    // Orchestrator 설정
+    // Agent Team Orchestrator 설정
     const config = {
       apiKey: process.env.ANTHROPIC_API_KEY,
       architectModel: projectData.model || 'claude-opus-4-6',
       writerModel: projectData.model || 'claude-opus-4-6',
       curatorModel: 'claude-sonnet-4-5',
-      reviewerModel: 'claude-sonnet-4-5'
+      reviewerModel: 'claude-sonnet-4-5',
+      writerTeamSize: 5 // 병렬 Writer 에이전트 수
     };
 
     // 프로젝트 정보
     const projectInfo = {
       title: projectData.title,
-      idea: projectData.idea
+      idea: projectData.idea,
+      projectId: projectId // 진행 추적용
     };
 
     // Phase 1: Architect 시작
@@ -182,21 +185,11 @@ async function generateDocumentBackground(projectId, projectData, userId) {
       message: '문서 구조 설계 시작'
     });
 
-    // Orchestrator로 문서 생성 (프록시로 진행 상황 추적)
-    const orchestrator = new Orchestrator(config);
+    // Agent Team Orchestrator로 문서 생성 (병렬 처리)
+    const orchestrator = new AgentTeamOrchestrator(config);
     
-    // Orchestrator의 원래 메서드를 래핑
-    const originalGenerateDocument = orchestrator.generateDocument.bind(orchestrator);
-    orchestrator.generateDocument = async (projectInfo) => {
-      const result = await originalGenerateDocument(projectInfo);
-      return result;
-    };
-
-    const result = await generateWithProgressTracking(
-      orchestrator,
-      projectInfo,
-      projectId
-    );
+    // 진행 상황 추적과 함께 생성
+    const result = await orchestrator.generateDocument(projectInfo, progressTracker);
 
     console.log(`[Background] Generation complete for project ${projectId}`);
     console.log(`Quality: ${result.reviews.summary.averageScore}/100, Sections: ${result.sections.length}`);
