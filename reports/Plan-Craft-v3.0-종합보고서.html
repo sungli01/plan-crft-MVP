@@ -1,0 +1,3312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Plan-Craft v3.0 — 프로젝트 종합 보고서</title>
+  <style>
+    @media print {
+      body { margin: 0; }
+      @page { size: A4; margin: 15mm 20mm; }
+      .no-print { display: none !important; }
+      .section-break { page-break-before: always; }
+      .section-break:first-of-type { page-break-before: auto; }
+    }
+    
+    * { box-sizing: border-box; }
+    
+    body {
+      font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+      line-height: 1.8;
+      color: #1a1a1a;
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 20mm;
+      font-size: 14px;
+    }
+    
+    /* Cover Page */
+    .cover {
+      text-align: center;
+      padding: 80px 0 60px;
+      page-break-after: always;
+    }
+    .cover h1 {
+      font-size: 42px;
+      color: #1e40af;
+      margin-bottom: 8px;
+      border: none;
+    }
+    .cover .version {
+      font-size: 20px;
+      color: #6b7280;
+      margin-bottom: 40px;
+    }
+    .cover .meta {
+      font-size: 14px;
+      color: #9ca3af;
+      line-height: 2;
+    }
+    .cover .meta strong { color: #374151; }
+    .cover .divider {
+      width: 60px;
+      height: 4px;
+      background: linear-gradient(to right, #2563eb, #7c3aed);
+      margin: 30px auto;
+      border-radius: 2px;
+    }
+    .cover .stats {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 40px;
+    }
+    .cover .stat {
+      text-align: center;
+    }
+    .cover .stat .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #2563eb;
+    }
+    .cover .stat .label {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    
+    /* TOC */
+    .toc {
+      page-break-after: always;
+    }
+    .toc h2 { 
+      font-size: 24px; 
+      color: #1e40af; 
+      border-bottom: 2px solid #2563eb;
+      padding-bottom: 8px;
+    }
+    .toc ul {
+      list-style: none;
+      padding: 0;
+    }
+    .toc li {
+      padding: 10px 0;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 16px;
+    }
+    .toc a {
+      color: #1e40af;
+      text-decoration: none;
+    }
+    .toc a:hover { text-decoration: underline; }
+    
+    /* Content */
+    h1 {
+      font-size: 28px;
+      color: #1e40af;
+      border-bottom: 3px solid #2563eb;
+      padding-bottom: 10px;
+      margin-top: 0;
+    }
+    h2 {
+      font-size: 22px;
+      color: #1e3a5f;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 6px;
+      margin-top: 32px;
+    }
+    h3 { font-size: 18px; color: #374151; margin-top: 24px; }
+    h4 { font-size: 16px; color: #4b5563; margin-top: 20px; }
+    
+    p { margin: 8px 0; text-align: justify; }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 13px;
+    }
+    th, td {
+      border: 1px solid #d1d5db;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th { background: #f3f4f6; font-weight: 600; }
+    tr:nth-child(even) { background: #fafafa; }
+    
+    code {
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Fira Code', monospace;
+      font-size: 13px;
+    }
+    
+    pre {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    pre code {
+      background: none;
+      padding: 0;
+      color: inherit;
+    }
+    
+    blockquote {
+      border-left: 4px solid #2563eb;
+      margin: 16px 0;
+      padding: 12px 20px;
+      background: #eff6ff;
+      color: #1e40af;
+    }
+    
+    ul, ol { padding-left: 24px; }
+    li { margin: 4px 0; }
+    
+    a { color: #2563eb; }
+    
+    img { max-width: 100%; height: auto; }
+    
+    .print-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 14px 28px;
+      background: linear-gradient(to right, #2563eb, #7c3aed);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      z-index: 100;
+    }
+    .print-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4); }
+  </style>
+</head>
+<body>
+  <button class="print-btn no-print" onclick="window.print()">📥 PDF로 저장 (Ctrl+P)</button>
+
+  <!-- Cover Page -->
+  <div class="cover">
+    <h1>Plan-Craft</h1>
+    <div class="version">v3.0 프로젝트 종합 보고서</div>
+    <div class="divider"></div>
+    <div class="meta">
+      <strong>프로젝트:</strong> AI 기반 사업계획서 자동 생성 플랫폼<br>
+      <strong>개발 기간:</strong> 2026-02-07 ~ 2026-02-08 (2일)<br>
+      <strong>개발팀:</strong> 바질 (AI 어시스턴트) + 형님 (프로젝트 오너)<br>
+      <strong>기술 스택:</strong> Next.js 14, Hono, PostgreSQL, Claude Opus 4.6<br>
+      <strong>보고서 작성일:</strong> 2026. 2. 8.
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="value">87.6</div><div class="label">품질 점수 /100</div></div>
+      <div class="stat"><div class="value">23건</div><div class="label">개선 완료</div></div>
+      <div class="stat"><div class="value">5</div><div class="label">보고서</div></div>
+      <div class="stat"><div class="value">2일</div><div class="label">개발 기간</div></div>
+    </div>
+  </div>
+
+  <!-- Table of Contents -->
+  <div class="toc">
+    <h2>📑 목차</h2>
+    <ul>
+      <li><a href="#reports-PROJECT-HISTORY-md">📜 개발 히스토리</a></li>
+<li><a href="#reports-ARCHITECTURE-md">📐 기술 아키텍처</a></li>
+<li><a href="#reports-INSTRUCTIONS-md">📖 사용 설명서</a></li>
+<li><a href="#reports-improvement-plan-md">💡 개선사항 분석 보고서</a></li>
+<li><a href="#reports-skywork-analysis-md">🔍 Skywork.ai 벤치마킹 분석</a></li>
+
+    </ul>
+  </div>
+
+  <!-- Content -->
+  
+    <div class="section-break" id="reports-PROJECT-HISTORY-md"></div>
+    <section>
+      <h1>Plan-Craft 개발 히스토리</h1>
+<blockquote>
+<p>🗓️ 작성일: 2026-02-08<br>✍️ 작성자: 바질 (AI 어시스턴트)</p>
+</blockquote>
+<hr>
+<h2>📋 프로젝트 개요</h2>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>프로젝트명</strong></td>
+<td>Plan-Craft v3.0</td>
+</tr>
+<tr>
+<td><strong>설명</strong></td>
+<td>AI 기반 사업계획서 자동 생성 플랫폼</td>
+</tr>
+<tr>
+<td><strong>개발 기간</strong></td>
+<td>2026-02-07 ~ 2026-02-08 (2일)</td>
+</tr>
+<tr>
+<td><strong>개발팀</strong></td>
+<td>바질 (AI 어시스턴트) + 형님 (프로젝트 오너)</td>
+</tr>
+<tr>
+<td><strong>기술 스택</strong></td>
+<td>Next.js 14, Hono, PostgreSQL, Claude Opus 4.6</td>
+</tr>
+<tr>
+<td><strong>GitHub</strong></td>
+<td><a href="https://github.com/sungli01/plan-crft-MVP.git">https://github.com/sungli01/plan-crft-MVP.git</a></td>
+</tr>
+<tr>
+<td><strong>프론트엔드 URL</strong></td>
+<td><a href="https://plan-crft-mvp-ot41.vercel.app">https://plan-crft-mvp-ot41.vercel.app</a></td>
+</tr>
+<tr>
+<td><strong>백엔드 URL</strong></td>
+<td><a href="https://plan-crft-mvp-production.up.railway.app">https://plan-crft-mvp-production.up.railway.app</a></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🕐 개발 타임라인</h2>
+<h3>Day 1 — 2026-02-07 (토요일)</h3>
+<h4>오전: 프로젝트 기획 및 설계</h4>
+<ul>
+<li><strong>프로젝트 컨셉 확정</strong>: AI가 사업계획서를 자동으로 생성해주는 SaaS 플랫폼</li>
+<li><strong>핵심 아키텍처 설계</strong>: 4-에이전트 AI 시스템 구조 확정<ul>
+<li>🏗️ <strong>Architect</strong> (설계자): 사업계획서의 전체 구조와 목차를 설계</li>
+<li>✍️ <strong>Writer</strong> (작성자): 각 섹션의 상세 콘텐츠를 작성</li>
+<li>🖼️ <strong>Image Curator</strong> (이미지 큐레이터): 적절한 이미지와 차트를 선별·배치</li>
+<li>🔍 <strong>Reviewer</strong> (검토자): 전체 문서의 품질을 검토하고 점수를 매김</li>
+</ul>
+</li>
+<li><strong>기술 스택 선정</strong>: Next.js 14 (프론트엔드) + Hono (백엔드) + SQLite (초기 DB)</li>
+</ul>
+<h4>오후: 핵심 기능 구현</h4>
+<ul>
+<li><strong>백엔드 API 개발</strong><ul>
+<li>Hono 프레임워크로 REST API 서버 구축</li>
+<li>SQLite 데이터베이스 연동 (초기 버전)</li>
+<li>사업계획서 생성 엔드포인트 구현</li>
+<li>Claude API 연동 및 4-에이전트 파이프라인 구현</li>
+</ul>
+</li>
+<li><strong>프론트엔드 개발</strong><ul>
+<li>Next.js 14 App Router 기반 UI 구축</li>
+<li>사업 아이디어 입력 폼 구현</li>
+<li>생성된 사업계획서 뷰어 구현</li>
+</ul>
+</li>
+<li><strong>GitHub 레포지토리 생성 및 초기 코드 업로드</strong><ul>
+<li>레포: <a href="https://github.com/sungli01/plan-crft-MVP.git">https://github.com/sungli01/plan-crft-MVP.git</a></li>
+<li>모노레포 구조 (frontend/ + backend/)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3>Day 2 — 2026-02-08 (일요일)</h3>
+<p>이 날은 프로젝트의 <strong>폭발적 성장</strong>이 일어난 날입니다. 약 5시간 만에 MVP 런칭부터 대규모 리팩토링까지 완료했습니다.</p>
+<h4>08:18 — 🚀 MVP 런칭</h4>
+<ul>
+<li><strong>Railway</strong> 배포: 백엔드 서버 + PostgreSQL 데이터베이스</li>
+<li><strong>Vercel</strong> 배포: 프론트엔드 애플리케이션</li>
+<li>SQLite → <strong>PostgreSQL</strong> 마이그레이션 (프로덕션 환경 대응)</li>
+<li>첫 번째 사업계획서 생성 성공 확인</li>
+<li>라이브 URL 확인 및 동작 테스트 완료</li>
+</ul>
+<h4>09:00~10:00 — 🎨 Skywork 스타일 UI 구현</h4>
+<ul>
+<li>기존의 기본 UI를 <strong>Skywork 스타일</strong>의 모던 디자인으로 전면 개편</li>
+<li>그라디언트 배경, 글래스모피즘 효과 적용</li>
+<li>반응형 레이아웃 구현</li>
+<li>사용자 경험(UX) 대폭 개선</li>
+</ul>
+<h4>10:00~10:48 — 📊 실시간 진행 추적 시스템</h4>
+<ul>
+<li>사업계획서 생성 과정을 <strong>실시간으로 추적</strong>할 수 있는 시스템 구현</li>
+<li>각 에이전트의 작업 상태를 시각적으로 표시</li>
+<li>진행률 표시 바 및 단계별 상태 업데이트</li>
+<li>생성 완료까지의 예상 시간 표시</li>
+</ul>
+<h4>11:00 — 🤖 Claude Opus 4.6 에이전트 업그레이드</h4>
+<ul>
+<li>Plan-Craft의 AI 에이전트들을 <strong>Claude Opus 4.6</strong>으로 업그레이드</li>
+<li>이전 모델 대비 더 정확하고 풍부한 사업계획서 생성</li>
+<li>4-에이전트 시스템의 각 역할에 최적화된 프롬프트 재설계</li>
+<li>품질 점수 향상 확인</li>
+</ul>
+<h4>11:32 — 🧠 바질 자체 Opus 4.6 업그레이드</h4>
+<ul>
+<li>개발을 담당하는 바질(AI 어시스턴트) 자체도 <strong>Opus 4.6</strong>으로 업그레이드</li>
+<li>더 빠르고 정확한 코드 생성 및 문제 해결 능력 확보</li>
+<li>이후 작업 효율이 크게 향상됨</li>
+</ul>
+<h4>12:30 — 🎭 오케스트레이터 아키텍처 설계</h4>
+<ul>
+<li>대규모 리팩토링을 위한 <strong>오케스트레이터 패턴</strong> 설계</li>
+<li>여러 서브에이전트를 동시에 운영하여 병렬 작업 수행</li>
+<li>Phase 기반 작업 분류 체계 확립</li>
+</ul>
+<h4>12:40 — 🤝 서브에이전트 시스템 가동</h4>
+<ul>
+<li><strong>분석봇</strong>: 현재 코드베이스를 분석하고 개선점 42개 도출</li>
+<li><strong>개선봇</strong>: 도출된 개선점을 우선순위에 따라 구현</li>
+<li>병렬 작업으로 개발 속도 극대화</li>
+</ul>
+<h4>12:55 — ⚡ Phase 1-2 착수</h4>
+<ul>
+<li><strong>Phase 1 — 보안 패치</strong><ul>
+<li>API 키 노출 방지</li>
+<li>환경 변수 기반 설정 관리</li>
+<li>Rate Limiting 구현</li>
+<li>JWT 인증 강화</li>
+</ul>
+</li>
+<li><strong>Phase 2 — 아키텍처 개선</strong><ul>
+<li>공유 TypeScript 타입 시스템 구축</li>
+<li>중앙집중 API 클라이언트 구현</li>
+<li>코드 중복 제거 및 모듈화</li>
+<li>에러 핸들링 통일</li>
+</ul>
+</li>
+</ul>
+<h4>13:10 — 🎨 Phase 3-4 착수</h4>
+<ul>
+<li><strong>Phase 3 — UX 개선</strong><ul>
+<li>공통 컴포넌트 추출 (Header, Toast, Skeleton)</li>
+<li>로딩 상태 개선 (Skeleton UI)</li>
+<li>토스트 알림 시스템</li>
+</ul>
+</li>
+<li><strong>Phase 4 — 기능 추가</strong><ul>
+<li>PDF 내보내기 기능</li>
+<li>다크모드 지원 (ThemeProvider)</li>
+<li>사업계획서 공유 기능</li>
+</ul>
+</li>
+</ul>
+<h4>13:30 — ✅ Phase 1-4 완료, 배포</h4>
+<ul>
+<li>모든 Phase 작업 완료</li>
+<li>Git commit &amp; push</li>
+<li>Railway + Vercel <strong>자동 배포</strong> 트리거</li>
+<li>프로덕션 환경에서 최종 동작 확인</li>
+</ul>
+<hr>
+<h2>🏆 주요 성과</h2>
+<h3>품질 지표</h3>
+<table>
+<thead>
+<tr>
+<th>지표</th>
+<th>수치</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>품질 점수</strong></td>
+<td>87.6 / 100</td>
+</tr>
+<tr>
+<td><strong>생성 섹션 수</strong></td>
+<td>25개</td>
+</tr>
+<tr>
+<td><strong>총 단어 수</strong></td>
+<td>10,800 단어</td>
+</tr>
+<tr>
+<td><strong>포함 이미지 수</strong></td>
+<td>93개</td>
+</tr>
+</tbody></table>
+<h3>코드 변경 통계 (Phase 1-4)</h3>
+<table>
+<thead>
+<tr>
+<th>지표</th>
+<th>수치</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>수정된 파일</strong></td>
+<td>27개</td>
+</tr>
+<tr>
+<td><strong>추가된 코드</strong></td>
+<td>1,326줄</td>
+</tr>
+<tr>
+<td><strong>삭제된 코드</strong></td>
+<td>914줄</td>
+</tr>
+<tr>
+<td><strong>순 증가</strong></td>
+<td>+412줄</td>
+</tr>
+</tbody></table>
+<h3>개선사항 처리</h3>
+<ul>
+<li>총 도출된 개선사항: <strong>42건</strong></li>
+<li>완료된 개선사항: <strong>23건</strong> (54.8%)</li>
+<li>잔여 개선사항: 19건 (향후 버전에서 처리 예정)</li>
+</ul>
+<hr>
+<h2>🧩 기술적 결정 및 근거</h2>
+<h3>1. 프레임워크 선택</h3>
+<table>
+<thead>
+<tr>
+<th>결정</th>
+<th>선택</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>백엔드 프레임워크</td>
+<td><strong>Hono</strong></td>
+<td>경량, 빠른 속도, Edge 호환, TypeScript 네이티브 지원</td>
+</tr>
+<tr>
+<td>프론트엔드 프레임워크</td>
+<td><strong>Next.js 14</strong></td>
+<td>App Router, SSR/SSG 지원, React 생태계 활용</td>
+</tr>
+<tr>
+<td>CSS 프레임워크</td>
+<td><strong>Tailwind CSS</strong></td>
+<td>빠른 프로토타이핑, 일관된 디자인 시스템, 다크모드 지원</td>
+</tr>
+</tbody></table>
+<h3>2. 데이터베이스 마이그레이션</h3>
+<table>
+<thead>
+<tr>
+<th>결정</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>SQLite → PostgreSQL</strong></td>
+<td>초기 개발은 SQLite로 빠르게, 프로덕션은 PostgreSQL로 안정성 확보</td>
+</tr>
+<tr>
+<td><strong>Drizzle ORM 채택</strong></td>
+<td>TypeScript 네이티브, 경량, 타입 안전성</td>
+</tr>
+</tbody></table>
+<h3>3. AI 아키텍처</h3>
+<table>
+<thead>
+<tr>
+<th>결정</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>4-에이전트 분리</strong></td>
+<td>단일 프롬프트 대비 품질 향상 — 각 에이전트가 전문 역할 수행</td>
+</tr>
+<tr>
+<td><strong>Claude Opus 4.6</strong></td>
+<td>최신 모델로 더 높은 품질의 사업계획서 생성</td>
+</tr>
+<tr>
+<td><strong>순차 파이프라인</strong></td>
+<td>Architect → Writer → Image Curator → Reviewer 순서로 실행</td>
+</tr>
+</tbody></table>
+<h3>4. 배포 전략</h3>
+<table>
+<thead>
+<tr>
+<th>결정</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Railway (백엔드)</strong></td>
+<td>PostgreSQL 내장, 자동 배포, 합리적 가격</td>
+</tr>
+<tr>
+<td><strong>Vercel (프론트엔드)</strong></td>
+<td>Next.js 최적화, 글로벌 CDN, 무료 티어</td>
+</tr>
+<tr>
+<td><strong>모노레포 구조</strong></td>
+<td>단일 GitHub 레포에서 프론트엔드/백엔드 관리 — 소규모 팀에 적합</td>
+</tr>
+</tbody></table>
+<h3>5. 보안 결정</h3>
+<table>
+<thead>
+<tr>
+<th>결정</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>JWT 인증</strong></td>
+<td>상태 비저장(Stateless) 인증, 확장성 우수</td>
+</tr>
+<tr>
+<td><strong>Rate Limiting</strong></td>
+<td>API 남용 방지, 비용 제어</td>
+</tr>
+<tr>
+<td><strong>환경 변수 관리</strong></td>
+<td>API 키 등 민감 정보를 코드에서 분리</td>
+</tr>
+</tbody></table>
+<h3>6. UX/UI 결정</h3>
+<table>
+<thead>
+<tr>
+<th>결정</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Skywork 스타일 UI</strong></td>
+<td>모던하고 전문적인 인상, 경쟁 서비스 대비 차별화</td>
+</tr>
+<tr>
+<td><strong>실시간 진행 추적</strong></td>
+<td>긴 생성 시간 동안 사용자 이탈 방지</td>
+</tr>
+<tr>
+<td><strong>다크모드</strong></td>
+<td>사용자 편의성, 현대 웹앱의 기본 기능</td>
+</tr>
+<tr>
+<td><strong>공통 컴포넌트 추출</strong></td>
+<td>코드 재사용성 향상, 일관된 UI 경험</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>📝 교훈 및 회고</h2>
+<h3>잘된 점</h3>
+<ol>
+<li><strong>2일 만에 MVP 런칭</strong> — 빠른 프로토타이핑과 배포로 실제 동작하는 제품 완성</li>
+<li><strong>서브에이전트 병렬 작업</strong> — 오케스트레이터 패턴으로 대규모 리팩토링을 1시간 내 완료</li>
+<li><strong>점진적 개선</strong> — SQLite → PostgreSQL, 기본 UI → Skywork 스타일로 단계적 발전</li>
+</ol>
+<h3>개선할 점</h3>
+<ol>
+<li>초기부터 PostgreSQL로 시작했으면 마이그레이션 비용 절약 가능</li>
+<li>테스트 코드 부재 — 향후 버전에서 테스트 추가 필요</li>
+<li>19개 미완료 개선사항 — 후속 버전에서 처리 예정</li>
+</ol>
+<hr>
+<h2>🔮 향후 계획</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 미완료 개선사항 19건 처리</li>
+<li><input disabled="" type="checkbox"> 사용자 인증 시스템 고도화 (소셜 로그인)</li>
+<li><input disabled="" type="checkbox"> 사업계획서 템플릿 다양화</li>
+<li><input disabled="" type="checkbox"> 다국어 지원 (영어, 일본어)</li>
+<li><input disabled="" type="checkbox"> 결제 시스템 연동</li>
+<li><input disabled="" type="checkbox"> 사업계획서 협업 편집 기능</li>
+<li><input disabled="" type="checkbox"> 모바일 최적화</li>
+</ul>
+<hr>
+<blockquote>
+<p>💡 이 문서는 Plan-Craft v3.0 개발 과정을 기록한 히스토리 문서입니다.<br>최종 업데이트: 2026-02-08 13:30 KST</p>
+</blockquote>
+
+    </section>
+  
+    <div class="section-break" id="reports-ARCHITECTURE-md"></div>
+    <section>
+      <h1>Plan-Craft 기술 아키텍처</h1>
+<blockquote>
+<p>🗓️ 작성일: 2026-02-08<br>📐 버전: v3.0<br>✍️ 작성자: 바질 (AI 어시스턴트)</p>
+</blockquote>
+<hr>
+<h2>📐 시스템 구성도</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                         사용자 (브라우저)                          │
+└─────────────────────┬───────────────────────────────────────────┘
+                      │ HTTPS
+                      ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    프론트엔드 (Vercel)                             │
+│              Next.js 14 App Router                               │
+│              https://plan-crft-mvp-ot41.vercel.app               │
+│                                                                   │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────────┐   │
+│  │ 입력 폼   │ │ 진행 추적 │ │ 결과 뷰어 │ │ 공통 컴포넌트      │   │
+│  │ (Create) │ │(Progress)│ │ (Viewer) │ │(Header,Toast,등) │   │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────────────┘   │
+└─────────────────────┬───────────────────────────────────────────┘
+                      │ REST API (JSON)
+                      ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    백엔드 (Railway)                               │
+│              Hono Framework                                      │
+│              https://plan-crft-mvp-production.up.railway.app     │
+│                                                                   │
+│  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐   │
+│  │ Auth       │ │ Plans API  │ │ Rate Limit │ │ Error      │   │
+│  │ Middleware │ │ Routes     │ │ Middleware │ │ Handler    │   │
+│  └────────────┘ └────────────┘ └────────────┘ └────────────┘   │
+│                        │                                         │
+│                        ▼                                         │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │              AI 에이전트 엔진 (Claude Opus 4.6)           │    │
+│  │                                                          │    │
+│  │  ① Architect ──→ ② Writer ──→ ③ Image Curator ──→ ④ Reviewer │
+│  │  (구조 설계)     (콘텐츠)      (이미지 선별)       (품질 검토)  │
+│  └─────────────────────────────────────────────────────────┘    │
+└─────────────────────┬───────────────────────────────────────────┘
+                      │ Drizzle ORM
+                      ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   데이터베이스 (Railway)                           │
+│                   PostgreSQL                                     │
+│                                                                   │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────────┐   │
+│  │ users    │ │ plans    │ │ sections │ │ generation_logs  │   │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+</code></pre>
+<hr>
+<h2>🔧 백엔드 아키텍처</h2>
+<h3>기술 스택</h3>
+<table>
+<thead>
+<tr>
+<th>기술</th>
+<th>버전</th>
+<th>용도</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Hono</strong></td>
+<td>최신</td>
+<td>웹 프레임워크 (경량, Edge 호환)</td>
+</tr>
+<tr>
+<td><strong>PostgreSQL</strong></td>
+<td>15+</td>
+<td>관계형 데이터베이스</td>
+</tr>
+<tr>
+<td><strong>Drizzle ORM</strong></td>
+<td>최신</td>
+<td>TypeScript ORM (타입 안전)</td>
+</tr>
+<tr>
+<td><strong>JWT</strong></td>
+<td>-</td>
+<td>사용자 인증 토큰</td>
+</tr>
+<tr>
+<td><strong>Claude Opus 4.6</strong></td>
+<td>4.6</td>
+<td>AI 사업계획서 생성</td>
+</tr>
+</tbody></table>
+<h3>디렉토리 구조</h3>
+<pre><code>backend/
+├── src/
+│   ├── index.ts              # 앱 진입점, Hono 서버 설정
+│   ├── routes/
+│   │   ├── auth.ts           # 인증 관련 라우트
+│   │   ├── plans.ts          # 사업계획서 CRUD 라우트
+│   │   └── health.ts         # 헬스체크 엔드포인트
+│   ├── middleware/
+│   │   ├── auth.ts           # JWT 인증 미들웨어
+│   │   ├── rateLimit.ts      # Rate Limiting 미들웨어
+│   │   ├── cors.ts           # CORS 설정
+│   │   └── errorHandler.ts   # 전역 에러 핸들러
+│   ├── services/
+│   │   ├── aiEngine.ts       # AI 에이전트 오케스트레이션
+│   │   ├── architect.ts      # Architect 에이전트
+│   │   ├── writer.ts         # Writer 에이전트
+│   │   ├── imageCurator.ts   # Image Curator 에이전트
+│   │   └── reviewer.ts       # Reviewer 에이전트
+│   ├── db/
+│   │   ├── schema.ts         # Drizzle 스키마 정의
+│   │   ├── migrations/       # DB 마이그레이션 파일
+│   │   └── index.ts          # DB 연결 설정
+│   └── types/
+│       └── shared.ts         # 공유 TypeScript 타입
+├── drizzle.config.ts         # Drizzle 설정
+├── package.json
+└── tsconfig.json
+</code></pre>
+<h3>Hono 프레임워크</h3>
+<p>Hono는 <strong>경량 웹 프레임워크</strong>로, Express와 유사한 API를 제공하면서도 훨씬 빠르고 가볍습니다.</p>
+<pre><code class="language-typescript">// src/index.ts 예시 구조
+import { Hono } from &#39;hono&#39;
+import { cors } from &#39;hono/cors&#39;
+import { authRoutes } from &#39;./routes/auth&#39;
+import { planRoutes } from &#39;./routes/plans&#39;
+import { authMiddleware } from &#39;./middleware/auth&#39;
+import { rateLimiter } from &#39;./middleware/rateLimit&#39;
+import { errorHandler } from &#39;./middleware/errorHandler&#39;
+
+const app = new Hono()
+
+// 전역 미들웨어
+app.use(&#39;*&#39;, cors())
+app.use(&#39;*&#39;, errorHandler)
+app.use(&#39;/api/*&#39;, rateLimiter)
+
+// 라우트
+app.route(&#39;/api/auth&#39;, authRoutes)
+app.route(&#39;/api/plans&#39;, authMiddleware, planRoutes)
+
+// 헬스체크
+app.get(&#39;/health&#39;, (c) =&gt; c.json({ status: &#39;ok&#39; }))
+
+export default app
+</code></pre>
+<h3>JWT 인증 시스템</h3>
+<pre><code>┌──────────┐     POST /api/auth/login     ┌──────────┐
+│  클라이언트 │ ─────────────────────────→ │  서버      │
+│          │                               │          │
+│          │  ← JWT 토큰 반환               │          │
+│          │                               │          │
+│          │  Authorization: Bearer &lt;JWT&gt;   │          │
+│          │ ─────────────────────────→     │  검증     │
+│          │                               │  ✓ 통과   │
+│          │  ← API 응답                    │          │
+└──────────┘                               └──────────┘
+</code></pre>
+<h3>Rate Limiting</h3>
+<ul>
+<li><strong>윈도우</strong>: 15분</li>
+<li><strong>최대 요청</strong>: 100회 (일반 API), 10회 (사업계획서 생성)</li>
+<li><strong>초과 시</strong>: HTTP 429 Too Many Requests 반환</li>
+<li><strong>목적</strong>: API 남용 방지, Claude API 비용 제어</li>
+</ul>
+<h3>4-에이전트 AI 엔진</h3>
+<p>사업계획서 생성은 4개의 전문 에이전트가 <strong>파이프라인 방식</strong>으로 순차 실행합니다.</p>
+<pre><code>입력: 사업 아이디어 (텍스트)
+         │
+         ▼
+┌─────────────────┐
+│ ① Architect      │  구조 설계 에이전트
+│                  │  - 사업 아이디어 분석
+│                  │  - 목차 및 섹션 구조 설계
+│                  │  - 각 섹션의 핵심 포인트 정의
+│                  │  출력: 목차 + 섹션 구조 (JSON)
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ ② Writer         │  콘텐츠 작성 에이전트
+│                  │  - 각 섹션별 상세 내용 작성
+│                  │  - 시장 분석, 재무 계획 등 포함
+│                  │  - 전문적이고 설득력 있는 문체
+│                  │  출력: 25개 섹션 콘텐츠 (10,800+ 단어)
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ ③ Image Curator  │  이미지 큐레이션 에이전트
+│                  │  - 각 섹션에 적합한 이미지 선별
+│                  │  - 차트, 그래프, 인포그래픽 배치
+│                  │  - 시각적 완성도 향상
+│                  │  출력: 93개 이미지 참조 + 배치 정보
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ ④ Reviewer       │  품질 검토 에이전트
+│                  │  - 전체 문서 품질 검토
+│                  │  - 논리적 일관성 확인
+│                  │  - 점수 산출 (0-100)
+│                  │  출력: 품질 점수 + 개선 제안
+└────────┬────────┘
+         │
+         ▼
+출력: 완성된 사업계획서 (87.6/100)
+</code></pre>
+<hr>
+<h2>🎨 프론트엔드 아키텍처</h2>
+<h3>기술 스택</h3>
+<table>
+<thead>
+<tr>
+<th>기술</th>
+<th>버전</th>
+<th>용도</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Next.js</strong></td>
+<td>14</td>
+<td>React 프레임워크 (App Router)</td>
+</tr>
+<tr>
+<td><strong>Tailwind CSS</strong></td>
+<td>3.x</td>
+<td>유틸리티 기반 CSS</td>
+</tr>
+<tr>
+<td><strong>TypeScript</strong></td>
+<td>5.x</td>
+<td>타입 안전한 JavaScript</td>
+</tr>
+<tr>
+<td><strong>next-themes</strong></td>
+<td>-</td>
+<td>다크모드 지원</td>
+</tr>
+</tbody></table>
+<h3>디렉토리 구조</h3>
+<pre><code>frontend/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── layout.tsx          # 루트 레이아웃 (ThemeProvider 포함)
+│   │   ├── page.tsx            # 홈페이지 (랜딩)
+│   │   ├── create/
+│   │   │   └── page.tsx        # 사업계획서 생성 페이지
+│   │   ├── plans/
+│   │   │   ├── page.tsx        # 사업계획서 목록
+│   │   │   └── [id]/
+│   │   │       └── page.tsx    # 사업계획서 상세 뷰어
+│   │   ├── progress/
+│   │   │   └── [id]/
+│   │   │       └── page.tsx    # 실시간 진행 추적
+│   │   └── auth/
+│   │       ├── login/
+│   │       │   └── page.tsx    # 로그인 페이지
+│   │       └── register/
+│   │           └── page.tsx    # 회원가입 페이지
+│   ├── components/
+│   │   ├── common/
+│   │   │   ├── Header.tsx      # 공통 헤더 (네비게이션)
+│   │   │   ├── Toast.tsx       # 토스트 알림 시스템
+│   │   │   ├── Skeleton.tsx    # 로딩 스켈레톤 UI
+│   │   │   └── ThemeProvider.tsx # 다크모드 제공자
+│   │   ├── plan/
+│   │   │   ├── PlanForm.tsx    # 사업 아이디어 입력 폼
+│   │   │   ├── PlanViewer.tsx  # 사업계획서 뷰어
+│   │   │   ├── PlanCard.tsx    # 사업계획서 카드 (목록용)
+│   │   │   └── ProgressTracker.tsx # 실시간 진행 표시기
+│   │   └── ui/
+│   │       ├── Button.tsx      # 공통 버튼 컴포넌트
+│   │       ├── Input.tsx       # 공통 입력 컴포넌트
+│   │       └── Modal.tsx       # 공통 모달 컴포넌트
+│   ├── lib/
+│   │   ├── api.ts              # 중앙집중 API 클라이언트
+│   │   └── utils.ts            # 유틸리티 함수
+│   ├── types/
+│   │   └── shared.ts           # 공유 TypeScript 타입
+│   └── styles/
+│       └── globals.css         # 전역 스타일 (Tailwind)
+├── public/
+│   └── ...                     # 정적 파일
+├── next.config.js
+├── tailwind.config.js
+├── package.json
+└── tsconfig.json
+</code></pre>
+<h3>공통 컴포넌트 시스템</h3>
+<h4>Header</h4>
+<pre><code>┌─────────────────────────────────────────────────────┐
+│  🏗️ Plan-Craft          [홈] [생성] [내 계획서]  🌙/☀️ │
+└─────────────────────────────────────────────────────┘
+</code></pre>
+<ul>
+<li>반응형 네비게이션</li>
+<li>다크모드 토글 버튼</li>
+<li>로그인 상태에 따른 메뉴 변경</li>
+</ul>
+<h4>Toast 알림 시스템</h4>
+<pre><code>┌────────────────────────────┐
+│ ✅ 사업계획서가 생성되었습니다! │  ← 성공 (초록)
+└────────────────────────────┘
+┌────────────────────────────┐
+│ ❌ 오류가 발생했습니다.       │  ← 에러 (빨강)
+└────────────────────────────┘
+┌────────────────────────────┐
+│ ℹ️ 생성 중입니다. 잠시만...   │  ← 정보 (파랑)
+└────────────────────────────┘
+</code></pre>
+<ul>
+<li>자동 소멸 (3~5초)</li>
+<li>여러 토스트 스택 지원</li>
+<li>애니메이션 효과</li>
+</ul>
+<h4>Skeleton 로딩 UI</h4>
+<p>데이터 로딩 중 표시되는 플레이스홀더 UI:</p>
+<ul>
+<li>텍스트 블록 스켈레톤</li>
+<li>카드 스켈레톤</li>
+<li>이미지 플레이스홀더</li>
+<li>부드러운 펄스 애니메이션</li>
+</ul>
+<h4>ThemeProvider (다크모드)</h4>
+<ul>
+<li><code>next-themes</code> 기반</li>
+<li>시스템 설정 자동 감지</li>
+<li>수동 토글 지원</li>
+<li><code>localStorage</code>에 사용자 선호 저장</li>
+<li>Tailwind <code>dark:</code> 클래스 활용</li>
+</ul>
+<h3>중앙집중 API 클라이언트</h3>
+<pre><code class="language-typescript">// lib/api.ts 구조 예시
+class ApiClient {
+  private baseUrl: string
+  private token: string | null
+
+  constructor() {
+    this.baseUrl = process.env.NEXT_PUBLIC_API_URL
+    this.token = null
+  }
+
+  // 공통 요청 메서드
+  private async request&lt;T&gt;(endpoint: string, options?: RequestInit): Promise&lt;T&gt; {
+    const headers: HeadersInit = {
+      &#39;Content-Type&#39;: &#39;application/json&#39;,
+      ...(this.token &amp;&amp; { Authorization: `Bearer ${this.token}` }),
+    }
+    const res = await fetch(`${this.baseUrl}${endpoint}`, { ...options, headers })
+    if (!res.ok) throw new ApiError(res.status, await res.text())
+    return res.json()
+  }
+
+  // 인증
+  login(email: string, password: string) { ... }
+  register(email: string, password: string) { ... }
+
+  // 사업계획서
+  createPlan(idea: string) { ... }
+  getPlan(id: string) { ... }
+  getPlans() { ... }
+  getPlanProgress(id: string) { ... }
+  exportPdf(id: string) { ... }
+}
+
+export const api = new ApiClient()
+</code></pre>
+<h3>공유 TypeScript 타입</h3>
+<p>프론트엔드와 백엔드에서 동일한 타입을 사용하여 <strong>타입 안전성</strong>을 보장합니다:</p>
+<pre><code class="language-typescript">// types/shared.ts
+export interface Plan {
+  id: string
+  userId: string
+  idea: string
+  title: string
+  status: &#39;pending&#39; | &#39;generating&#39; | &#39;completed&#39; | &#39;failed&#39;
+  qualityScore: number | null
+  sections: Section[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Section {
+  id: string
+  planId: string
+  title: string
+  content: string
+  order: number
+  images: ImageRef[]
+}
+
+export interface ImageRef {
+  url: string
+  alt: string
+  caption: string
+}
+
+export interface GenerationProgress {
+  planId: string
+  currentAgent: &#39;architect&#39; | &#39;writer&#39; | &#39;imageCurator&#39; | &#39;reviewer&#39;
+  progress: number       // 0-100
+  message: string
+  estimatedTimeLeft: number  // 초 단위
+}
+</code></pre>
+<hr>
+<h2>🌐 API 엔드포인트</h2>
+<h3>인증 API</h3>
+<table>
+<thead>
+<tr>
+<th>메서드</th>
+<th>엔드포인트</th>
+<th>설명</th>
+<th>인증</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST</code></td>
+<td><code>/api/auth/register</code></td>
+<td>회원가입</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/auth/login</code></td>
+<td>로그인 (JWT 발급)</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/auth/me</code></td>
+<td>현재 사용자 정보 조회</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/auth/refresh</code></td>
+<td>JWT 토큰 갱신</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+<h3>사업계획서 API</h3>
+<table>
+<thead>
+<tr>
+<th>메서드</th>
+<th>엔드포인트</th>
+<th>설명</th>
+<th>인증</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST</code></td>
+<td><code>/api/plans</code></td>
+<td>새 사업계획서 생성 요청</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/plans</code></td>
+<td>내 사업계획서 목록 조회</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/plans/:id</code></td>
+<td>특정 사업계획서 상세 조회</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/plans/:id/progress</code></td>
+<td>생성 진행 상태 조회</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/plans/:id/pdf</code></td>
+<td>PDF 내보내기</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/api/plans/:id</code></td>
+<td>사업계획서 삭제</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/plans/:id/share</code></td>
+<td>공유 링크 생성</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+<h3>시스템 API</h3>
+<table>
+<thead>
+<tr>
+<th>메서드</th>
+<th>엔드포인트</th>
+<th>설명</th>
+<th>인증</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET</code></td>
+<td><code>/health</code></td>
+<td>서버 헬스체크</td>
+<td>❌</td>
+</tr>
+</tbody></table>
+<h3>API 요청/응답 예시</h3>
+<h4>사업계획서 생성 요청</h4>
+<pre><code class="language-http">POST /api/plans
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+Content-Type: application/json
+
+{
+  &quot;idea&quot;: &quot;반려동물 맞춤형 영양제 구독 서비스&quot;
+}
+</code></pre>
+<h4>응답</h4>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;plan_abc123&quot;,
+  &quot;status&quot;: &quot;generating&quot;,
+  &quot;message&quot;: &quot;사업계획서 생성을 시작합니다.&quot;
+}
+</code></pre>
+<h4>진행 상태 조회</h4>
+<pre><code class="language-http">GET /api/plans/plan_abc123/progress
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+</code></pre>
+<h4>응답</h4>
+<pre><code class="language-json">{
+  &quot;planId&quot;: &quot;plan_abc123&quot;,
+  &quot;currentAgent&quot;: &quot;writer&quot;,
+  &quot;progress&quot;: 45,
+  &quot;message&quot;: &quot;Writer 에이전트가 &#39;시장 분석&#39; 섹션을 작성 중입니다...&quot;,
+  &quot;estimatedTimeLeft&quot;: 120
+}
+</code></pre>
+<hr>
+<h2>🗄️ 데이터베이스 스키마</h2>
+<h3>ER 다이어그램</h3>
+<pre><code>┌──────────────┐       ┌──────────────┐       ┌──────────────┐
+│    users     │       │    plans     │       │   sections   │
+├──────────────┤       ├──────────────┤       ├──────────────┤
+│ id (PK)      │──┐    │ id (PK)      │──┐    │ id (PK)      │
+│ email        │  │    │ userId (FK)  │  │    │ planId (FK)  │
+│ password     │  └───→│ idea         │  └───→│ title        │
+│ name         │       │ title        │       │ content      │
+│ createdAt    │       │ status       │       │ order        │
+│ updatedAt    │       │ qualityScore │       │ images       │
+└──────────────┘       │ metadata     │       │ createdAt    │
+                       │ createdAt    │       └──────────────┘
+                       │ updatedAt    │
+                       └──────┬───────┘
+                              │
+                              │
+                       ┌──────┴───────┐
+                       │generation_logs│
+                       ├──────────────┤
+                       │ id (PK)      │
+                       │ planId (FK)  │
+                       │ agent        │
+                       │ status       │
+                       │ input        │
+                       │ output       │
+                       │ duration     │
+                       │ tokenUsage   │
+                       │ createdAt    │
+                       └──────────────┘
+</code></pre>
+<h3>테이블 상세</h3>
+<h4><code>users</code> — 사용자</h4>
+<table>
+<thead>
+<tr>
+<th>컬럼</th>
+<th>타입</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>UUID (PK)</td>
+<td>고유 식별자</td>
+</tr>
+<tr>
+<td><code>email</code></td>
+<td>VARCHAR(255) UNIQUE</td>
+<td>이메일 주소</td>
+</tr>
+<tr>
+<td><code>password</code></td>
+<td>VARCHAR(255)</td>
+<td>bcrypt 해시 비밀번호</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>VARCHAR(100)</td>
+<td>사용자 이름</td>
+</tr>
+<tr>
+<td><code>createdAt</code></td>
+<td>TIMESTAMP</td>
+<td>가입일</td>
+</tr>
+<tr>
+<td><code>updatedAt</code></td>
+<td>TIMESTAMP</td>
+<td>수정일</td>
+</tr>
+</tbody></table>
+<h4><code>plans</code> — 사업계획서</h4>
+<table>
+<thead>
+<tr>
+<th>컬럼</th>
+<th>타입</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>UUID (PK)</td>
+<td>고유 식별자</td>
+</tr>
+<tr>
+<td><code>userId</code></td>
+<td>UUID (FK → users.id)</td>
+<td>소유자</td>
+</tr>
+<tr>
+<td><code>idea</code></td>
+<td>TEXT</td>
+<td>원본 사업 아이디어</td>
+</tr>
+<tr>
+<td><code>title</code></td>
+<td>VARCHAR(500)</td>
+<td>생성된 사업계획서 제목</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>ENUM</td>
+<td>pending / generating / completed / failed</td>
+</tr>
+<tr>
+<td><code>qualityScore</code></td>
+<td>DECIMAL(5,2)</td>
+<td>AI 품질 점수 (0-100)</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td>JSONB</td>
+<td>기타 메타데이터</td>
+</tr>
+<tr>
+<td><code>createdAt</code></td>
+<td>TIMESTAMP</td>
+<td>생성일</td>
+</tr>
+<tr>
+<td><code>updatedAt</code></td>
+<td>TIMESTAMP</td>
+<td>수정일</td>
+</tr>
+</tbody></table>
+<h4><code>sections</code> — 사업계획서 섹션</h4>
+<table>
+<thead>
+<tr>
+<th>컬럼</th>
+<th>타입</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>UUID (PK)</td>
+<td>고유 식별자</td>
+</tr>
+<tr>
+<td><code>planId</code></td>
+<td>UUID (FK → plans.id)</td>
+<td>소속 사업계획서</td>
+</tr>
+<tr>
+<td><code>title</code></td>
+<td>VARCHAR(500)</td>
+<td>섹션 제목</td>
+</tr>
+<tr>
+<td><code>content</code></td>
+<td>TEXT</td>
+<td>섹션 내용 (마크다운)</td>
+</tr>
+<tr>
+<td><code>order</code></td>
+<td>INTEGER</td>
+<td>정렬 순서</td>
+</tr>
+<tr>
+<td><code>images</code></td>
+<td>JSONB</td>
+<td>이미지 참조 배열</td>
+</tr>
+<tr>
+<td><code>createdAt</code></td>
+<td>TIMESTAMP</td>
+<td>생성일</td>
+</tr>
+</tbody></table>
+<h4><code>generation_logs</code> — 생성 로그</h4>
+<table>
+<thead>
+<tr>
+<th>컬럼</th>
+<th>타입</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>UUID (PK)</td>
+<td>고유 식별자</td>
+</tr>
+<tr>
+<td><code>planId</code></td>
+<td>UUID (FK → plans.id)</td>
+<td>소속 사업계획서</td>
+</tr>
+<tr>
+<td><code>agent</code></td>
+<td>VARCHAR(50)</td>
+<td>에이전트 이름</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>ENUM</td>
+<td>running / completed / failed</td>
+</tr>
+<tr>
+<td><code>input</code></td>
+<td>JSONB</td>
+<td>에이전트 입력 데이터</td>
+</tr>
+<tr>
+<td><code>output</code></td>
+<td>JSONB</td>
+<td>에이전트 출력 데이터</td>
+</tr>
+<tr>
+<td><code>duration</code></td>
+<td>INTEGER</td>
+<td>실행 시간 (ms)</td>
+</tr>
+<tr>
+<td><code>tokenUsage</code></td>
+<td>JSONB</td>
+<td>토큰 사용량 (input/output)</td>
+</tr>
+<tr>
+<td><code>createdAt</code></td>
+<td>TIMESTAMP</td>
+<td>생성일</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🚀 배포 아키텍처</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│                     GitHub Repository                        │
+│          https://github.com/sungli01/plan-crft-MVP.git       │
+│                                                               │
+│  ┌─────────────┐                    ┌─────────────┐         │
+│  │  frontend/  │                    │  backend/   │         │
+│  └──────┬──────┘                    └──────┬──────┘         │
+└─────────┼──────────────────────────────────┼────────────────┘
+          │ git push                         │ git push
+          │ (자동 배포)                       │ (자동 배포)
+          ▼                                  ▼
+┌─────────────────┐              ┌─────────────────────┐
+│    Vercel        │              │    Railway            │
+│                  │              │                       │
+│  - Next.js SSR   │              │  - Hono 서버           │
+│  - Edge Network  │   ← API →   │  - PostgreSQL DB       │
+│  - 글로벌 CDN     │              │  - 자동 스케일링         │
+│  - HTTPS 자동     │              │  - HTTPS 자동           │
+│  - 프리뷰 배포    │              │  - 헬스체크              │
+│                  │              │                       │
+│  도메인:          │              │  도메인:                │
+│  plan-crft-mvp-  │              │  plan-crft-mvp-        │
+│  ot41.vercel.app │              │  production.up.        │
+│                  │              │  railway.app           │
+└─────────────────┘              └─────────────────────┘
+</code></pre>
+<h3>배포 프로세스</h3>
+<ol>
+<li><strong>코드 변경</strong> → GitHub에 push</li>
+<li><strong>Vercel</strong>: 자동으로 프론트엔드 빌드 및 배포 (약 1~2분)</li>
+<li><strong>Railway</strong>: 자동으로 백엔드 빌드 및 배포 (약 2~3분)</li>
+<li><strong>프리뷰 배포</strong>: PR 생성 시 Vercel이 자동으로 프리뷰 URL 생성</li>
+</ol>
+<h3>환경 변수 관리</h3>
+<h4>백엔드 (Railway)</h4>
+<pre><code class="language-env">DATABASE_URL=postgresql://...
+JWT_SECRET=&lt;비밀키&gt;
+ANTHROPIC_API_KEY=&lt;Claude API 키&gt;
+CORS_ORIGIN=https://plan-crft-mvp-ot41.vercel.app
+NODE_ENV=production
+PORT=3000
+RATE_LIMIT_WINDOW=900000
+RATE_LIMIT_MAX=100
+</code></pre>
+<h4>프론트엔드 (Vercel)</h4>
+<pre><code class="language-env">NEXT_PUBLIC_API_URL=https://plan-crft-mvp-production.up.railway.app
+NEXT_PUBLIC_APP_NAME=Plan-Craft
+</code></pre>
+<hr>
+<h2>🔒 보안 아키텍처</h2>
+<pre><code>사용자 요청
+    │
+    ▼
+┌─────────────┐
+│ CORS 검사    │ ← 허용된 origin만 통과
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│ Rate Limit  │ ← 요청 횟수 제한
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│ JWT 인증     │ ← 유효한 토큰만 통과
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│ 입력 검증    │ ← XSS/Injection 방지
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│ 비즈니스 로직 │
+└─────────────┘
+</code></pre>
+<h3>보안 체크리스트</h3>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> HTTPS 강제 (Vercel + Railway 자동)</li>
+<li><input checked="" disabled="" type="checkbox"> CORS 설정 (허용된 도메인만)</li>
+<li><input checked="" disabled="" type="checkbox"> JWT 인증 (만료 시간 설정)</li>
+<li><input checked="" disabled="" type="checkbox"> Rate Limiting (API 남용 방지)</li>
+<li><input checked="" disabled="" type="checkbox"> 환경 변수로 비밀 정보 관리</li>
+<li><input checked="" disabled="" type="checkbox"> bcrypt 비밀번호 해싱</li>
+<li><input checked="" disabled="" type="checkbox"> SQL Injection 방지 (Drizzle ORM 파라미터 바인딩)</li>
+<li><input checked="" disabled="" type="checkbox"> XSS 방지 (React 자동 이스케이프)</li>
+</ul>
+<hr>
+<blockquote>
+<p>💡 이 문서는 Plan-Craft v3.0의 기술 아키텍처를 설명합니다.<br>최종 업데이트: 2026-02-08 13:30 KST</p>
+</blockquote>
+
+    </section>
+  
+    <div class="section-break" id="reports-INSTRUCTIONS-md"></div>
+    <section>
+      <h1>Plan-Craft 사용 설명서</h1>
+<blockquote>
+<p>🗓️ 작성일: 2026-02-08<br>📖 대상: 사용자 및 개발자<br>✍️ 작성자: 바질 (AI 어시스턴트)</p>
+</blockquote>
+<hr>
+<h2>📑 목차</h2>
+<ol>
+<li><a href="#1-plan-craft%EB%9E%80">Plan-Craft란?</a></li>
+<li><a href="#2-%EC%82%AC%EC%9A%A9%EC%9E%90-%EA%B0%80%EC%9D%B4%EB%93%9C">사용자 가이드 (서비스 이용 방법)</a></li>
+<li><a href="#3-%EA%B0%9C%EB%B0%9C%EC%9E%90-%EA%B0%80%EC%9D%B4%EB%93%9C">개발자 가이드 (배포 방법)</a></li>
+<li><a href="#4-%ED%99%98%EA%B2%BD-%EB%B3%80%EC%88%98-%EC%84%A4%EC%A0%95">환경 변수 설정</a></li>
+<li><a href="#5-%EC%9E%90%EC%A3%BC-%EB%B0%9C%EC%83%9D%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-%ED%95%B4%EA%B2%B0">자주 발생하는 문제 해결</a></li>
+</ol>
+<hr>
+<h2>1. Plan-Craft란?</h2>
+<p><strong>Plan-Craft</strong>는 AI가 사업계획서를 자동으로 생성해주는 웹 서비스입니다.</p>
+<p>사업 아이디어만 입력하면, 4개의 AI 에이전트가 순차적으로 작업하여 전문적인 사업계획서를 만들어 줍니다.</p>
+<h3>주요 기능</h3>
+<table>
+<thead>
+<tr>
+<th>기능</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>🤖 <strong>AI 자동 생성</strong></td>
+<td>사업 아이디어 하나로 25개 섹션의 완성된 사업계획서 생성</td>
+</tr>
+<tr>
+<td>📊 <strong>실시간 진행 추적</strong></td>
+<td>생성 과정을 실시간으로 확인 가능</td>
+</tr>
+<tr>
+<td>📄 <strong>PDF 내보내기</strong></td>
+<td>생성된 사업계획서를 PDF로 다운로드</td>
+</tr>
+<tr>
+<td>🌙 <strong>다크모드</strong></td>
+<td>눈이 편한 다크모드 지원</td>
+</tr>
+<tr>
+<td>🔒 <strong>개인 계정</strong></td>
+<td>회원가입 후 내 사업계획서를 안전하게 보관</td>
+</tr>
+<tr>
+<td>🔗 <strong>공유 기능</strong></td>
+<td>링크로 사업계획서 공유 가능</td>
+</tr>
+</tbody></table>
+<h3>접속 주소</h3>
+<ul>
+<li><strong>서비스 URL</strong>: <a href="https://plan-crft-mvp-ot41.vercel.app">https://plan-crft-mvp-ot41.vercel.app</a></li>
+<li><strong>API 서버</strong>: <a href="https://plan-crft-mvp-production.up.railway.app">https://plan-crft-mvp-production.up.railway.app</a></li>
+<li><strong>소스 코드</strong>: <a href="https://github.com/sungli01/plan-crft-MVP.git">https://github.com/sungli01/plan-crft-MVP.git</a></li>
+</ul>
+<hr>
+<h2>2. 사용자 가이드</h2>
+<h3>2-1. 회원가입</h3>
+<ol>
+<li><a href="https://plan-crft-mvp-ot41.vercel.app">https://plan-crft-mvp-ot41.vercel.app</a> 에 접속합니다.</li>
+<li>우측 상단의 <strong>&quot;회원가입&quot;</strong> 버튼을 클릭합니다.</li>
+<li>아래 정보를 입력합니다:<ul>
+<li><strong>이메일</strong>: 사용할 이메일 주소</li>
+<li><strong>비밀번호</strong>: 8자 이상의 비밀번호</li>
+<li><strong>이름</strong>: 표시될 이름</li>
+</ul>
+</li>
+<li><strong>&quot;가입하기&quot;</strong> 버튼을 클릭합니다.</li>
+<li>가입이 완료되면 자동으로 로그인 페이지로 이동합니다.</li>
+</ol>
+<h3>2-2. 로그인</h3>
+<ol>
+<li>우측 상단의 <strong>&quot;로그인&quot;</strong> 버튼을 클릭합니다.</li>
+<li>가입할 때 사용한 <strong>이메일</strong>과 <strong>비밀번호</strong>를 입력합니다.</li>
+<li><strong>&quot;로그인&quot;</strong> 버튼을 클릭합니다.</li>
+<li>로그인 성공 시 메인 페이지로 이동합니다.</li>
+</ol>
+<h3>2-3. 사업계획서 생성하기</h3>
+<p>이것이 Plan-Craft의 <strong>핵심 기능</strong>입니다!</p>
+<h4>단계 1: 생성 페이지로 이동</h4>
+<ul>
+<li>상단 메뉴에서 <strong>&quot;생성&quot;</strong> 또는 <strong>&quot;새 사업계획서&quot;</strong> 버튼을 클릭합니다.</li>
+</ul>
+<h4>단계 2: 사업 아이디어 입력</h4>
+<ul>
+<li>텍스트 입력창에 <strong>사업 아이디어</strong>를 작성합니다.</li>
+<li>예시:<pre><code>반려동물 맞춤형 영양제 구독 서비스. 
+반려동물의 나이, 종, 건강 상태에 따라 
+맞춤형 영양제를 매월 배송하는 서비스입니다.
+</code></pre>
+</li>
+<li><strong>팁</strong>: 아이디어를 자세히 쓸수록 더 좋은 결과가 나옵니다!</li>
+</ul>
+<h4>단계 3: 생성 시작</h4>
+<ul>
+<li><strong>&quot;사업계획서 생성&quot;</strong> 버튼을 클릭합니다.</li>
+<li>AI가 작업을 시작하며, <strong>실시간 진행 화면</strong>으로 이동합니다.</li>
+</ul>
+<h4>단계 4: 진행 상태 확인</h4>
+<p>생성 중에는 아래와 같은 진행 상태를 실시간으로 볼 수 있습니다:</p>
+<pre><code>① Architect (구조 설계)    ████████████████████ 100% ✅
+② Writer (콘텐츠 작성)     ████████████░░░░░░░░  60% ⏳
+③ Image Curator (이미지)   ░░░░░░░░░░░░░░░░░░░░   0% ⏸️
+④ Reviewer (품질 검토)     ░░░░░░░░░░░░░░░░░░░░   0% ⏸️
+</code></pre>
+<ul>
+<li>전체 생성에 약 <strong>2~5분</strong>이 소요됩니다.</li>
+<li>페이지를 닫아도 서버에서 계속 생성됩니다.</li>
+</ul>
+<h4>단계 5: 결과 확인</h4>
+<ul>
+<li>생성이 완료되면 자동으로 <strong>사업계획서 뷰어</strong>로 이동합니다.</li>
+<li>25개 섹션으로 구성된 사업계획서를 확인할 수 있습니다.</li>
+<li>우측 상단에 <strong>품질 점수</strong> (예: 87.6/100)가 표시됩니다.</li>
+</ul>
+<h3>2-4. 내 사업계획서 관리</h3>
+<h4>목록 보기</h4>
+<ul>
+<li>상단 메뉴에서 **&quot;내 계획서&quot;**를 클릭합니다.</li>
+<li>생성한 모든 사업계획서가 카드 형태로 표시됩니다.</li>
+<li>각 카드에는 제목, 생성일, 상태, 품질 점수가 표시됩니다.</li>
+</ul>
+<h4>상세 보기</h4>
+<ul>
+<li>원하는 사업계획서 카드를 클릭하면 상세 내용을 볼 수 있습니다.</li>
+</ul>
+<h4>PDF 다운로드</h4>
+<ol>
+<li>사업계획서 상세 페이지에서 <strong>&quot;PDF 내보내기&quot;</strong> 버튼을 클릭합니다.</li>
+<li>PDF 파일이 자동으로 다운로드됩니다.</li>
+<li>다운로드된 PDF는 인쇄하거나 이메일로 전송할 수 있습니다.</li>
+</ol>
+<h4>삭제</h4>
+<ul>
+<li>사업계획서 카드 또는 상세 페이지에서 <strong>&quot;삭제&quot;</strong> 버튼을 클릭합니다.</li>
+<li>삭제 확인 팝업이 나타나면 **&quot;확인&quot;**을 클릭합니다.</li>
+<li>⚠️ <strong>주의</strong>: 삭제된 사업계획서는 복구할 수 없습니다!</li>
+</ul>
+<h4>공유</h4>
+<ol>
+<li>사업계획서 상세 페이지에서 <strong>&quot;공유&quot;</strong> 버튼을 클릭합니다.</li>
+<li>공유 링크가 클립보드에 복사됩니다.</li>
+<li>이 링크를 받은 사람은 로그인 없이 사업계획서를 볼 수 있습니다.</li>
+</ol>
+<h3>2-5. 다크모드 사용</h3>
+<ul>
+<li>우측 상단의 🌙 (달) 아이콘을 클릭하면 <strong>다크모드</strong>로 전환됩니다.</li>
+<li>다시 클릭하면 ☀️ (해) <strong>라이트모드</strong>로 돌아옵니다.</li>
+<li>설정은 브라우저에 저장되어 다음 방문 시에도 유지됩니다.</li>
+</ul>
+<hr>
+<h2>3. 개발자 가이드</h2>
+<h3>3-1. 사전 요구사항</h3>
+<p>아래 프로그램이 컴퓨터에 설치되어 있어야 합니다:</p>
+<table>
+<thead>
+<tr>
+<th>프로그램</th>
+<th>최소 버전</th>
+<th>설치 방법</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Node.js</strong></td>
+<td>v18 이상</td>
+<td><a href="https://nodejs.org">https://nodejs.org</a> 에서 다운로드</td>
+</tr>
+<tr>
+<td><strong>npm</strong></td>
+<td>v9 이상</td>
+<td>Node.js 설치 시 함께 설치됨</td>
+</tr>
+<tr>
+<td><strong>Git</strong></td>
+<td>최신</td>
+<td><a href="https://git-scm.com">https://git-scm.com</a> 에서 다운로드</td>
+</tr>
+<tr>
+<td><strong>PostgreSQL</strong></td>
+<td>15 이상</td>
+<td><a href="https://postgresql.org">https://postgresql.org</a> 에서 다운로드 (로컬 개발 시)</td>
+</tr>
+</tbody></table>
+<h4>Node.js 설치 확인</h4>
+<p>터미널(명령 프롬프트)을 열고 다음을 입력합니다:</p>
+<pre><code class="language-bash">node --version
+# v18.0.0 이상이 나오면 OK
+
+npm --version  
+# v9.0.0 이상이 나오면 OK
+</code></pre>
+<h4>Git 설치 확인</h4>
+<pre><code class="language-bash">git --version
+# git version 2.x.x 이 나오면 OK
+</code></pre>
+<h3>3-2. 소스 코드 다운로드</h3>
+<pre><code class="language-bash"># 1. 원하는 폴더로 이동
+cd ~/projects   # 예시
+
+# 2. GitHub에서 소스 코드 다운로드 (클론)
+git clone https://github.com/sungli01/plan-crft-MVP.git
+
+# 3. 프로젝트 폴더로 이동
+cd plan-crft-MVP
+</code></pre>
+<h3>3-3. 백엔드 설정</h3>
+<pre><code class="language-bash"># 1. 백엔드 폴더로 이동
+cd backend
+
+# 2. 필요한 패키지 설치 (처음 한 번만)
+npm install
+
+# 3. 환경 변수 파일 생성
+cp .env.example .env
+# .env 파일을 열어서 환경 변수를 설정합니다 (아래 &#39;환경 변수 설정&#39; 참고)
+
+# 4. 데이터베이스 마이그레이션 실행
+npm run db:migrate
+
+# 5. 개발 서버 시작
+npm run dev
+</code></pre>
+<p>성공하면 다음과 같은 메시지가 나타납니다:</p>
+<pre><code>🚀 Server running on http://localhost:3000
+</code></pre>
+<h3>3-4. 프론트엔드 설정</h3>
+<p>새 터미널 창을 열고:</p>
+<pre><code class="language-bash"># 1. 프론트엔드 폴더로 이동 (프로젝트 루트에서)
+cd frontend
+
+# 2. 필요한 패키지 설치 (처음 한 번만)
+npm install
+
+# 3. 환경 변수 파일 생성
+cp .env.example .env.local
+# .env.local 파일을 열어서 환경 변수를 설정합니다
+
+# 4. 개발 서버 시작
+npm run dev
+</code></pre>
+<p>성공하면 다음과 같은 메시지가 나타납니다:</p>
+<pre><code>▲ Next.js 14.x.x
+- Local:    http://localhost:3001
+</code></pre>
+<h3>3-5. 로컬에서 확인</h3>
+<ol>
+<li>브라우저에서 <a href="http://localhost:3001">http://localhost:3001</a> 에 접속합니다.</li>
+<li>회원가입 → 로그인 → 사업계획서 생성을 테스트합니다.</li>
+</ol>
+<h3>3-6. Railway 배포 (백엔드)</h3>
+<h4>계정 생성</h4>
+<ol>
+<li><a href="https://railway.app">https://railway.app</a> 에 접속합니다.</li>
+<li><strong>GitHub 계정</strong>으로 가입합니다.</li>
+</ol>
+<h4>프로젝트 생성</h4>
+<ol>
+<li>Railway 대시보드에서 <strong>&quot;New Project&quot;</strong> 클릭</li>
+<li><strong>&quot;Deploy from GitHub Repo&quot;</strong> 선택</li>
+<li><code>sungli01/plan-crft-MVP</code> 레포지토리 선택</li>
+<li><strong>Root Directory</strong>를 <code>backend</code>로 설정</li>
+</ol>
+<h4>PostgreSQL 추가</h4>
+<ol>
+<li>프로젝트 내에서 <strong>&quot;New&quot;</strong> → <strong>&quot;Database&quot;</strong> → <strong>&quot;PostgreSQL&quot;</strong> 클릭</li>
+<li>PostgreSQL 서비스가 자동으로 생성됩니다.</li>
+<li><code>DATABASE_URL</code> 환경 변수가 자동으로 연결됩니다.</li>
+</ol>
+<h4>환경 변수 설정</h4>
+<ol>
+<li>백엔드 서비스 클릭 → <strong>&quot;Variables&quot;</strong> 탭</li>
+<li>아래 환경 변수를 추가합니다 (자세한 내용은 <a href="#4-%ED%99%98%EA%B2%BD-%EB%B3%80%EC%88%98-%EC%84%A4%EC%A0%95">4. 환경 변수 설정</a> 참고)</li>
+</ol>
+<h4>배포 확인</h4>
+<ul>
+<li>Railway가 자동으로 빌드하고 배포합니다.</li>
+<li><strong>&quot;Deployments&quot;</strong> 탭에서 배포 상태를 확인합니다.</li>
+<li>배포 완료 후 제공된 URL(예: <code>xxx.up.railway.app</code>)로 접속하여 확인합니다.</li>
+</ul>
+<h3>3-7. Vercel 배포 (프론트엔드)</h3>
+<h4>계정 생성</h4>
+<ol>
+<li><a href="https://vercel.com">https://vercel.com</a> 에 접속합니다.</li>
+<li><strong>GitHub 계정</strong>으로 가입합니다.</li>
+</ol>
+<h4>프로젝트 import</h4>
+<ol>
+<li>Vercel 대시보드에서 <strong>&quot;Add New...&quot;</strong> → <strong>&quot;Project&quot;</strong> 클릭</li>
+<li><code>sungli01/plan-crft-MVP</code> 레포지토리 import</li>
+<li><strong>Framework Preset</strong>: <code>Next.js</code> 선택</li>
+<li><strong>Root Directory</strong>: <code>frontend</code> 입력</li>
+<li><strong>Environment Variables</strong> 섹션에서 환경 변수 추가</li>
+</ol>
+<h4>배포</h4>
+<ol>
+<li><strong>&quot;Deploy&quot;</strong> 버튼을 클릭합니다.</li>
+<li>Vercel이 자동으로 빌드하고 배포합니다.</li>
+<li>배포 완료 후 제공된 URL(예: <code>xxx.vercel.app</code>)로 접속하여 확인합니다.</li>
+</ol>
+<h4>자동 배포 설정</h4>
+<ul>
+<li>GitHub에 push하면 <strong>자동으로 재배포</strong>됩니다.</li>
+<li>PR을 올리면 <strong>프리뷰 배포</strong>가 자동 생성됩니다.</li>
+</ul>
+<hr>
+<h2>4. 환경 변수 설정</h2>
+<h3>백엔드 환경 변수 (.env)</h3>
+<pre><code class="language-env"># ========================================
+# 데이터베이스
+# ========================================
+# PostgreSQL 연결 문자열
+# Railway 사용 시 자동으로 제공됩니다.
+# 로컬 개발 시 아래와 같이 설정합니다.
+DATABASE_URL=postgresql://사용자이름:비밀번호@localhost:5432/plancraft
+
+# ========================================
+# 인증 (JWT)
+# ========================================
+# JWT 서명에 사용할 비밀 키 (반드시 복잡한 문자열로 설정!)
+# 터미널에서 생성: openssl rand -hex 32
+JWT_SECRET=여기에_복잡한_랜덤_문자열_입력
+
+# JWT 토큰 만료 시간 (기본: 7일)
+JWT_EXPIRES_IN=7d
+
+# ========================================
+# AI (Claude API)
+# ========================================
+# Anthropic API 키
+# https://console.anthropic.com 에서 발급
+ANTHROPIC_API_KEY=sk-ant-여기에_API_키_입력
+
+# ========================================
+# 서버 설정
+# ========================================
+# 실행 환경 (development / production)
+NODE_ENV=development
+
+# 서버 포트 (Railway에서는 자동 할당)
+PORT=3000
+
+# ========================================
+# 보안
+# ========================================
+# CORS 허용 도메인 (프론트엔드 URL)
+CORS_ORIGIN=http://localhost:3001
+
+# Rate Limiting 윈도우 (밀리초, 기본: 15분)
+RATE_LIMIT_WINDOW=900000
+
+# Rate Limiting 최대 요청 횟수
+RATE_LIMIT_MAX=100
+</code></pre>
+<h3>프론트엔드 환경 변수 (.env.local)</h3>
+<pre><code class="language-env"># ========================================
+# API 서버 주소
+# ========================================
+# 백엔드 API URL
+# 로컬 개발 시: http://localhost:3000
+# 프로덕션 시: Railway에서 제공한 URL
+NEXT_PUBLIC_API_URL=http://localhost:3000
+
+# ========================================
+# 앱 정보
+# ========================================
+# 앱 이름 (UI에 표시)
+NEXT_PUBLIC_APP_NAME=Plan-Craft
+</code></pre>
+<h3>프로덕션 환경 변수 (배포 시)</h3>
+<h4>Railway (백엔드)</h4>
+<table>
+<thead>
+<tr>
+<th>변수명</th>
+<th>값 (예시)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>DATABASE_URL</code></td>
+<td><em>(Railway가 자동 제공)</em></td>
+</tr>
+<tr>
+<td><code>JWT_SECRET</code></td>
+<td><code>a1b2c3d4e5f6...</code> (랜덤 문자열)</td>
+</tr>
+<tr>
+<td><code>JWT_EXPIRES_IN</code></td>
+<td><code>7d</code></td>
+</tr>
+<tr>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td><code>sk-ant-...</code></td>
+</tr>
+<tr>
+<td><code>NODE_ENV</code></td>
+<td><code>production</code></td>
+</tr>
+<tr>
+<td><code>CORS_ORIGIN</code></td>
+<td><code>https://plan-crft-mvp-ot41.vercel.app</code></td>
+</tr>
+<tr>
+<td><code>RATE_LIMIT_WINDOW</code></td>
+<td><code>900000</code></td>
+</tr>
+<tr>
+<td><code>RATE_LIMIT_MAX</code></td>
+<td><code>100</code></td>
+</tr>
+</tbody></table>
+<h4>Vercel (프론트엔드)</h4>
+<table>
+<thead>
+<tr>
+<th>변수명</th>
+<th>값 (예시)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>NEXT_PUBLIC_API_URL</code></td>
+<td><code>https://plan-crft-mvp-production.up.railway.app</code></td>
+</tr>
+<tr>
+<td><code>NEXT_PUBLIC_APP_NAME</code></td>
+<td><code>Plan-Craft</code></td>
+</tr>
+</tbody></table>
+<h3>⚠️ 환경 변수 주의사항</h3>
+<ol>
+<li><strong>절대로 <code>.env</code> 파일을 GitHub에 올리지 마세요!</strong><ul>
+<li><code>.gitignore</code>에 <code>.env</code>와 <code>.env.local</code>이 포함되어 있는지 확인하세요.</li>
+</ul>
+</li>
+<li><strong><code>JWT_SECRET</code>은 반드시 복잡한 문자열로 설정하세요.</strong><ul>
+<li>추천: <code>openssl rand -hex 32</code> 명령어로 생성</li>
+</ul>
+</li>
+<li><strong><code>ANTHROPIC_API_KEY</code>를 공유하지 마세요.</strong><ul>
+<li>API 키가 노출되면 즉시 Anthropic 콘솔에서 재발급하세요.</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>5. 자주 발생하는 문제 해결</h2>
+<h3>🔴 문제 1: <code>npm install</code> 실행 시 에러</h3>
+<p><strong>증상:</strong></p>
+<pre><code>npm ERR! code ERESOLVE
+npm ERR! ERESOLVE unable to resolve dependency tree
+</code></pre>
+<p><strong>해결 방법:</strong></p>
+<pre><code class="language-bash"># 방법 1: --legacy-peer-deps 옵션 추가
+npm install --legacy-peer-deps
+
+# 방법 2: node_modules 삭제 후 재설치
+rm -rf node_modules package-lock.json
+npm install
+
+# 방법 3: Node.js 버전 확인
+node --version
+# v18 이상이어야 합니다. 아니라면 Node.js를 업데이트하세요.
+</code></pre>
+<hr>
+<h3>🔴 문제 2: 백엔드 서버가 시작되지 않음</h3>
+<p><strong>증상:</strong></p>
+<pre><code>Error: connect ECONNREFUSED 127.0.0.1:5432
+</code></pre>
+<p><strong>원인:</strong> PostgreSQL이 실행되지 않고 있습니다.</p>
+<p><strong>해결 방법:</strong></p>
+<pre><code class="language-bash"># PostgreSQL 실행 상태 확인
+# macOS:
+brew services list | grep postgresql
+brew services start postgresql
+
+# Ubuntu/Linux:
+sudo systemctl status postgresql
+sudo systemctl start postgresql
+
+# Windows:
+# 서비스 관리자에서 PostgreSQL 서비스 시작
+
+# 또는 Docker 사용:
+docker run -d \
+  --name plancraft-db \
+  -e POSTGRES_PASSWORD=password \
+  -e POSTGRES_DB=plancraft \
+  -p 5432:5432 \
+  postgres:15
+</code></pre>
+<hr>
+<h3>🔴 문제 3: &quot;CORS error&quot; 발생</h3>
+<p><strong>증상:</strong><br>브라우저 콘솔에 다음과 같은 에러가 표시됩니다:</p>
+<pre><code>Access to fetch at &#39;https://...&#39; from origin &#39;http://localhost:3001&#39; 
+has been blocked by CORS policy
+</code></pre>
+<p><strong>원인:</strong> 백엔드의 CORS 설정이 프론트엔드 URL과 맞지 않습니다.</p>
+<p><strong>해결 방법:</strong></p>
+<ol>
+<li>백엔드 <code>.env</code> 파일을 엽니다.</li>
+<li><code>CORS_ORIGIN</code>을 프론트엔드 주소로 정확히 설정합니다:<pre><code class="language-env"># 로컬 개발 시
+CORS_ORIGIN=http://localhost:3001
+
+# 프로덕션
+CORS_ORIGIN=https://plan-crft-mvp-ot41.vercel.app
+</code></pre>
+</li>
+<li>백엔드 서버를 재시작합니다.</li>
+</ol>
+<hr>
+<h3>🔴 문제 4: 사업계획서 생성이 실패함</h3>
+<p><strong>증상:</strong><br>생성 버튼을 눌러도 에러가 발생하거나 진행이 멈춤</p>
+<p><strong>가능한 원인과 해결:</strong></p>
+<h4>원인 1: Anthropic API 키가 잘못됨</h4>
+<pre><code class="language-bash"># .env 파일에서 API 키 확인
+# 키가 sk-ant-로 시작하는지 확인
+ANTHROPIC_API_KEY=sk-ant-...
+</code></pre>
+<ul>
+<li><a href="https://console.anthropic.com">https://console.anthropic.com</a> 에서 API 키 확인</li>
+<li>키가 만료되었다면 새로 발급</li>
+</ul>
+<h4>원인 2: API 사용량 초과</h4>
+<ul>
+<li>Anthropic 콘솔에서 사용량 및 잔액 확인</li>
+<li>무료 크레딧이 소진되었다면 결제 정보 등록</li>
+</ul>
+<h4>원인 3: Rate Limit 초과</h4>
+<ul>
+<li>짧은 시간에 너무 많은 요청을 보냄</li>
+<li><strong>15분</strong> 후 다시 시도</li>
+</ul>
+<hr>
+<h3>🔴 문제 5: Railway 배포 실패</h3>
+<p><strong>증상:</strong><br>Railway 대시보드에서 배포가 &quot;Failed&quot; 상태</p>
+<p><strong>해결 방법:</strong></p>
+<ol>
+<li><strong>빌드 로그 확인</strong>: Deployments → 실패한 배포 클릭 → 로그 확인</li>
+<li><strong>Root Directory 확인</strong>: Settings에서 Root Directory가 <code>backend</code>로 설정되어 있는지 확인</li>
+<li><strong>환경 변수 확인</strong>: 필수 환경 변수가 모두 설정되어 있는지 확인</li>
+<li><strong>Start Command 확인</strong>: <code>npm start</code> 또는 <code>npm run start</code>가 <code>package.json</code>에 정의되어 있는지 확인</li>
+</ol>
+<hr>
+<h3>🔴 문제 6: Vercel 배포 실패</h3>
+<p><strong>증상:</strong><br>Vercel 대시보드에서 빌드 에러</p>
+<p><strong>해결 방법:</strong></p>
+<ol>
+<li><strong>빌드 로그 확인</strong>: Vercel 대시보드 → Deployments → 로그 확인</li>
+<li><strong>Root Directory 확인</strong>: Settings → General에서 Root Directory가 <code>frontend</code>로 설정되어 있는지 확인</li>
+<li><strong>Framework 확인</strong>: Framework Preset이 <code>Next.js</code>로 설정되어 있는지 확인</li>
+<li><strong>환경 변수 확인</strong>: <code>NEXT_PUBLIC_API_URL</code>이 올바르게 설정되어 있는지 확인</li>
+<li><strong>로컬에서 빌드 테스트</strong>:<pre><code class="language-bash">cd frontend
+npm run build
+</code></pre>
+<ul>
+<li>로컬에서 빌드가 성공하면 Vercel 설정 문제</li>
+<li>로컬에서도 실패하면 코드 문제</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h3>🔴 문제 7: 다크모드가 깜빡임 (Flash of Wrong Theme)</h3>
+<p><strong>증상:</strong><br>페이지 로딩 시 잠깐 라이트모드로 표시되었다가 다크모드로 전환됨</p>
+<p><strong>해결 방법:</strong></p>
+<p>이것은 SSR(서버 사이드 렌더링)과 클라이언트 테마가 다를 때 발생합니다. <code>ThemeProvider</code>에 <code>suppressHydrationWarning</code> 속성이 설정되어 있는지 확인하세요:</p>
+<pre><code class="language-tsx">// layout.tsx
+&lt;html suppressHydrationWarning&gt;
+  &lt;body&gt;
+    &lt;ThemeProvider attribute=&quot;class&quot; defaultTheme=&quot;system&quot;&gt;
+      {children}
+    &lt;/ThemeProvider&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<hr>
+<h3>🔴 문제 8: Git push 할 수 없음</h3>
+<p><strong>증상:</strong></p>
+<pre><code>remote: Permission to sungli01/plan-crft-MVP.git denied
+</code></pre>
+<p><strong>해결 방법:</strong></p>
+<pre><code class="language-bash"># 1. Git 인증 확인
+git config --global user.name
+git config --global user.email
+
+# 2. 아직 설정하지 않았다면:
+git config --global user.name &quot;내이름&quot;
+git config --global user.email &quot;내이메일@example.com&quot;
+
+# 3. GitHub 인증 방법 (택 1)
+
+# 방법 A: Personal Access Token (추천)
+# GitHub → Settings → Developer Settings → Personal access tokens → Generate new token
+# 생성된 토큰을 비밀번호 대신 사용
+
+# 방법 B: SSH 키
+# ssh-keygen -t ed25519 -C &quot;내이메일@example.com&quot;
+# 생성된 공개키를 GitHub → Settings → SSH Keys에 등록
+</code></pre>
+<hr>
+<h3>🔴 문제 9: 페이지가 빈 화면으로 표시됨</h3>
+<p><strong>증상:</strong><br>사이트에 접속하면 아무것도 표시되지 않음</p>
+<p><strong>해결 방법:</strong></p>
+<ol>
+<li><strong>브라우저 개발자 도구 확인</strong> (F12 → Console 탭)<ul>
+<li>빨간 에러 메시지가 있는지 확인</li>
+</ul>
+</li>
+<li><strong>API URL 확인</strong><ul>
+<li><code>NEXT_PUBLIC_API_URL</code>이 올바른지 확인</li>
+<li>백엔드 서버가 실행 중인지 확인</li>
+</ul>
+</li>
+<li><strong>브라우저 캐시 삭제</strong><ul>
+<li>Ctrl + Shift + Delete → 캐시 삭제</li>
+<li>또는 시크릿/프라이빗 모드에서 접속</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h3>🔴 문제 10: 데이터베이스 마이그레이션 에러</h3>
+<p><strong>증상:</strong></p>
+<pre><code>Error: relation &quot;users&quot; does not exist
+</code></pre>
+<p><strong>해결 방법:</strong></p>
+<pre><code class="language-bash"># 1. 백엔드 폴더에서 마이그레이션 실행
+cd backend
+npm run db:migrate
+
+# 2. 마이그레이션이 계속 실패한다면 DB 재생성
+npm run db:push
+
+# 3. 그래도 안 된다면 데이터베이스 삭제 후 재생성 (주의: 데이터 손실!)
+# 로컬 PostgreSQL:
+dropdb plancraft
+createdb plancraft
+npm run db:migrate
+</code></pre>
+<hr>
+<h2>📞 도움이 더 필요하신가요?</h2>
+<ul>
+<li><strong>GitHub Issues</strong>: <a href="https://github.com/sungli01/plan-crft-MVP/issues">https://github.com/sungli01/plan-crft-MVP/issues</a><ul>
+<li>버그 신고나 기능 요청은 여기에 등록해주세요.</li>
+</ul>
+</li>
+<li><strong>소스 코드 확인</strong>: <a href="https://github.com/sungli01/plan-crft-MVP.git">https://github.com/sungli01/plan-crft-MVP.git</a></li>
+</ul>
+<hr>
+<blockquote>
+<p>💡 이 문서는 Plan-Craft v3.0의 사용 설명서입니다.<br>최종 업데이트: 2026-02-08 13:30 KST</p>
+</blockquote>
+
+    </section>
+  
+    <div class="section-break" id="reports-improvement-plan-md"></div>
+    <section>
+      <h1>Plan-Craft 개선사항 분석 보고서</h1>
+<blockquote>
+<p>분석일: 2026-02-08
+분석 대상: plan-craft-web (프론트엔드) + plan-craft-backend (백엔드)
+목표: Skywork 수준 품질로 업그레이드</p>
+</blockquote>
+<hr>
+<h2>📋 요약</h2>
+<table>
+<thead>
+<tr>
+<th>분류</th>
+<th>P0 (즉시)</th>
+<th>P1 (중요)</th>
+<th>P2 (개선)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>코드 품질</td>
+<td>4</td>
+<td>3</td>
+<td>2</td>
+</tr>
+<tr>
+<td>UI/UX</td>
+<td>3</td>
+<td>5</td>
+<td>4</td>
+</tr>
+<tr>
+<td>성능</td>
+<td>2</td>
+<td>3</td>
+<td>2</td>
+</tr>
+<tr>
+<td>기능</td>
+<td>2</td>
+<td>4</td>
+<td>3</td>
+</tr>
+<tr>
+<td>보안</td>
+<td>5</td>
+<td>2</td>
+<td>1</td>
+</tr>
+<tr>
+<td>배포/인프라</td>
+<td>2</td>
+<td>2</td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>합계</strong></td>
+<td><strong>18</strong></td>
+<td><strong>19</strong></td>
+<td><strong>14</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🔴 P0: 즉시 해결 필요</h2>
+<h3>1. 보안: JWT 시크릿 하드코딩</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-backend/src/middleware/auth.js</code></li>
+<li><strong>문제</strong>: <code>JWT_SECRET</code>이 <code>&#39;your-secret-key-change-in-production&#39;</code>으로 하드코딩. 환경변수 미설정 시 누구나 토큰 위조 가능.</li>
+<li><strong>난이도</strong>: 쉬움</li>
+<li><strong>예상 효과</strong>: 치명적 보안 취약점 제거</li>
+<li><strong>실행 방법</strong>:<pre><code class="language-javascript">const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error(&#39;JWT_SECRET environment variable is required&#39;);
+}
+</code></pre>
+<ul>
+<li><code>.env.example</code>에 <code>JWT_SECRET=</code>을 추가하고, 배포 시 강력한 랜덤 값 사용</li>
+</ul>
+</li>
+</ul>
+<h3>2. 보안: generate.js에서 SQLite 직접 사용 (DB 불일치)</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-backend/src/routes/generate.js</code></li>
+<li><strong>문제</strong>: <code>db/index.js</code>는 PostgreSQL만 사용하도록 설정했지만, <code>generate.js</code>에서는 <code>sqlite.prepare(...)</code> 직접 호출. <code>sqlite</code>는 <code>null</code>로 export되므로 <strong>런타임 크래시 발생</strong>.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 핵심 기능(문서 생성) 동작 보장</li>
+<li><strong>실행 방법</strong>:<ul>
+<li><code>generate.js</code> 전체를 Drizzle ORM + PostgreSQL 쿼리로 마이그레이션</li>
+</ul>
+<pre><code class="language-javascript">// Before (깨진 코드)
+sqlite.prepare(&#39;SELECT * FROM projects WHERE id = ? AND user_id = ?&#39;).get(projectId, userId);
+
+// After
+const [project] = await db.select().from(projects)
+  .where(and(eq(projects.id, projectId), eq(projects.userId, userId)))
+  .limit(1);
+</code></pre>
+<ul>
+<li><code>generateDocumentBackground</code> 함수 내부의 모든 <code>sqlite.prepare(...)</code> → Drizzle ORM 전환</li>
+</ul>
+</li>
+</ul>
+<h3>3. 보안: CORS 설정 단일 오리진만 허용</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-backend/src/index.js</code></li>
+<li><strong>문제</strong>: <code>origin: process.env.FRONTEND_URL || &#39;http://localhost:3000&#39;</code>으로 단일 오리진만 허용. 배포 환경에서 여러 도메인(www, 비www, 프리뷰 URL) 접근 불가.</li>
+<li><strong>난이도</strong>: 쉬움</li>
+<li><strong>예상 효과</strong>: 배포 환경 호환성 확보</li>
+<li><strong>실행 방법</strong>:<pre><code class="language-javascript">const allowedOrigins = (process.env.ALLOWED_ORIGINS || &#39;http://localhost:3000&#39;).split(&#39;,&#39;);
+app.use(&#39;*&#39;, cors({
+  origin: (origin) =&gt; allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
+  credentials: true
+}));
+</code></pre>
+</li>
+</ul>
+<h3>4. 보안: 비밀번호 검증 불일치</h3>
+<ul>
+<li><strong>파일</strong>: 프론트엔드 <code>register/page.tsx</code> vs 백엔드 <code>routes/auth.js</code></li>
+<li><strong>문제</strong>: 프론트엔드는 <code>password.length &lt; 6</code> 검증, 백엔드 Zod 스키마는 <code>.min(8)</code> 검증. 6~7자 비밀번호로 가입 시도 시 백엔드에서 거부되나 에러 메시지 불친절.</li>
+<li><strong>난이도</strong>: 쉬움</li>
+<li><strong>예상 효과</strong>: 사용자 혼란 방지</li>
+<li><strong>실행 방법</strong>: 프론트엔드 검증을 8자로 통일, 비밀번호 강도 표시기 추가</li>
+</ul>
+<h3>5. 보안: 인증 없는 <code>/api/auth/me</code> 엔드포인트</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-backend/src/routes/auth.js</code></li>
+<li><strong>문제</strong>: <code>/me</code> 엔드포인트에 <code>authMiddleware</code>가 적용되어 있지 않음. <code>c.get(&#39;user&#39;)</code>는 항상 <code>undefined</code>를 반환하여 401 에러만 발생.</li>
+<li><strong>난이도</strong>: 쉬움</li>
+<li><strong>예상 효과</strong>: 사용자 정보 조회 기능 정상 동작</li>
+<li><strong>실행 방법</strong>:<pre><code class="language-javascript">import { authMiddleware } from &#39;../middleware/auth.js&#39;;
+auth.get(&#39;/me&#39;, authMiddleware, async (c) =&gt; { ... });
+</code></pre>
+</li>
+</ul>
+<h3>6. 코드 품질: 미사용/죽은 코드 파일</h3>
+<ul>
+<li><strong>파일</strong>: <code>page-old-broken.tsx</code>, <code>page-old.tsx</code>, <code>dashboard/page.tsx</code>, <code>schema-pg.js</code> + <code>schema.js</code> 중복</li>
+<li><strong>문제</strong>: 레거시 파일이 프로젝트에 남아있어 혼란 유발. <code>schema.js</code>와 <code>schema-pg.js</code>가 동시 존재하여 어떤 것이 active인지 불명확.</li>
+<li><strong>난이도</strong>: 쉬움</li>
+<li><strong>예상 효과</strong>: 코드베이스 명확성 향상</li>
+<li><strong>실행 방법</strong>: 미사용 파일 삭제, schema 파일 통합</li>
+</ul>
+<h3>7. 코드 품질: <code>generate.js</code> 내 미사용 함수</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-backend/src/routes/generate.js</code></li>
+<li><strong>문제</strong>: <code>generateWithProgressTracking</code> 함수가 정의만 되어 있고 호출되지 않음 (실제로는 <code>generateDocumentBackground</code>에서 직접 <code>AgentTeamOrchestrator</code> 호출). 약 100줄의 데드코드.</li>
+<li><strong>난이도</strong>: 쉬움</li>
+<li><strong>예상 효과</strong>: 코드 가독성 향상</li>
+<li><strong>실행 방법</strong>: 미사용 함수 삭제, 또는 실제 사용하도록 리팩토링</li>
+</ul>
+<h3>8. 코드 품질: 헤더/네비게이션 4번 복사-붙여넣기</h3>
+<ul>
+<li><strong>파일</strong>: <code>page.tsx</code>, <code>projects/page.tsx</code>, <code>create/page.tsx</code>, <code>project/[id]/page.tsx</code></li>
+<li><strong>문제</strong>: 동일한 헤더 컴포넌트 코드가 4개 파일에 copy-paste. 로고, 네비게이션, 로그아웃 로직 전부 중복.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 유지보수성 대폭 향상 (변경 시 1곳만 수정)</li>
+<li><strong>실행 방법</strong>:<pre><code>components/
+  Header.tsx          # 공통 헤더
+  Sidebar.tsx         # 사이드바
+  AuthProvider.tsx    # 인증 Context
+  Layout.tsx          # 앱 쉘 레이아웃
+</code></pre>
+</li>
+</ul>
+<h3>9. 성능: 프로젝트 상세 페이지 1초 폴링</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-web/app/project/[id]/page.tsx</code></li>
+<li><strong>문제</strong>: <code>setInterval</code> 1초 간격으로 <code>loadProjectData</code> 호출. 매 초마다 전체 프로젝트 데이터 + 진행상황을 다시 fetch. <strong>project?.status 의존성이 useEffect에 포함되어 무한 리렌더링 가능</strong>.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 서버 부하 90% 감소, 브라우저 성능 향상</li>
+<li><strong>실행 방법</strong>:<ul>
+<li>Server-Sent Events (SSE) 또는 WebSocket으로 전환</li>
+<li>혹은 최소한 폴링 간격을 3-5초로 늘리고, status만 가벼운 엔드포인트로 분리</li>
+</ul>
+<pre><code class="language-javascript">// SSE 구현 (백엔드)
+generate.get(&#39;/:projectId/stream&#39;, authMiddleware, (c) =&gt; {
+  return streamSSE(c, async (stream) =&gt; {
+    while (project.status === &#39;generating&#39;) {
+      const progress = progressTracker.get(projectId);
+      await stream.writeSSE({ data: JSON.stringify(progress) });
+      await stream.sleep(3000);
+    }
+  });
+});
+</code></pre>
+</li>
+</ul>
+<h3>10. 성능: <code>useEffect</code> 무한 루프 위험</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-web/app/project/[id]/page.tsx</code></li>
+<li><strong>문제</strong>: <code>useEffect</code>의 의존성 배열에 <code>project?.status</code>가 있고, <code>loadProjectData</code>에서 <code>setProject</code>를 호출. 매 API 응답마다 <code>project</code> 객체가 새로 생성되어 effect가 다시 트리거.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: CPU 사용량 정상화, 메모리 누수 방지</li>
+<li><strong>실행 방법</strong>:<pre><code class="language-javascript">// status를 별도 state로 관리
+const [projectStatus, setProjectStatus] = useState&lt;string&gt;(&#39;&#39;);
+
+useEffect(() =&gt; {
+  // initial load
+  loadProjectData(token);
+}, [projectId]);
+
+useEffect(() =&gt; {
+  if (projectStatus !== &#39;generating&#39;) return;
+  const interval = setInterval(() =&gt; pollProgress(token), 3000);
+  return () =&gt; clearInterval(interval);
+}, [projectStatus]);
+</code></pre>
+</li>
+</ul>
+<hr>
+<h2>🟡 P1: 중요 개선사항</h2>
+<h3>11. UI/UX: 랜딩 페이지 - 가치 제안 미흡</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-web/app/page.tsx</code></li>
+<li><strong>문제</strong>: &quot;고급 지능으로 문서 생성&quot; 한 줄만 있고, 서비스의 핵심 가치(4-에이전트 시스템, 87+/100 품질, 8-10분 생성)가 제대로 전달되지 않음. Skywork은 히어로 섹션에서 Before/After, 데모 영상, 핵심 수치를 명확히 보여줌.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 전환율 2-3배 향상</li>
+<li><strong>실행 방법</strong>:<ul>
+<li>히어로 섹션 리디자인: 부제목(핵심 가치 3줄), 데모 GIF/동영상, 핵심 수치 카드</li>
+<li>&quot;How it works&quot; 섹션: 4단계 프로세스 시각화 (Architect → Writer → Image → Review)</li>
+<li>사회적 증거: 생성된 문서 수, 사용자 수, 평균 품질 점수</li>
+<li>CTA 버튼을 2개 → &quot;무료로 시작하기&quot; + &quot;데모 보기&quot;</li>
+</ul>
+</li>
+</ul>
+<h3>12. UI/UX: 반응형 디자인 미흡</h3>
+<ul>
+<li><strong>파일</strong>: 전체 프론트엔드</li>
+<li><strong>문제</strong>: 모바일 대응이 <code>hidden md:flex</code>로 네비게이션 숨기기 정도만 구현. 모바일 메뉴(햄버거), 사이드바 드로어, 터치 최적화 없음.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 모바일 사용자 접근성 확보 (트래픽의 40-60%)</li>
+<li><strong>실행 방법</strong>:<ul>
+<li>모바일 햄버거 메뉴 구현</li>
+<li>사이드바를 모바일에서 오버레이 드로어로</li>
+<li>터치 영역 최소 44px 보장</li>
+<li>템플릿 그리드 <code>grid-cols-1 sm:grid-cols-2</code>로 조정</li>
+</ul>
+</li>
+</ul>
+<h3>13. UI/UX: 로딩/에러 상태 처리 미흡</h3>
+<ul>
+<li><strong>파일</strong>: 전체 프론트엔드</li>
+<li><strong>문제</strong>: 로딩 시 단순 스피너만 표시, 에러 시 <code>alert()</code> 사용, skeleton UI 없음, 토스트 알림 없음. Skywork은 세련된 로딩 애니메이션과 인라인 에러 메시지 사용.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 체감 성능 향상, 사용자 신뢰도 상승</li>
+<li><strong>실행 방법</strong>:<ul>
+<li><code>react-hot-toast</code> 또는 자체 토스트 시스템 도입</li>
+<li>Skeleton UI 컴포넌트 구현 (프로젝트 목록, 상세 페이지)</li>
+<li><code>alert()</code> 전면 제거 → 인라인 에러/성공 메시지</li>
+<li>Framer Motion으로 페이지 전환 애니메이션</li>
+</ul>
+</li>
+</ul>
+<h3>14. UI/UX: 다크 모드 미지원</h3>
+<ul>
+<li><strong>파일</strong>: <code>layout.tsx</code>, 전체</li>
+<li><strong>문제</strong>: 라이트 모드만 존재. 현대 SaaS 표준에서 다크 모드는 필수.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 사용자 경험 향상, 야간 사용 편의</li>
+<li><strong>실행 방법</strong>:<ul>
+<li><code>next-themes</code> 패키지 도입</li>
+<li>Tailwind <code>dark:</code> 클래스 적용</li>
+<li>토글 버튼 헤더에 추가</li>
+<li>CSS 변수 기반 색상 시스템으로 전환</li>
+</ul>
+</li>
+</ul>
+<h3>15. UI/UX: 프로젝트 상세 페이지 - 문서 미리보기 없음</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-web/app/project/[id]/page.tsx</code></li>
+<li><strong>문제</strong>: 완료된 문서를 다운로드만 가능하고 브라우저 내 미리보기가 없음. Skywork은 인라인 문서 뷰어를 제공하여 다운로드 전 확인 가능.</li>
+<li><strong>난이도</strong>: 어려움</li>
+<li><strong>예상 효과</strong>: 사용자 만족도 대폭 향상</li>
+<li><strong>실행 방법</strong>:<ul>
+<li><code>iframe</code> 또는 HTML sanitizer로 문서 미리보기 컴포넌트 구현</li>
+<li>섹션별 네비게이션 (목차 기반)</li>
+<li>인쇄/PDF 다운로드 버튼</li>
+<li>문서 내 검색 기능</li>
+</ul>
+</li>
+</ul>
+<h3>16. 기능: &quot;에이전트와 소통&quot; 기능이 가짜</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-web/app/project/[id]/page.tsx</code></li>
+<li><strong>문제</strong>: <code>handleSendMessage</code>는 단순히 &quot;요청을 확인했습니다. AI 에이전트에게 전달하겠습니다.&quot; 고정 메시지를 1초 후 보여줌. 실제 AI 에이전트와의 상호작용 없음. <code>handleFileUpload</code>도 파일 업로드 없이 setTimeout으로 메시지만 표시.</li>
+<li><strong>난이도</strong>: 어려움</li>
+<li><strong>예상 효과</strong>: 핵심 차별화 기능 (실시간 AI 대화형 문서 수정)</li>
+<li><strong>실행 방법</strong>:<ul>
+<li>백엔드에 대화형 수정 API 구현 (<code>POST /api/generate/:projectId/chat</code>)</li>
+<li>생성 진행 중 사용자 피드백을 에이전트에 전달하는 메커니즘</li>
+<li>완료 후 특정 섹션 재작성 요청 기능</li>
+<li>실제 파일 업로드 → S3/로컬 저장 → 참고자료로 활용</li>
+</ul>
+</li>
+</ul>
+<h3>17. 기능: 문서 포맷 HTML만 지원</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-backend/src/routes/generate.js</code></li>
+<li><strong>문제</strong>: 다운로드 시 HTML 포맷만 지원. 실제 사용자는 DOCX, PDF 포맷을 기대.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 실용성 대폭 향상</li>
+<li><strong>실행 방법</strong>:<ul>
+<li><code>puppeteer</code> 또는 <code>playwright</code>로 HTML → PDF 변환</li>
+<li><code>docx</code> npm 패키지로 HTML → DOCX 변환</li>
+<li>다운로드 버튼에 포맷 선택 드롭다운 추가</li>
+<li>PPT 지원 (bonus)</li>
+</ul>
+</li>
+</ul>
+<h3>18. 기능: 프로젝트 삭제/편집 기능 미구현 (프론트엔드)</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-web/app/projects/page.tsx</code></li>
+<li><strong>문제</strong>: 백엔드에 <code>PATCH /api/projects/:id</code>, <code>DELETE /api/projects/:id</code> 라우트가 있지만, 프론트엔드에서 이를 사용하는 UI가 없음. 사용자가 프로젝트를 수정하거나 삭제할 방법 없음.</li>
+<li><strong>난이도</strong>: 쉬움</li>
+<li><strong>예상 효과</strong>: 기본적인 CRUD 완성</li>
+<li><strong>실행 방법</strong>:<ul>
+<li>프로젝트 카드에 드롭다운 메뉴 (수정/삭제/복제)</li>
+<li>삭제 시 확인 모달</li>
+<li>제목/아이디어 인라인 편집</li>
+<li>벌크 삭제 기능 (체크박스)</li>
+</ul>
+</li>
+</ul>
+<h3>19. 기능: 재생성 기능 없음</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-web/app/project/[id]/page.tsx</code></li>
+<li><strong>문제</strong>: 문서 생성이 실패하거나 결과가 불만족스러울 때 재생성할 방법이 없음.</li>
+<li><strong>난이도</strong>: 쉬움</li>
+<li><strong>예상 효과</strong>: 사용자 이탈 방지</li>
+<li><strong>실행 방법</strong>:<ul>
+<li>완료/실패 상태에서 &quot;재생성&quot; 버튼 추가</li>
+<li>기존 결과 보존 옵션 (버전 관리)</li>
+<li>특정 섹션만 재생성하는 기능</li>
+</ul>
+</li>
+</ul>
+<h3>20. 코드 품질: 인증 상태 관리 패턴 불안정</h3>
+<ul>
+<li><strong>파일</strong>: 전체 프론트엔드</li>
+<li><strong>문제</strong>: <code>localStorage</code>에서 직접 토큰/사용자 정보를 읽는 패턴이 모든 페이지에 반복. React Context나 상태 관리 라이브러리 미사용. 토큰 만료 처리 없음.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 코드 일관성, 토큰 만료 시 자동 로그아웃</li>
+<li><strong>실행 방법</strong>:<pre><code class="language-typescript">// contexts/AuthContext.tsx
+const AuthContext = createContext&lt;AuthState&gt;(null);
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  
+  // 토큰 만료 체크
+  // 자동 로그아웃
+  // axios interceptor에서 401 → 자동 리다이렉트
+  
+  return &lt;AuthContext.Provider value={{ user, token, login, logout }}&gt;
+    {children}
+  &lt;/AuthContext.Provider&gt;;
+}
+</code></pre>
+</li>
+</ul>
+<h3>21. 코드 품질: API 클라이언트 미표준화</h3>
+<ul>
+<li><strong>파일</strong>: 전체 프론트엔드</li>
+<li><strong>문제</strong>: 각 페이지에서 직접 <code>axios.get/post</code>를 호출하며, <code>API_URL</code> 상수를 매 파일 상단에 선언. 에러 처리, 토큰 첨부 등 반복.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 코드 중복 70% 감소, 일관된 에러 처리</li>
+<li><strong>실행 방법</strong>:<pre><code class="language-typescript">// lib/api.ts
+import axios from &#39;axios&#39;;
+
+export const api = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || &#39;http://localhost:8000&#39;,
+});
+
+api.interceptors.request.use((config) =&gt; {
+  const token = localStorage.getItem(&#39;token&#39;);
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+api.interceptors.response.use(
+  (res) =&gt; res,
+  (err) =&gt; {
+    if (err.response?.status === 401) {
+      localStorage.clear();
+      window.location.href = &#39;/login&#39;;
+    }
+    return Promise.reject(err);
+  }
+);
+</code></pre>
+</li>
+</ul>
+<h3>22. 코드 품질: TypeScript 활용 미흡</h3>
+<ul>
+<li><strong>파일</strong>: 전체 프론트엔드</li>
+<li><strong>문제</strong>: 인터페이스가 파일마다 중복 정의 (<code>User</code>, <code>Project</code> 인터페이스가 3개 파일에 각각 정의). <code>any</code> 타입 사용 (<code>realtimeProgress: any</code>). 타입 안전성 낮음.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 런타임 에러 감소, 개발 생산성 향상</li>
+<li><strong>실행 방법</strong>:<pre><code>types/
+  index.ts       # 공통 타입
+  api.ts         # API 응답 타입
+  project.ts     # 프로젝트 관련 타입
+</code></pre>
+<ul>
+<li>모든 <code>any</code> 타입을 구체적 인터페이스로 교체</li>
+<li>API 응답 타입을 zod로 정의하고 프론트/백엔드 공유</li>
+</ul>
+</li>
+</ul>
+<h3>23. 성능: 프로젝트 목록 페이지네이션 없음</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-web/app/projects/page.tsx</code>, <code>plan-craft-backend/src/routes/projects.js</code></li>
+<li><strong>문제</strong>: 모든 프로젝트를 한 번에 로드. 프로젝트 수가 늘어나면 성능 저하.</li>
+<li><strong>난이도</strong>: 쉬움</li>
+<li><strong>예상 효과</strong>: 대규모 데이터 시 안정적 로딩</li>
+<li><strong>실행 방법</strong>:<ul>
+<li>백엔드: <code>?page=1&amp;limit=20</code> 쿼리 파라미터 추가</li>
+<li>프론트엔드: 무한 스크롤 또는 페이지네이션 UI</li>
+<li>정렬 옵션 (최신순, 이름순, 상태별)</li>
+<li>검색/필터 기능</li>
+</ul>
+</li>
+</ul>
+<h3>24. 성능: 이미지 최적화 미사용</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-web/app/page.tsx</code></li>
+<li><strong>문제</strong>: 현재 이미지가 거의 없지만, 향후 템플릿 썸네일 등에서 Next.js <code>Image</code> 컴포넌트 미사용.</li>
+<li><strong>난이도</strong>: 쉬움</li>
+<li><strong>예상 효과</strong>: 이미지 로딩 속도 60% 향상</li>
+<li><strong>실행 방법</strong>: <code>next/image</code> 컴포넌트 사용, blur placeholder 적용</li>
+</ul>
+<h3>25. 백엔드: 진행 상황이 메모리에만 저장</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-backend/src/utils/progress-tracker.js</code></li>
+<li><strong>문제</strong>: <code>ProgressTracker</code>가 <code>Map</code>으로 메모리에만 저장. 서버 재시작 시 진행 상황 유실. 다중 서버 인스턴스에서 공유 불가.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 서버 재시작 시 진행 상황 복구, 수평 확장 가능</li>
+<li><strong>실행 방법</strong>:<ul>
+<li>Redis로 진행 상황 저장 (TTL 30분)</li>
+<li>또는 DB에 progress 테이블 추가 (간단한 방법)</li>
+</ul>
+<pre><code class="language-javascript">// Redis 기반
+import Redis from &#39;ioredis&#39;;
+const redis = new Redis(process.env.REDIS_URL);
+
+async updateAgent(projectId, agentName, data) {
+  const key = `progress:${projectId}`;
+  await redis.hset(key, agentName, JSON.stringify(data));
+  await redis.expire(key, 1800); // 30분 TTL
+}
+</code></pre>
+</li>
+</ul>
+<h3>26. 백엔드: Rate Limiting 없음</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-backend/src/index.js</code></li>
+<li><strong>문제</strong>: API에 rate limiting이 없어 무한 요청 가능. 문서 생성은 비싼 AI API 호출을 포함하므로 악용 위험 높음.</li>
+<li><strong>난이도</strong>: 쉬움</li>
+<li><strong>예상 효과</strong>: API 남용 방지, 비용 보호</li>
+<li><strong>실행 방법</strong>:<pre><code class="language-javascript">import { rateLimiter } from &#39;hono-rate-limiter&#39;;
+
+app.use(&#39;/api/generate/*&#39;, rateLimiter({
+  windowMs: 60 * 60 * 1000, // 1시간
+  limit: 5, // 시간당 5회 생성
+  keyGenerator: (c) =&gt; c.get(&#39;userId&#39;),
+}));
+
+app.use(&#39;/api/auth/*&#39;, rateLimiter({
+  windowMs: 15 * 60 * 1000,
+  limit: 10, // 15분당 10회
+}));
+</code></pre>
+</li>
+</ul>
+<h3>27. 백엔드: Orchestrator 에러 핸들링 부실</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-backend/src/routes/generate.js</code></li>
+<li><strong>문제</strong>: <code>generateDocumentBackground</code> 함수에서 에러 발생 시 프로젝트 상태를 &#39;failed&#39;로 변경하지만, 에러 원인을 DB에 저장하지 않음. 사용자에게 왜 실패했는지 정보 전달 불가.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 디버깅 용이, 사용자 신뢰도 향상</li>
+<li><strong>실행 방법</strong>:<ul>
+<li><code>projects</code> 테이블에 <code>error_message TEXT</code> 컬럼 추가</li>
+<li>실패 시 에러 메시지 저장</li>
+<li>프론트엔드에서 실패 원인 표시</li>
+</ul>
+</li>
+</ul>
+<h3>28. 성능: Orchestrator 내 하드코딩된 2초 Rate Limiting</h3>
+<ul>
+<li><strong>파일</strong>: <code>plan-craft-backend/src/engine/agent-team-orchestrator.js</code></li>
+<li><strong>문제</strong>: 라운드 간 <code>await new Promise(resolve =&gt; setTimeout(resolve, 2000))</code> 고정. API rate limit 상황에 따라 동적으로 조절 필요.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 생성 속도 최적화</li>
+<li><strong>실행 방법</strong>:<ul>
+<li>429 응답 시 exponential backoff</li>
+<li>rate limit 여유가 있을 때 딜레이 단축</li>
+<li>환경변수로 기본 딜레이 설정 가능하도록</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2>🟢 P2: 개선/향상</h2>
+<h3>29. UI/UX: 온보딩 플로우 없음</h3>
+<ul>
+<li><strong>문제</strong>: 가입 후 바로 빈 홈 화면. 튜토리얼, 첫 문서 생성 가이드 없음.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 첫 사용자 활성화율 향상</li>
+<li><strong>실행 방법</strong>: 가입 후 환영 모달 → 첫 프로젝트 생성 가이드 (3단계)</li>
+</ul>
+<h3>30. UI/UX: 애니메이션/마이크로인터랙션 부재</h3>
+<ul>
+<li><strong>문제</strong>: 상태 변화, 버튼 클릭, 페이지 전환 시 시각적 피드백 미흡. Skywork 수준의 매끄러운 전환 효과 없음.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 전문적/세련된 느낌</li>
+<li><strong>실행 방법</strong>: Framer Motion 도입, 페이지 전환/카드 호버/진행바 애니메이션</li>
+</ul>
+<h3>31. UI/UX: SEO 최적화 미흡</h3>
+<ul>
+<li><strong>파일</strong>: <code>layout.tsx</code>, 전체</li>
+<li><strong>문제</strong>: 기본 meta 태그만 존재. OG 태그, 구조화된 데이터, sitemap, robots.txt 없음.</li>
+<li><strong>난이도</strong>: 쉬움</li>
+<li><strong>예상 효과</strong>: 검색 유입 증가</li>
+<li><strong>실행 방법</strong>: Next.js metadata API 활용, sitemap.xml 자동 생성, OG 이미지</li>
+</ul>
+<h3>32. UI/UX: 접근성(a11y) 미흡</h3>
+<ul>
+<li><strong>문제</strong>: 키보드 내비게이션, aria-label, 포커스 관리, 색상 대비 등 접근성 표준 미적용.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 접근성 규정 준수, 모든 사용자 포용</li>
+<li><strong>실행 방법</strong>: axe-core 감사 실행, aria 속성 추가, 포커스 트랩 구현</li>
+</ul>
+<h3>33. 기능: 사용량 대시보드 없음</h3>
+<ul>
+<li><strong>문제</strong>: 토큰 사용량, 비용, 생성 이력 등을 사용자가 확인할 수 없음. 백엔드에 <code>token_usage</code> 테이블이 있지만 프론트엔드 미구현.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 투명한 사용량 관리, Pro 플랜 업셀 유도</li>
+<li><strong>실행 방법</strong>: 대시보드 페이지 + 차트 (recharts/visx)</li>
+</ul>
+<h3>34. 기능: 플랜/결제 시스템 껍데기만 존재</h3>
+<ul>
+<li><strong>문제</strong>: Free/Pro Mode 드롭다운이 있지만 <code>alert(&#39;Pro Mode는 준비 중입니다&#39;)</code>. 실제 구독/결제 시스템 없음.</li>
+<li><strong>난이도</strong>: 어려움</li>
+<li><strong>예상 효과</strong>: 매출 창출</li>
+<li><strong>실행 방법</strong>: Stripe 연동, 플랜별 기능 제한, 결제 페이지</li>
+</ul>
+<h3>35. 기능: 문서 공유/협업 기능 없음</h3>
+<ul>
+<li><strong>문제</strong>: 생성된 문서를 다른 사람과 공유하거나 공동 편집할 방법 없음.</li>
+<li><strong>난이도</strong>: 어려움</li>
+<li><strong>예상 효과</strong>: 팀 사용 활성화</li>
+<li><strong>실행 방법</strong>: 공유 링크 생성, 읽기 전용 공개 페이지, 코멘트 기능</li>
+</ul>
+<h3>36. 성능: 번들 최적화</h3>
+<ul>
+<li><strong>파일</strong>: <code>package.json</code></li>
+<li><strong>문제</strong>: axios(13KB gzipped)를 단순 fetch 대신 사용. 클라이언트 번들에 불필요한 의존성 포함 가능.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 초기 로딩 속도 향상</li>
+<li><strong>실행 방법</strong>: axios → fetch + 간단한 래퍼, 또는 <code>ky</code> (1KB) 사용. dynamic import 활용.</li>
+</ul>
+<h3>37. 배포: CI/CD 파이프라인 없음</h3>
+<ul>
+<li><strong>문제</strong>: GitHub Actions, Vercel 자동 배포 등 CI/CD 미설정.</li>
+<li><strong>난이도</strong>: 보통</li>
+<li><strong>예상 효과</strong>: 배포 안정성, 자동 테스트</li>
+<li><strong>실행 방법</strong>: GitHub Actions → lint + type check + build → Vercel/Railway 자동 배포</li>
+</ul>
+<h3>38. 배포: 테스트 코드 전무</h3>
+<ul>
+<li><strong>문제</strong>: 단위 테스트, 통합 테스트, E2E 테스트가 전혀 없음.</li>
+<li><strong>난이도</strong>: 어려움</li>
+<li><strong>예상 효과</strong>: 회귀 방지, 코드 신뢰성</li>
+<li><strong>실행 방법</strong>:<ul>
+<li>백엔드: Vitest + API 통합 테스트</li>
+<li>프론트엔드: React Testing Library + Cypress E2E</li>
+<li>핵심 플로우(가입→생성→다운로드) E2E 테스트 우선</li>
+</ul>
+</li>
+</ul>
+<h3>39. 배포: 에러 모니터링 없음</h3>
+<ul>
+<li><strong>문제</strong>: 프로덕션 에러를 <code>console.error</code>로만 로깅. 에러 알림, 트래킹 시스템 없음.</li>
+<li><strong>난이도</strong>: 쉬움</li>
+<li><strong>예상 효과</strong>: 장애 대응 시간 단축</li>
+<li><strong>실행 방법</strong>: Sentry 도입 (프론트엔드 + 백엔드), 에러 알림 Slack/Discord 웹훅</li>
+</ul>
+<h3>40. 배포: 환경 설정 관리</h3>
+<ul>
+<li><strong>문제</strong>: <code>.env</code> 파일 관리 표준 없음. 필요한 환경변수 목록이 문서화되어 있지 않음.</li>
+<li><strong>난이도</strong>: 쉬움</li>
+<li><strong>예상 효과</strong>: 팀 온보딩 시간 단축</li>
+<li><strong>실행 방법</strong>: <code>.env.example</code> 생성, 환경변수 검증 스크립트, Docker Compose 설정</li>
+</ul>
+<h3>41. 코드 품질: 백엔드 JavaScript → TypeScript 전환</h3>
+<ul>
+<li><strong>문제</strong>: 프론트엔드는 TypeScript인데 백엔드는 plain JavaScript. 타입 안전성 없음, 에이전트 코드의 <code>config</code> 파라미터 타입 불명확.</li>
+<li><strong>난이도</strong>: 어려움</li>
+<li><strong>예상 효과</strong>: 백엔드 코드 안정성 대폭 향상</li>
+<li><strong>실행 방법</strong>: 점진적 전환 (.js → .ts), tsconfig.json 설정, 인터페이스 정의</li>
+</ul>
+<h3>42. 코드 품질: 로깅 시스템 표준화</h3>
+<ul>
+<li><strong>파일</strong>: 백엔드 전체</li>
+<li><strong>문제</strong>: <code>console.log</code>로 로깅. 로그 레벨, 구조화된 로그, 파일 출력 없음.</li>
+<li><strong>난이도</strong>: 쉬움</li>
+<li><strong>예상 효과</strong>: 운영 디버깅 효율 향상</li>
+<li><strong>실행 방법</strong>: <code>pino</code> 또는 <code>winston</code> 도입, JSON 구조화 로그, 로그 레벨 관리</li>
+</ul>
+<hr>
+<h2>🎯 우선순위별 실행 로드맵</h2>
+<h3>Phase 1: 긴급 수정 (1-2일)</h3>
+<ol>
+<li>JWT 시크릿 하드코딩 수정 (#1)</li>
+<li>SQLite → PostgreSQL 마이그레이션 in generate.js (#2)</li>
+<li>비밀번호 검증 통일 (#4)</li>
+<li><code>/me</code> 엔드포인트 인증 미들웨어 추가 (#5)</li>
+<li>미사용 파일/코드 정리 (#6, #7)</li>
+<li>Rate Limiting 추가 (#26)</li>
+</ol>
+<h3>Phase 2: 아키텍처 개선 (3-5일)</h3>
+<ol>
+<li>공통 컴포넌트 추출 (Header, AuthProvider) (#8, #20)</li>
+<li>API 클라이언트 표준화 (#21)</li>
+<li>TypeScript 타입 통합 (#22)</li>
+<li>SSE/WebSocket 전환 (#9, #10)</li>
+<li>CORS 설정 개선 (#3)</li>
+</ol>
+<h3>Phase 3: UX 혁신 (1-2주)</h3>
+<ol>
+<li>랜딩 페이지 리디자인 (#11)</li>
+<li>문서 미리보기 구현 (#15)</li>
+<li>토스트/Skeleton UI (#13)</li>
+<li>반응형 디자인 (#12)</li>
+<li>프로젝트 삭제/편집 UI (#18)</li>
+<li>재생성 기능 (#19)</li>
+<li>DOCX/PDF 다운로드 (#17)</li>
+</ol>
+<h3>Phase 4: 고급 기능 (2-4주)</h3>
+<ol>
+<li>실제 AI 대화 기능 (#16)</li>
+<li>다크 모드 (#14)</li>
+<li>사용량 대시보드 (#33)</li>
+<li>에러 모니터링 (#39)</li>
+<li>CI/CD 파이프라인 (#37)</li>
+<li>테스트 코드 작성 (#38)</li>
+</ol>
+<h3>Phase 5: 비즈니스 확장 (4주+)</h3>
+<ol>
+<li>결제 시스템 (#34)</li>
+<li>문서 공유/협업 (#35)</li>
+<li>온보딩 플로우 (#29)</li>
+<li>백엔드 TypeScript 전환 (#41)</li>
+</ol>
+<hr>
+<h2>📊 Skywork 대비 갭 분석</h2>
+<table>
+<thead>
+<tr>
+<th>영역</th>
+<th>Plan-Craft 현재</th>
+<th>Skywork 수준</th>
+<th>갭</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>랜딩 페이지</td>
+<td>기본 템플릿 나열</td>
+<td>인터랙티브 데모 + 성공 사례</td>
+<td>큼</td>
+</tr>
+<tr>
+<td>문서 미리보기</td>
+<td>없음 (다운로드만)</td>
+<td>인라인 뷰어 + 편집</td>
+<td>매우 큼</td>
+</tr>
+<tr>
+<td>실시간 진행</td>
+<td>1초 폴링</td>
+<td>SSE/WebSocket</td>
+<td>보통</td>
+</tr>
+<tr>
+<td>인증/보안</td>
+<td>기본 JWT</td>
+<td>OAuth + 2FA + 세션 관리</td>
+<td>큼</td>
+</tr>
+<tr>
+<td>다운로드 포맷</td>
+<td>HTML만</td>
+<td>PDF/DOCX/PPT</td>
+<td>큼</td>
+</tr>
+<tr>
+<td>모바일</td>
+<td>부분 대응</td>
+<td>완전 반응형 + PWA</td>
+<td>큼</td>
+</tr>
+<tr>
+<td>에러 처리</td>
+<td>alert()</td>
+<td>토스트 + 재시도 + 폴백</td>
+<td>큼</td>
+</tr>
+<tr>
+<td>테스트</td>
+<td>없음</td>
+<td>Unit + Integration + E2E</td>
+<td>매우 큼</td>
+</tr>
+<tr>
+<td>모니터링</td>
+<td>console.log</td>
+<td>Sentry + 대시보드</td>
+<td>큼</td>
+</tr>
+<tr>
+<td>협업</td>
+<td>없음</td>
+<td>실시간 공유/코멘트</td>
+<td>매우 큼</td>
+</tr>
+</tbody></table>
+<hr>
+<blockquote>
+<p><strong>결론</strong>: Plan-Craft는 핵심 아이디어(4-에이전트 문서 생성)는 강력하나, 프로덕션 레벨 안정성과 UX 완성도에서 Skywork 대비 상당한 갭이 있습니다. <strong>P0 보안 이슈 즉시 해결 → 아키텍처 정리 → UX 개선</strong> 순서로 진행하면 2-4주 내에 Skywork에 견줄 수 있는 수준으로 업그레이드 가능합니다.</p>
+</blockquote>
+
+    </section>
+  
+    <div class="section-break" id="reports-skywork-analysis-md"></div>
+    <section>
+      <h1>Skywork.ai 심층 분석 보고서</h1>
+<blockquote>
+<p><strong>분석일</strong>: 2026-02-08<br><strong>분석 대상</strong>: <a href="https://skywork.ai">https://skywork.ai</a><br><strong>목적</strong>: Plan-Craft 프로젝트 UI/UX 및 기능 개선을 위한 벤치마킹<br><strong>분석 방법</strong>: web_fetch를 통한 페이지 크롤링 및 구조 분석</p>
+</blockquote>
+<hr>
+<h2>1. 서비스 개요</h2>
+<h3>1.1 포지셔닝</h3>
+<ul>
+<li><strong>슬로건</strong>: &quot;The Originator of AI Workspace Agents&quot;</li>
+<li><strong>타이틀</strong>: &quot;Boost your productivity, powered by AI&quot;</li>
+<li><strong>운영사</strong>: SKYWORK AI PTE. LTD. (싱가포르 법인)</li>
+<li><strong>핵심 컨셉</strong>: AI 기반 올인원 워크스페이스 에이전트 — 문서, 이미지, 슬라이드, 스프레드시트, 팟캐스트, 개발 도구를 하나의 플랫폼에서 AI로 생성</li>
+</ul>
+<h3>1.2 제품 라인업 (메인 네비게이션 기준)</h3>
+<table>
+<thead>
+<tr>
+<th>제품</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>General</strong></td>
+<td>범용 AI 채팅/생성 (메인 워크스페이스)</td>
+</tr>
+<tr>
+<td><strong>Images</strong></td>
+<td>AI 이미지 생성</td>
+</tr>
+<tr>
+<td><strong>Documents</strong></td>
+<td>AI 문서 생성</td>
+</tr>
+<tr>
+<td><strong>Slides</strong></td>
+<td>AI 프레젠테이션(PPT) 생성</td>
+</tr>
+<tr>
+<td><strong>Sheets</strong></td>
+<td>AI 스프레드시트 생성</td>
+</tr>
+<tr>
+<td><strong>AI Developer</strong></td>
+<td>AI 코드/개발 도구</td>
+</tr>
+<tr>
+<td><strong>Podcasts</strong></td>
+<td>AI 팟캐스트 생성</td>
+</tr>
+<tr>
+<td><strong>YouVibe</strong></td>
+<td>개인화/소셜 기능 (추정)</td>
+</tr>
+</tbody></table>
+<h3>1.3 보조 섹션</h3>
+<ul>
+<li><strong>Skypage</strong>: AI가 생성한 콘텐츠의 퍼블리싱 플랫폼 (SEO용 정적 페이지)</li>
+<li><strong>Blog</strong> (AI Journal): 블로그 및 프로모션</li>
+<li><strong>Tutorial</strong>: 튜토리얼 갤러리 (영상 기반)</li>
+<li><strong>Resources</strong>: 주제별 리소스 허브 (MCP Server, Stocks 등 카테고리별)</li>
+</ul>
+<hr>
+<h2>2. UI/UX 구조 분석</h2>
+<h3>2.1 랜딩페이지</h3>
+<ul>
+<li><strong>SPA (Single Page Application)</strong> 구조로, 콘텐츠 대부분이 JavaScript로 동적 렌더링됨</li>
+<li>서버 사이드 렌더링(SSR) 미적용으로 크롤러/봇에게는 최소한의 텍스트만 노출</li>
+<li>메인 네비게이션이 곧 제품 탭으로, 진입 즉시 기능을 선택하는 구조</li>
+<li>별도의 &quot;히어로 섹션&quot; 마케팅 랜딩 없이, 바로 워크스페이스로 진입하는 실용적 접근</li>
+</ul>
+<h3>2.2 네비게이션 패턴</h3>
+<pre><code>[Skywork 로고] [General] [Images] [Documents] [Slides] [Sheets] [AI Developer] [Podcasts] [YouVibe]
+                                                        [Skypage] [Blog] [Tutorial] [Resources]
+</code></pre>
+<ul>
+<li><strong>상단 수평 탭 네비게이션</strong>: 핵심 기능을 탭으로 구분</li>
+<li><strong>2단 구조</strong>: 1차 = 생성 도구 탭, 2차 = 콘텐츠/리소스 페이지</li>
+<li>각 탭이 독립적인 AI 에이전트/워크스페이스로 작동</li>
+</ul>
+<h3>2.3 Skypage (콘텐츠 퍼블리싱)</h3>
+<ul>
+<li>AI가 생성한 장문 콘텐츠를 정적 웹페이지로 퍼블리싱</li>
+<li><strong>다국어 지원</strong>: URL에 <code>/ko/</code>, <code>/en/</code> 등 언어 코드 포함</li>
+<li><strong>SEO 최적화</strong>: 제목이 URL에 인코딩되어 포함됨 (<code>/skypage/ko/{제목}/{ID}</code>)</li>
+<li><strong>콘텐츠 구조</strong>:<ul>
+<li>목차(TOC) 자동 생성</li>
+<li>H2/H3 기반 계층적 섹션 구조</li>
+<li>참고자료/출처 자동 포함 (학술적 형식)</li>
+<li>전문적인 분석 보고서 형태의 출력</li>
+</ul>
+</li>
+</ul>
+<h3>2.4 Resources 페이지</h3>
+<ul>
+<li><strong>카테고리별 콘텐츠 허브</strong>: MCP Server, Stocks 등 주제별 분류</li>
+<li><strong>카드 리스트 형태</strong>: 각 항목이 Skypage 링크로 연결</li>
+<li>대량의 AI 생성 콘텐츠를 자동으로 생산하여 SEO 트래픽을 확보하는 전략</li>
+<li>카테고리 설명 + 리스트 아이템 패턴</li>
+</ul>
+<h3>2.5 Tutorial 갤러리</h3>
+<ul>
+<li><strong>2개 탭 구조</strong>: 메인 탭 + Influencer 탭</li>
+<li><strong>언어 필터</strong>: Influencer 탭 하위에 언어 필터 제공</li>
+<li><strong>라이트박스 프리뷰</strong>: 카드 클릭 시 영상 미리보기</li>
+</ul>
+<hr>
+<h2>3. 핵심 기능 분석</h2>
+<h3>3.1 AI 문서 생성 (Documents)</h3>
+<ul>
+<li>장문의 전문 분석 보고서 자동 생성</li>
+<li><strong>Skypage 샘플 분석</strong> (한국 AI 거버넌스 백서 분석 리포트):<ul>
+<li>6,000+ 단어의 심층 분석 보고서</li>
+<li>목차 → 서론 → 본론(다중 섹션) → 결론 → 참고자료 구조</li>
+<li>인용구 블록, 핵심 요점 박스, 통계 데이터 활용</li>
+<li>20+ 참고자료 자동 인용 (URL 포함)</li>
+<li>다양한 시각에서의 분석 (법률, 기술, 산업별)</li>
+</ul>
+</li>
+</ul>
+<h3>3.2 템플릿 시스템</h3>
+<ul>
+<li><strong>200+ 템플릿</strong> (블로그 프로모션에서 확인)</li>
+<li><strong>원클릭 PPT 생성</strong> 기능</li>
+<li><strong>300+ 전문 &amp; 실시간 데이터베이스</strong> 활용</li>
+</ul>
+<h3>3.3 AI 이미지 생성 (Images)</h3>
+<ul>
+<li>독립 탭으로 분리된 이미지 생성 도구</li>
+<li>워크스페이스 내에서 직접 생성 가능</li>
+</ul>
+<h3>3.4 AI 슬라이드 (Slides)</h3>
+<ul>
+<li>프레젠테이션 자동 생성</li>
+<li>템플릿 기반 원클릭 생성</li>
+</ul>
+<h3>3.5 AI 스프레드시트 (Sheets)</h3>
+<ul>
+<li>스프레드시트 데이터 처리 및 생성</li>
+</ul>
+<h3>3.6 AI Developer</h3>
+<ul>
+<li>코드 생성 및 개발 보조 도구</li>
+</ul>
+<h3>3.7 AI Podcasts</h3>
+<ul>
+<li>음성 기반 콘텐츠 생성</li>
+<li>개인정보보호 정책에서 &quot;AI podcast work&quot; 언급 → UGC 생성 및 공유 기능 포함</li>
+</ul>
+<h3>3.8 Sky Browser Takeover</h3>
+<ul>
+<li><strong>브라우저 원격 제어 기능</strong>: 사용자의 서드파티 플랫폼 로그인을 유지하며 자동화 작업 수행</li>
+<li>쿠키 및 로컬 스토리지 기반 세션 유지</li>
+<li>암호화된 로그인 데이터 (로컬 + 클라우드)</li>
+<li>사용자 간 데이터 완전 격리</li>
+</ul>
+<hr>
+<h2>4. 사용자 경험 분석</h2>
+<h3>4.1 온보딩 흐름</h3>
+<ul>
+<li><strong>회원가입</strong>: 이메일 기반 + 서드파티 로그인 (Google, Apple)</li>
+<li><strong>최소 정보 수집</strong>: 닉네임, 아바타, 이메일, 비밀번호</li>
+<li><strong>프리미엄 전환 유도</strong>: 블로그 방문 시 팝업으로 &quot;Limited-Time Free Access&quot; 프로모션<ul>
+<li>&quot;🔥 Only 99 Members Left ⏳ Countdown For Free: 10 Mins&quot; — 긴급성 + 희소성 마케팅</li>
+<li>ALL IN ONE AI Office Tools Integration 강조</li>
+<li>200+ Templates, 300+ Database 수치 강조</li>
+</ul>
+</li>
+</ul>
+<h3>4.2 프로젝트 생성 프로세스</h3>
+<ul>
+<li>상단 탭에서 도구 선택 → 프롬프트 입력 → AI 생성 → 결과물 확인</li>
+<li>각 도구가 독립 워크스페이스로 작동</li>
+<li>생성된 결과물은 Skypage를 통해 웹에 퍼블리싱 가능</li>
+</ul>
+<h3>4.3 결과물 표시</h3>
+<ul>
+<li><strong>Skypage 형태</strong>: 완전한 웹페이지로 퍼블리싱<ul>
+<li>SEO 메타데이터 포함</li>
+<li>공유 가능한 고유 URL</li>
+<li>다국어 지원</li>
+<li>목차 네비게이션</li>
+<li>참고자료 자동 생성</li>
+</ul>
+</li>
+<li><strong>결과물 품질</strong>: 전문 리포트 수준의 긴 장문 콘텐츠 생성 가능</li>
+</ul>
+<h3>4.4 결제 시스템</h3>
+<ul>
+<li>Apple Pay, Google Pay, Stripe, Airwallex 지원</li>
+<li>크레딧 기반 과금 체계 (URL에 <code>rechargeFrom=credit_details</code> 확인)</li>
+</ul>
+<hr>
+<h2>5. 기술적 특징</h2>
+<h3>5.1 프론트엔드 아키텍처</h3>
+<ul>
+<li><strong>SPA (Single Page Application)</strong>: JavaScript 기반 동적 렌더링</li>
+<li><strong>CSR (Client-Side Rendering)</strong>: 대부분의 인터랙티브 콘텐츠가 클라이언트에서 렌더링</li>
+<li><strong>정적 자산 CDN</strong>: <code>static.skywork.ai</code> 도메인으로 정적 파일 서빙</li>
+<li><strong>Skypage는 별도 SSR/SSG</strong>: SEO를 위해 서버 사이드 렌더링 적용 (readability 추출 성공)</li>
+</ul>
+<h3>5.2 콘텐츠 전략 (SEO)</h3>
+<ul>
+<li>AI 생성 콘텐츠를 Skypage로 대량 퍼블리싱</li>
+<li><strong>카테고리별 콘텐츠 허브</strong>: MCP Server (50+편), Stocks (100+편) 등</li>
+<li><strong>다국어 SEO</strong>: 한국어, 영어 등 다국어 동일 콘텐츠 제공</li>
+<li><strong>URL 구조</strong>: <code>/skypage/{lang}/{title}/{snowflake_id}</code> — SEO 친화적</li>
+<li>이 전략은 오가닉 트래픽 획득의 핵심 동력</li>
+</ul>
+<h3>5.3 보안 및 프라이버시</h3>
+<ul>
+<li>TLS 1.2 프로토콜 적용 (전송 암호화)</li>
+<li>저장 데이터 암호화 (at rest)</li>
+<li>접근 토큰 및 다단계 인증(MFA)</li>
+<li><strong>사용자 데이터를 모델 트레이닝에 사용하지 않음</strong> (명시적 선언)</li>
+<li>Browser Takeover 기능의 보안: 사용자별 데이터 격리, 평문 비밀번호 미저장</li>
+</ul>
+<h3>5.4 서드파티 통합</h3>
+<ul>
+<li>Google Workspace Suite (Gmail, Calendar, Drive)</li>
+<li>Microsoft 365, Outlook, OneDrive</li>
+<li>Notion</li>
+<li>소셜 미디어 공유 (Facebook, X, WhatsApp)</li>
+</ul>
+<h3>5.5 데이터 저장</h3>
+<ul>
+<li>미국 내 로컬 서버 배포</li>
+<li>글로벌 운영을 위한 교차 국경 데이터 전송</li>
+</ul>
+<hr>
+<h2>6. 차별화 포인트</h2>
+<h3>6.1 &quot;AI Workspace Agent&quot; 컨셉</h3>
+<ul>
+<li>단순 AI 도구가 아닌 <strong>워크스페이스 에이전트</strong>로 포지셔닝</li>
+<li>문서/이미지/슬라이드/시트/코드/팟캐스트를 하나의 플랫폼에서 통합 관리</li>
+<li>각 도구가 독립 에이전트로 작동하면서도 하나의 워크스페이스에 귀속</li>
+</ul>
+<h3>6.2 Skypage — AI 콘텐츠 퍼블리싱 플랫폼</h3>
+<ul>
+<li><strong>가장 독특한 차별화 요소</strong>: 생성된 콘텐츠를 즉시 웹페이지로 퍼블리싱</li>
+<li>SEO 최적화된 정적 페이지로 변환</li>
+<li>다국어 자동 지원</li>
+<li>참고자료 자동 생성으로 학술/전문적 신뢰성 부여</li>
+</ul>
+<h3>6.3 Sky Browser Takeover</h3>
+<ul>
+<li>AI가 사용자의 브라우저를 원격 제어하여 실제 웹 작업을 자동화</li>
+<li>서드파티 서비스 로그인을 유지하며 태스크 수행</li>
+<li>이는 <strong>Computer Use / AI Agent</strong> 최전선의 기능</li>
+</ul>
+<h3>6.4 대규모 AI 콘텐츠 생산 전략</h3>
+<ul>
+<li>MCP Server 가이드 50+편, 주식 분석 100+편 등 AI로 대량 콘텐츠 생산</li>
+<li>SEO 트래픽 획득 → 플랫폼 유입의 선순환 구조</li>
+<li>&quot;300+ Professional And Realtime Database&quot; 활용한 실시간 데이터 기반 콘텐츠</li>
+</ul>
+<h3>6.5 프리미엄 전환 마케팅</h3>
+<ul>
+<li>긴급성(카운트다운) + 희소성(99명 한정) + 가치 강조(올인원) 조합</li>
+<li>블로그/리소스 페이지 방문 시 팝업으로 전환 유도</li>
+</ul>
+<hr>
+<h2>7. Plan-Craft 적용 가능 인사이트</h2>
+<h3>7.1 🔥 즉시 적용 가능 (High Priority)</h3>
+<h4>A. Skypage 스타일 콘텐츠 퍼블리싱</h4>
+<ul>
+<li><strong>인사이트</strong>: AI로 생성한 계획서/보고서를 즉시 공유 가능한 웹 URL로 퍼블리싱</li>
+<li><strong>적용</strong>: Plan-Craft에서 생성한 사업계획서를 &quot;Plan Page&quot;로 퍼블리싱하여 투자자/팀원과 공유</li>
+<li><strong>SEO 효과</strong>: 공개 Plan Page가 검색 엔진에 노출되어 오가닉 유입 확보</li>
+</ul>
+<h4>B. 콘텐츠 구조의 체계화</h4>
+<ul>
+<li><strong>인사이트</strong>: 목차 → 서론 → 본론(다중 섹션) → 결론 → 참고자료의 완결된 구조</li>
+<li><strong>적용</strong>: Plan-Craft 사업계획서 출력물에 자동 목차, 참고자료, 핵심 요약 박스 포함</li>
+<li><strong>품질</strong>: 전문 컨설팅 보고서 수준의 출력물로 차별화</li>
+</ul>
+<h4>C. 탭 기반 도구 전환</h4>
+<ul>
+<li><strong>인사이트</strong>: 상단 탭으로 도구를 즉시 전환하는 직관적 UX</li>
+<li><strong>적용</strong>: Plan-Craft에서도 [사업계획서] [재무예측] [시장분석] [경쟁분석] [피치덱] 탭으로 구분</li>
+<li><strong>효과</strong>: 하나의 프로젝트 내에서 다양한 산출물을 탭으로 관리</li>
+</ul>
+<h3>7.2 🎯 단기 적용 (Medium Priority)</h3>
+<h4>D. 리소스 허브 / 템플릿 갤러리</h4>
+<ul>
+<li><strong>인사이트</strong>: 200+ 템플릿과 카테고리별 리소스 허브</li>
+<li><strong>적용</strong>: Plan-Craft 템플릿을 산업별/단계별/목적별로 분류한 갤러리 제공<ul>
+<li>&quot;SaaS 스타트업 계획서&quot;, &quot;F&amp;B 창업 계획서&quot;, &quot;시리즈A 투자 제안서&quot; 등</li>
+</ul>
+</li>
+<li><strong>효과</strong>: 사용자가 빈 캔버스 공포 없이 빠르게 시작 가능</li>
+</ul>
+<h4>E. 다국어 자동 지원</h4>
+<ul>
+<li><strong>인사이트</strong>: URL 기반 다국어 라우팅 (<code>/ko/</code>, <code>/en/</code>)</li>
+<li><strong>적용</strong>: 사업계획서의 자동 다국어 번역 → 해외 투자자용 영문 버전 원클릭 생성</li>
+<li><strong>효과</strong>: 글로벌 스타트업 시장 타겟팅</li>
+</ul>
+<h4>F. 실시간 데이터 기반 콘텐츠</h4>
+<ul>
+<li><strong>인사이트</strong>: 300+ 실시간 데이터베이스를 활용한 콘텐츠 생성</li>
+<li><strong>적용</strong>: 시장 규모, 경쟁사 데이터, 산업 트렌드를 실시간으로 가져와 계획서에 반영</li>
+<li><strong>효과</strong>: 항상 최신 데이터가 포함된 사업계획서</li>
+</ul>
+<h3>7.3 📋 중기 적용 (Lower Priority)</h3>
+<h4>G. 프리미엄 전환 마케팅 패턴</h4>
+<ul>
+<li><strong>인사이트</strong>: 긴급성 + 희소성 + 가치 조합의 전환 팝업</li>
+<li><strong>적용</strong>: 무료 플랜 사용자에게 적절한 시점에 프리미엄 전환 유도</li>
+<li><strong>주의</strong>: 과도한 긴급성 마케팅은 신뢰도를 떨어뜨릴 수 있음 (Skywork의 &quot;10분 카운트다운&quot;은 다소 공격적)</li>
+</ul>
+<h4>H. SEO 콘텐츠 전략</h4>
+<ul>
+<li><strong>인사이트</strong>: AI 생성 콘텐츠를 대량 퍼블리싱하여 SEO 트래픽 확보</li>
+<li><strong>적용</strong>: &quot;사업계획서 작성 가이드&quot;, &quot;시장분석 방법론&quot; 등 Plan-Craft 관련 콘텐츠를 AI로 대량 생산</li>
+<li><strong>효과</strong>: 검색 유입 → 회원 가입 → 프리미엄 전환의 퍼널 구축</li>
+</ul>
+<h4>I. 서드파티 통합</h4>
+<ul>
+<li><strong>인사이트</strong>: Google Workspace, Microsoft 365, Notion 등과의 통합</li>
+<li><strong>적용</strong>: Plan-Craft에서 생성한 문서를 Google Docs, Notion으로 내보내기</li>
+<li><strong>효과</strong>: 기존 워크플로우에 자연스럽게 통합</li>
+</ul>
+<hr>
+<h2>8. 주의 사항 및 안티패턴</h2>
+<h3>8.1 ⚠️ 피해야 할 패턴</h3>
+<table>
+<thead>
+<tr>
+<th>패턴</th>
+<th>Skywork 사례</th>
+<th>Plan-Craft 대응</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>SSR 미적용</strong></td>
+<td>메인 앱이 CSR이라 SEO/봇 접근 불가</td>
+<td>퍼블릭 페이지는 반드시 SSR/SSG 적용</td>
+</tr>
+<tr>
+<td><strong>과도한 긴급성 마케팅</strong></td>
+<td>10분 카운트다운, 99명 한정 등</td>
+<td>가치 중심 프리미엄 유도 (무료 체험 → 자연 전환)</td>
+</tr>
+<tr>
+<td><strong>콘텐츠 과잉 생산</strong></td>
+<td>AI 생성 콘텐츠 대량 퍼블리싱 → 품질 우려</td>
+<td>소수의 고품질 콘텐츠 + 실사용 사례 중심</td>
+</tr>
+<tr>
+<td><strong>복잡한 네비게이션</strong></td>
+<td>8개 탭 + 4개 보조 섹션 = 12개 항목</td>
+<td>핵심 기능 5개 이내로 단순화</td>
+</tr>
+</tbody></table>
+<h3>8.2 ✅ 배워야 할 패턴</h3>
+<table>
+<thead>
+<tr>
+<th>패턴</th>
+<th>Skywork 사례</th>
+<th>Plan-Craft 적용</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>올인원 워크스페이스</strong></td>
+<td>다양한 도구를 하나의 플랫폼에 통합</td>
+<td>사업계획의 모든 요소를 하나의 워크스페이스에서 관리</td>
+</tr>
+<tr>
+<td><strong>AI 결과물 퍼블리싱</strong></td>
+<td>Skypage로 즉시 공유 가능한 URL 생성</td>
+<td>Plan Page로 투자자/팀과 공유</td>
+</tr>
+<tr>
+<td><strong>자동 참고자료</strong></td>
+<td>콘텐츠에 출처를 자동으로 포함</td>
+<td>시장 데이터 출처를 사업계획서에 자동 삽입</td>
+</tr>
+<tr>
+<td><strong>다국어 퍼블리싱</strong></td>
+<td>URL 기반 다국어 자동 지원</td>
+<td>사업계획서 다국어 자동 번역</td>
+</tr>
+<tr>
+<td><strong>크레딧 기반 과금</strong></td>
+<td>사용량에 따른 유연한 과금</td>
+<td>생성 횟수 기반의 직관적인 가격 모델</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>9. 경쟁 포지셔닝 요약</h2>
+<pre><code>                    범용성 (높음)
+                         |
+                    [Skywork]
+                         |
+         전문성 (높음) ---+--- 전문성 (낮음)
+                         |
+                   [Plan-Craft]
+                         |
+                    특화성 (높음)
+</code></pre>
+<ul>
+<li><strong>Skywork</strong>: 넓은 범위의 AI 생성 도구 (문서, 이미지, 슬라이드 등) → &quot;AI 오피스 스위트&quot;</li>
+<li><strong>Plan-Craft</strong>: 사업계획서/전략 문서에 특화된 AI 도구 → &quot;AI 전략 컨설턴트&quot;</li>
+<li><strong>차별화 기회</strong>: Skywork은 범용성 추구로 각 도구의 깊이가 제한적 → Plan-Craft는 사업계획 특화로 깊이 있는 분석 제공</li>
+</ul>
+<hr>
+<h2>10. 결론</h2>
+<p>Skywork.ai는 &quot;AI Workspace Agent&quot;로서 문서, 이미지, 슬라이드, 스프레드시트, 코드, 팟캐스트를 하나의 플랫폼에서 AI로 생성하는 야심찬 올인원 솔루션이다. 특히 <strong>Skypage 퍼블리싱 시스템</strong>과 <strong>AI 콘텐츠 대량 생산을 통한 SEO 전략</strong>은 Plan-Craft가 즉시 참고할 수 있는 탁월한 접근법이다.</p>
+<p>Plan-Craft가 가져가야 할 핵심 3가지:</p>
+<ol>
+<li><strong>🌐 Plan Page</strong>: 사업계획서를 공유 가능한 웹 URL로 퍼블리싱 (Skypage 모델)</li>
+<li><strong>📋 구조화된 출력물</strong>: 목차 + 섹션 + 참고자료가 포함된 전문 보고서 형태</li>
+<li><strong>🗂️ 템플릿 갤러리</strong>: 산업별/목적별로 분류된 200+ 사업계획서 템플릿</li>
+</ol>
+<p>동시에 Skywork의 범용성 추구로 인한 각 도구의 깊이 부족은 Plan-Craft에게 기회다. <strong>사업계획서 특화</strong>라는 명확한 포지셔닝을 유지하면서, Skywork의 우수한 UX 패턴을 선택적으로 차용하는 것이 최적의 전략이다.</p>
+<hr>
+<p><em>분석 완료 — Plan-Craft 개발팀 참고용</em></p>
+
+    </section>
+  
+
+  <!-- Footer -->
+  <div style="margin-top: 60px; padding-top: 20px; border-top: 2px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 12px;">
+    <p>Plan-Craft v3.0 — AI 기반 사업계획서 자동 생성 플랫폼</p>
+    <p>GitHub: https://github.com/sungli01/plan-crft-MVP.git</p>
+    <p>Frontend: https://plan-crft-mvp-ot41.vercel.app | Backend: https://plan-crft-mvp-production.up.railway.app</p>
+    <p>Generated by 바질 (AI Assistant) · 2026. 2. 8.</p>
+  </div>
+</body>
+</html>
