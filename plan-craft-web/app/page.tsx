@@ -4,34 +4,38 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const DOCUMENT_TYPES = [
-  { icon: '📝', label: '방문', color: 'bg-blue-500' },
-  { icon: '📊', label: '이미지', color: 'bg-yellow-500' },
-  { icon: '📄', label: '문서', color: 'bg-purple-500' },
-  { icon: '💼', label: '파워포인트', color: 'bg-red-500' },
-  { icon: '📈', label: '채팅', color: 'bg-orange-500' },
-  { icon: '🎨', label: '표', color: 'bg-green-500' },
-  { icon: '🌐', label: '웹사이트', color: 'bg-blue-600' },
-  { icon: '📹', label: '비디오', color: 'bg-pink-500' },
-  { icon: '➕', label: '더보기', color: 'bg-gray-500' }
+  { icon: '🏛️', label: '국가\n사업계획서', color: 'bg-blue-500' },
+  { icon: '💻', label: '개발기획\n보고서', color: 'bg-purple-500' },
+  { icon: '📑', label: '연구\n보고서', color: 'bg-green-500' },
+  { icon: '🗺️', label: '비즈니스\n로드맵', color: 'bg-orange-500' },
+  { icon: '📊', label: '사업\n제안서', color: 'bg-red-500' },
+  { icon: '📈', label: '투자\n유치서', color: 'bg-indigo-500' },
+  { icon: '📋', label: '기술\n백서', color: 'bg-teal-500' },
+  { icon: '🎯', label: '마케팅\n전략서', color: 'bg-pink-500' }
 ];
 
-const TEMPLATE_CATEGORIES = ['전체', '구직 및 채용', '업무 관리 및 계획', '비지니스 및 마케팅', '사용량 활용도', '교육 및 훈련', '법률 및 콘트랙', '개인 관리'];
+const TEMPLATE_CATEGORIES = ['전체', '국가 사업', '개발 기획', '연구 보고', '비즈니스', '마케팅', '투자 유치', '기술 문서'];
 
 const SAMPLE_TEMPLATES = [
-  { title: 'AI 기반 물류 플랫폼', subtitle: '국가 사업계획서', category: '비지니스 및 마케팅' },
-  { title: 'SaaS 개발 로드맵', subtitle: '개발 기획 보고서', category: '업무 관리 및 계획' },
-  { title: '친환경 에너지 연구', subtitle: '연구 보고서', category: '교육 및 훈련' },
-  { title: '글로벌 진출 전략', subtitle: '비즈니스 로드맵', category: '비지니스 및 마케팅' },
-  { title: '스마트시티 구축', subtitle: '정부 제안서', category: '업무 관리 및 계획' },
-  { title: '빅데이터 분석 시스템', subtitle: '기술 기획서', category: '사용량 활용도' },
-  { title: 'ESG 경영 전략', subtitle: '전략 보고서', category: '비지니스 및 마케팅' },
-  { title: '디지털 전환', subtitle: '사업 계획서', category: '업무 관리 및 계획' }
+  { title: 'AI 기반 물류 플랫폼', subtitle: '국가 사업계획서', desc: '정부지원사업 신청용 사업계획서' },
+  { title: 'SaaS 개발 로드맵', subtitle: '개발 기획 보고서', desc: 'IT 프로젝트 기획 및 일정 관리' },
+  { title: '친환경 에너지 솔루션', subtitle: '연구 보고서', desc: '신재생 에너지 연구개발 보고서' },
+  { title: '글로벌 시장 진출', subtitle: '비즈니스 로드맵', desc: '해외시장 진출 전략 및 실행계획' },
+  { title: '스마트시티 구축', subtitle: '정부 제안서', desc: '공공기관 제안용 사업계획서' },
+  { title: '핀테크 서비스', subtitle: '투자 유치서', desc: '벤처캐피탈 투자유치용 IR자료' },
+  { title: '블록체인 기술 백서', subtitle: '기술 백서', desc: '암호화폐/NFT 기술 문서' },
+  { title: 'SNS 마케팅 전략', subtitle: '마케팅 전략서', desc: '디지털 마케팅 실행 계획' },
+  { title: '빅데이터 분석 시스템', subtitle: '개발 기획서', desc: 'AI/ML 시스템 설계 문서' },
+  { title: 'ESG 경영 전략', subtitle: '전략 보고서', desc: '지속가능경영 추진 계획' },
+  { title: '메타버스 플랫폼', subtitle: '사업계획서', desc: '가상공간 플랫폼 구축 계획' },
+  { title: '헬스케어 앱 개발', subtitle: '기획 보고서', desc: '모바일 헬스케어 서비스 기획' }
 ];
 
 export default function Home() {
   const router = useRouter();
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('전체');
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem('token');
@@ -39,6 +43,21 @@ export default function Home() {
       router.push('/dashboard');
     }
   }, [router]);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    router.push('/register');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -61,9 +80,10 @@ export default function Home() {
             </nav>
           </div>
           <div className="flex items-center gap-3">
-            <button className="text-sm text-gray-600 hover:text-gray-900">🔍</button>
-            <button className="text-sm text-gray-600 hover:text-gray-900">💬</button>
-            <button className="text-sm text-gray-600 hover:text-gray-900">🔔</button>
+            <button className="text-sm text-gray-600 hover:text-gray-900" title="검색">🔍</button>
+            <button className="text-sm text-gray-600 hover:text-gray-900" title="다운로드">💾</button>
+            <button className="text-sm text-gray-600 hover:text-gray-900" title="노트">📝</button>
+            <button className="text-sm text-gray-600 hover:text-gray-900" title="알림">🔔</button>
             <button
               onClick={() => router.push('/login')}
               className="px-4 py-1.5 text-sm text-gray-600 hover:text-gray-900"
@@ -87,10 +107,15 @@ export default function Home() {
         </h1>
 
         {/* 입력 영역 */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8 shadow-sm">
+        <div 
+          className={`bg-white rounded-2xl border-2 ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-200'} p-6 mb-8 shadow-sm transition`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
           <div className="flex items-center gap-3 mb-4">
-            <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-              <span>📝</span>
+            <button className="flex items-center gap-2 px-3 py-1.5 bg-pink-50 border border-pink-200 rounded-lg text-sm hover:bg-pink-100">
+              <span>✨</span>
               <span>에이전트</span>
             </button>
             <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
@@ -111,7 +136,7 @@ export default function Home() {
               type="text"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              placeholder="좋은부"
+              placeholder="어떤 문서를 만들고 싶으신가요? 예: AI 기반 물류 플랫폼 사업계획서"
               className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none text-sm"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && searchText) {
@@ -121,27 +146,44 @@ export default function Home() {
             />
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <span>📎</span>
-            <span>콘텐츠 작성</span>
-            <button className="ml-auto px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              →
+          <div className="flex items-center gap-3 text-xs text-gray-500">
+            <button className="flex items-center gap-1 hover:text-gray-700">
+              <span>📎</span>
+              <span>파일 첨부</span>
+            </button>
+            <button className="flex items-center gap-1 hover:text-gray-700">
+              <span>🖼️</span>
+              <span>이미지 추가</span>
+            </button>
+            <button className="flex items-center gap-1 hover:text-gray-700">
+              <span>📊</span>
+              <span>데이터 삽입</span>
+            </button>
+            <span className="text-gray-400">|</span>
+            <span>드래그앤드롭으로 파일을 추가하세요</span>
+            <button 
+              onClick={() => router.push('/register')}
+              className="ml-auto px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              생성 →
             </button>
           </div>
         </div>
 
-        {/* 아이콘 그리드 */}
-        <div className="grid grid-cols-3 md:grid-cols-9 gap-4 mb-12">
+        {/* 문서 타입 아이콘들 */}
+        <div className="grid grid-cols-4 md:grid-cols-8 gap-6 mb-12">
           {DOCUMENT_TYPES.map((type, index) => (
             <button
               key={index}
               onClick={() => router.push('/register')}
-              className="flex flex-col items-center gap-2 group"
+              className="group flex flex-col items-center gap-2"
             >
-              <div className={`w-14 h-14 ${type.color} rounded-2xl flex items-center justify-center text-2xl shadow-md group-hover:scale-110 transition-transform`}>
+              <div className={`w-16 h-16 ${type.color} rounded-2xl flex items-center justify-center text-3xl shadow-md group-hover:scale-110 transition-transform`}>
                 {type.icon}
               </div>
-              <span className="text-xs text-gray-700 text-center">{type.label}</span>
+              <span className="text-xs text-gray-700 text-center whitespace-pre-line leading-tight">
+                {type.label}
+              </span>
             </button>
           ))}
         </div>
@@ -175,19 +217,31 @@ export default function Home() {
               <button
                 key={index}
                 onClick={() => router.push('/register')}
-                className="group bg-white rounded-xl border border-gray-200 hover:shadow-lg transition overflow-hidden"
+                className="group bg-white rounded-xl border border-gray-200 hover:shadow-xl transition overflow-hidden"
               >
-                <div className="aspect-[3/4] bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 relative p-4">
-                  <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                    <div className="text-8xl">📄</div>
-                  </div>
-                  <div className="relative bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-sm">
-                    <div className="text-xs text-blue-600 font-semibold mb-1">
+                <div className="aspect-[3/4] bg-gradient-to-br from-blue-50 via-white to-purple-50 relative p-4 flex flex-col justify-between">
+                  {/* 문서 미리보기 효과 */}
+                  <div className="bg-white rounded-lg shadow-sm p-3 flex-1 flex flex-col">
+                    <div className="text-xs text-blue-600 font-semibold mb-2">
                       {template.subtitle}
                     </div>
-                    <div className="text-sm font-bold text-gray-900 leading-tight line-clamp-2">
+                    <div className="text-sm font-bold text-gray-900 leading-tight mb-2">
                       {template.title}
                     </div>
+                    <div className="text-xs text-gray-500 line-clamp-2 mb-3">
+                      {template.desc}
+                    </div>
+                    <div className="mt-auto space-y-1">
+                      <div className="h-1 bg-gray-200 rounded"></div>
+                      <div className="h-1 bg-gray-200 rounded w-4/5"></div>
+                      <div className="h-1 bg-gray-200 rounded w-3/5"></div>
+                    </div>
+                  </div>
+                  
+                  {/* 품질 배지 */}
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">87+ 품질</span>
+                    <span className="text-xs text-gray-500">20분</span>
                   </div>
                 </div>
               </button>
@@ -201,7 +255,7 @@ export default function Home() {
             onClick={() => router.push('/register')}
             className="px-8 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 shadow-lg"
           >
-            Plan-Craft에 가입하여 무료로 무제한 창작을 시작하세요
+            Plan-Craft에 가입하여 무료로 시작하기 →
           </button>
         </div>
       </div>
@@ -211,7 +265,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center text-sm text-gray-500">
             <p className="font-semibold text-gray-900 mb-2">Plan-Craft v3.0</p>
-            <p>Claude Opus 4 기반 멀티 에이전트 문서 생성 시스템</p>
+            <p>Claude Opus 4 기반 · 87+/100 품질 · 20분 생성 · 4개 AI 에이전트</p>
           </div>
         </div>
       </footer>
