@@ -7,10 +7,12 @@ import { db } from '../db/index.js';
 import { users } from '../db/schema-pg.js';
 import { eq } from 'drizzle-orm';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required');
-}
+import crypto from 'crypto';
+
+const JWT_SECRET = process.env.JWT_SECRET || (() => {
+  console.warn('⚠️  WARNING: JWT_SECRET not set! Using auto-generated secret. Tokens will reset on restart.');
+  return crypto.randomBytes(32).toString('hex');
+})();
 
 // JWT 토큰 생성
 export function generateToken(userId) {
