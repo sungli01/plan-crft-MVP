@@ -5,7 +5,7 @@ nixPkgs = ["nodejs_20"]
 cmds = ["npm install"]
 
 [phases.build]
-cmds = ["echo 'skip build'"]
+cmds = ["echo 'skip'"]
 
 [start]
-cmd = "./node_modules/.bin/tsx src/index.ts"
+cmd = "node start.js"

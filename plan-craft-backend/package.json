@@ -6,7 +6,7 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "start": "./node_modules/.bin/tsx src/index.ts",
+    "start": "node start.js",
     "build": "echo 'no build step needed'",
     "test": "vitest run",
     "test:watch": "vitest",
