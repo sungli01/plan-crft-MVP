@@ -67,6 +67,16 @@ export async function initializeDatabase(): Promise<boolean> {
       )
     `;
 
+    // Add new columns to existing projects table (safe migration)
+    await client`
+      DO $$ BEGIN
+        ALTER TABLE projects ADD COLUMN IF NOT EXISTS reference_doc TEXT;
+        ALTER TABLE projects ADD COLUMN IF NOT EXISTS error_message TEXT;
+        ALTER TABLE projects ADD COLUMN IF NOT EXISTS model TEXT DEFAULT 'claude-opus-4';
+      EXCEPTION WHEN OTHERS THEN NULL;
+      END $$
+    `;
+
     await client`
       CREATE TABLE IF NOT EXISTS documents (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

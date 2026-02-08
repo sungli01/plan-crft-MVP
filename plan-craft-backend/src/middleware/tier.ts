@@ -31,7 +31,7 @@ export function tierCheck() {
         .where(
           and(
             eq(projects.userId, user.id),
-            gte(projects.createdAt, startOfMonth.toISOString())
+            gte(projects.createdAt, new Date(startOfMonth.toISOString()))
           )
         );
 
