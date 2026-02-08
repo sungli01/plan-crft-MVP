@@ -4,18 +4,32 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../components/Header';
 import { useToast } from '../components/Toast';
+import ProLock from '../components/ProLock';
 import api from '../lib/api';
 
 export default function CreatePage() {
   const router = useRouter();
   const { showToast } = useToast();
   const [creating, setCreating] = useState(false);
+  const [deepResearch, setDeepResearch] = useState(false);
+  const [isPro, setIsPro] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');
       return;
+    }
+
+    // Check user plan
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        setIsPro(user.plan === 'pro' || user.plan === 'enterprise');
+      }
+    } catch {
+      // ignore
     }
   }, [router]);
 
@@ -36,7 +50,7 @@ export default function CreatePage() {
         referenceDoc = await readFileAsText(file);
       }
 
-      const response = await api.post('/api/projects', { title, idea, referenceDoc });
+      const response = await api.post('/api/projects', { title, idea, referenceDoc, deepResearch: deepResearch && isPro });
 
       // 프로젝트 생성 후 상세 페이지로 이동
       router.push(`/project/${response.data.project.id}`);
@@ -139,6 +153,54 @@ export default function CreatePage() {
               </div>
             </div>
 
+            {/* 심층 연구 토글 */}
+            <div>
+              <ProLock feature="심층 연구" isPro={isPro}>
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-5 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-900/10 dark:to-teal-900/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">🔬</span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                            심층 연구
+                          </span>
+                          <span className="px-1.5 py-0.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[10px] font-bold rounded-full">
+                            Pro
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          학술 논문과 전문 자료 기반 분석
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={deepResearch}
+                      onClick={() => isPro && setDeepResearch(!deepResearch)}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
+                        deepResearch ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
+                      } ${!isPro ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          deepResearch ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  {deepResearch && isPro && (
+                    <div className="mt-3 pl-11">
+                      <p className="text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded-md px-3 py-2">
+                        ✨ AI가 학술 논문과 전문 자료를 분석하여 문서 품질을 향상시킵니다
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </ProLock>
+            </div>
+
             <div className="flex gap-4 pt-4">
               <button
                 type="submit"
@@ -151,7 +213,7 @@ export default function CreatePage() {
                     생성 중...
                   </span>
                 ) : (
-                  '프로젝트 생성'
+                  deepResearch && isPro ? '🔬 심층 연구 + 프로젝트 생성' : '프로젝트 생성'
                 )}
               </button>
               <button

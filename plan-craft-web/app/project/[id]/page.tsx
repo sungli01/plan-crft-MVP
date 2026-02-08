@@ -4,6 +4,8 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Header from '../../components/Header';
 import { useToast } from '../../components/Toast';
+import ResearchPanel from '../../components/ResearchPanel';
+import type { ResearchData } from '../../components/ResearchPanel';
 import api from '../../lib/api';
 import type { Document as DocType, AgentProgress, ProgressLog, RealtimeProgress, Message } from '../../types';
 
@@ -13,6 +15,8 @@ interface ProjectData {
   idea: string;
   status: string;
   createdAt: string;
+  deepResearch?: boolean;
+  researchData?: ResearchData;
 }
 
 export default function ProjectDetailPage() {
@@ -34,6 +38,14 @@ export default function ProjectDetailPage() {
   const [realtimeProgress, setRealtimeProgress] = useState<RealtimeProgress | null>(null);
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [estimatedDuration] = useState<number>(20 * 60 * 1000); // 20분 (밀리초)
+
+  // 연구 데이터
+  const [researchData, setResearchData] = useState<ResearchData | null>(null);
+
+  // WebSocket 진행 상황
+  const [wsProgress, setWsProgress] = useState<string | null>(null);
+  const [wsConnected, setWsConnected] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
 
   // Fix: separate status tracking to avoid useEffect infinite loop
   const [projectStatus, setProjectStatus] = useState<string>('');
@@ -60,6 +72,11 @@ export default function ProjectDetailPage() {
       setProjectStatus(projectData.status);
       statusRef.current = projectData.status;
 
+      // Load research data if available
+      if (projectData.researchData) {
+        setResearchData(projectData.researchData);
+      }
+
       // 생성 상태 확인 (실시간 진행 상황 포함)
       const statusResponse = await api.get(`/api/generate/${projectId}/status`);
       
@@ -72,6 +89,11 @@ export default function ProjectDetailPage() {
       
       if (statusResponse.data.document) {
         setDocument(statusResponse.data.document);
+      }
+
+      // Also check for research data in status response
+      if (statusResponse.data.researchData) {
+        setResearchData(statusResponse.data.researchData);
       }
     } catch (error) {
       console.error('프로젝트 로딩 실패:', error);
@@ -115,16 +137,85 @@ export default function ProjectDetailPage() {
     loadProjectData();
   }, [projectId, loadProjectData, router]);
 
-  // Polling — only when generating, 3s interval
+  // WebSocket for real-time progress
   useEffect(() => {
     if (projectStatus !== 'generating') return;
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const wsUrl = apiUrl.replace(/^http/, 'ws') + `/ws/progress/${projectId}`;
+
+    try {
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        setWsConnected(true);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          // Update progress based on message type
+          if (data.type === 'research_search') {
+            setWsProgress('🔬 학술 논문 검색 중...');
+          } else if (data.type === 'research_analyze') {
+            setWsProgress(`📊 ${data.count || 0}개 논문 분석 완료`);
+          } else if (data.type === 'research_summary') {
+            setWsProgress('📝 연구 결과 요약 중...');
+          } else if (data.type === 'research_complete') {
+            setWsProgress(null);
+            if (data.researchData) {
+              setResearchData(data.researchData);
+            }
+          } else if (data.type === 'progress') {
+            if (data.progress) {
+              setRealtimeProgress(data.progress);
+            }
+          } else if (data.type === 'status') {
+            if (data.status && data.status !== statusRef.current) {
+              statusRef.current = data.status;
+              setProjectStatus(data.status);
+              // Reload full project data on status change
+              loadProjectData();
+            }
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      };
+
+      ws.onerror = () => {
+        setWsConnected(false);
+        // Fall back to polling (handled below)
+      };
+
+      ws.onclose = () => {
+        setWsConnected(false);
+        wsRef.current = null;
+      };
+
+      return () => {
+        ws.close();
+        wsRef.current = null;
+      };
+    } catch {
+      setWsConnected(false);
+      // Fall back to polling
+    }
+  }, [projectStatus, projectId, loadProjectData]);
+
+  // Polling — only when generating AND WebSocket is not connected, 3s interval
+  useEffect(() => {
+    if (projectStatus !== 'generating') return;
+    if (wsConnected) return; // Skip polling when WS is connected
     
     const interval = setInterval(() => {
       pollStatus();
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [projectStatus, projectId, pollStatus]);
+  }, [projectStatus, projectId, pollStatus, wsConnected]);
 
   const calculateTimeProgress = () => {
     if (!realtimeProgress) return 0;
@@ -460,6 +551,11 @@ export default function ProjectDetailPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-3">
                   <h1 className="text-lg font-bold text-gray-900 dark:text-white">{project.title}</h1>
+                  {project.deepResearch && (
+                    <span className="px-2 py-0.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold rounded-full">
+                      Pro
+                    </span>
+                  )}
                   {project.status === 'completed' && (
                     <div className="relative" ref={downloadMenuRef}>
                       <button
@@ -495,6 +591,19 @@ export default function ProjectDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Research Panel - shown above document when data exists */}
+          <ResearchPanel data={researchData} />
+
+          {/* WebSocket research progress */}
+          {wsProgress && project.status === 'generating' && (
+            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4 mb-6 flex items-center gap-3">
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-emerald-600 border-t-transparent"></div>
+              <span className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
+                {wsProgress}
+              </span>
+            </div>
+          )}
 
           {/* 실시간 생성 문서 내용 */}
           {project.status === 'generating' && realtimeProgress && (
