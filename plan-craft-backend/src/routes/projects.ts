@@ -114,7 +114,7 @@ projectsRouter.post('/', async (c) => {
     }
 
     console.error('프로젝트 생성 오류:', error);
-    return c.json({ error: '서버 오류가 발생했습니다', detail: error?.message || String(error) }), 500);
+    return c.json({ error: '서버 오류가 발생했습니다', detail: error?.message || String(error) }, 500);
   }
 });
 
@@ -155,7 +155,7 @@ projectsRouter.get('/:id', async (c) => {
 
   } catch (error: any) {
     console.error('프로젝트 조회 오류:', error);
-    return c.json({ error: '서버 오류가 발생했습니다', detail: error?.message || String(error) }), 500);
+    return c.json({ error: '서버 오류가 발생했습니다', detail: error?.message || String(error) }, 500);
   }
 });
 
@@ -207,7 +207,7 @@ projectsRouter.patch('/:id', async (c) => {
     }
 
     console.error('프로젝트 수정 오류:', error);
-    return c.json({ error: '서버 오류가 발생했습니다', detail: error?.message || String(error) }), 500);
+    return c.json({ error: '서버 오류가 발생했습니다', detail: error?.message || String(error) }, 500);
   }
 });
 
@@ -243,7 +243,7 @@ projectsRouter.delete('/:id', async (c) => {
 
   } catch (error: any) {
     console.error('프로젝트 삭제 오류:', error);
-    return c.json({ error: '서버 오류가 발생했습니다', detail: error?.message || String(error) }), 500);
+    return c.json({ error: '서버 오류가 발생했습니다', detail: error?.message || String(error) }, 500);
   }
 });
 
