@@ -84,6 +84,19 @@ export async function initializeDatabase(): Promise<boolean> {
     `;
 
     await client`
+      CREATE TABLE IF NOT EXISTS mockups (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        project_id UUID NOT NULL REFERENCES projects(id),
+        user_id UUID NOT NULL REFERENCES users(id),
+        html TEXT NOT NULL,
+        style TEXT DEFAULT 'modern',
+        metadata TEXT DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT NOW(),
+        expires_at TIMESTAMP
+      )
+    `;
+
+    await client`
       CREATE TABLE IF NOT EXISTS token_usage (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id),

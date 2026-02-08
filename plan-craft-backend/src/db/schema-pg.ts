@@ -49,6 +49,18 @@ export const documents = pgTable('documents', {
   generatedAt: timestamp('generated_at').defaultNow()
 });
 
+// Mockups 테이블
+export const mockups = pgTable('mockups', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  projectId: uuid('project_id').notNull().references(() => projects.id),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  html: text('html').notNull(),
+  style: text('style').default('modern'),
+  metadata: text('metadata').default('{}'),
+  createdAt: timestamp('created_at').defaultNow(),
+  expiresAt: timestamp('expires_at'),
+});
+
 // Token Usage 테이블
 export const tokenUsage = pgTable('token_usage', {
   id: uuid('id').primaryKey().defaultRandom(),

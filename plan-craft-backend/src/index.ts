@@ -16,6 +16,7 @@ import oauthRouter from './routes/oauth';
 import projectsRoutes from './routes/projects';
 import generateRoutes from './routes/generate';
 import usageRoutes from './routes/usage';
+import mockupRouter from './routes/mockup';
 import { addConnection, removeConnection, getConnectionCount } from './ws/progress-ws';
 import { progressTracker } from './utils/progress-tracker';
 import { getCache } from './cache/redis';
@@ -130,6 +131,7 @@ app.route('/api/oauth', oauthRouter);
 app.route('/api/projects', projectsRoutes);
 app.route('/api/generate', generateRoutes);
 app.route('/api/usage', usageRoutes);
+app.route('/api/mockup', mockupRouter);
 
 // 404 handler
 app.notFound((c) => {
@@ -180,6 +182,9 @@ const server = serve({
   console.log(`   GET  /api/generate/:projectId/status    - 생성 상태 확인`);
   console.log(`   GET  /api/generate/:projectId/download  - HTML 다운로드`);
   console.log(`   GET  /api/usage                            - 사용량 조회`);
+  console.log(`   POST /api/mockup/:projectId/generate       - 목업 생성`);
+  console.log(`   GET  /api/mockup/:projectId                - 목업 목록`);
+  console.log(`   GET  /api/mockup/:projectId/preview/:id    - 목업 미리보기`);
   console.log('');
 });
 
