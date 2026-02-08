@@ -12,6 +12,7 @@ import type { ProjectInfo } from './agents/architect';
 import { WriterAgent } from './agents/writer';
 import { ImageCuratorAgent } from './agents/image-curator';
 import { ReviewerAgent } from './agents/reviewer';
+import { ResearchAgent } from './agents/researcher';
 import { ModelRouter } from './model-router';
 import { TokenTracker } from './token-tracker';
 
@@ -144,6 +145,65 @@ export class AgentTeamOrchestrator {
     const startTime = Date.now();
 
     try {
+      // Phase 0 (Pro Mode): Deep Research
+      let researchResult: any = null;
+      if (this.config.proMode) {
+        console.log('\n🔬 Phase 0: 딥 리서치 (Research Agent - Pro Mode)');
+        this.updateProgress('researcher', { status: 'running', progress: 10 });
+
+        if (progressTracker && projectInfo.projectId) {
+          progressTracker.updateAgent(projectInfo.projectId, 'researcher', {
+            status: 'running',
+            progress: 10,
+            detail: '학술 논문 검색 및 분석 중...'
+          });
+          progressTracker.addLog(projectInfo.projectId, {
+            agent: 'researcher',
+            level: 'info',
+            message: '딥 리서치 시작 (Semantic Scholar + arXiv)'
+          });
+        }
+
+        try {
+          const researcher = new ResearchAgent({ apiKey: this.config.apiKey });
+          researchResult = await researcher.research(
+            projectInfo.idea || projectInfo.title || '',
+            []
+          );
+
+          console.log(`✅ 리서치 완료: ${researchResult.stats.totalPapers}개 논문 발견`);
+          console.log(`   Semantic Scholar: ${researchResult.stats.semanticScholar}개`);
+          console.log(`   arXiv: ${researchResult.stats.arxiv}개`);
+          console.log(`   키워드: ${researchResult.keywords.join(', ')}`);
+
+          this.updateProgress('researcher', { status: 'completed', progress: 100 });
+
+          if (progressTracker && projectInfo.projectId) {
+            progressTracker.updateAgent(projectInfo.projectId, 'researcher', {
+              status: 'completed',
+              progress: 100,
+              detail: `${researchResult.stats.totalPapers}개 논문 분석 완료`
+            });
+            progressTracker.addLog(projectInfo.projectId, {
+              agent: 'researcher',
+              level: 'success',
+              message: `딥 리서치 완료: ${researchResult.stats.totalPapers}개 논문, ${researchResult.references.length}개 참고문헌`
+            });
+          }
+        } catch (researchError: any) {
+          console.warn('[ResearchAgent] Research failed (non-fatal):', researchError.message);
+          this.updateProgress('researcher', { status: 'skipped', progress: 0 });
+
+          if (progressTracker && projectInfo.projectId) {
+            progressTracker.addLog(projectInfo.projectId, {
+              agent: 'researcher',
+              level: 'warn',
+              message: `리서치 건너뜀: ${researchError.message}`
+            });
+          }
+        }
+      }
+
       // Phase 1: 문서 설계 (Architect)
       console.log('\n📐 Phase 1: 문서 설계 (Architect)');
       this.updateProgress('architect', { status: 'running', progress: 10 });
@@ -161,7 +221,14 @@ export class AgentTeamOrchestrator {
         });
       }
 
-      const designResult = await this.architect.designStructure(projectInfo);
+      // Enrich projectInfo with research context for architect
+      const enrichedProjectInfo = { ...projectInfo };
+      if (researchResult && researchResult.summary) {
+        const researchContext = `\n\n[학술 연구 컨텍스트]\n${researchResult.summary}\n\n[참고 키워드: ${researchResult.keywords.join(', ')}]`;
+        enrichedProjectInfo.idea = (enrichedProjectInfo.idea || '') + researchContext;
+      }
+
+      const designResult = await this.architect.designStructure(enrichedProjectInfo);
       this.updateTokenUsage('architect', designResult.tokens, { model: this.architect.model });
       
       const design = designResult.design;
@@ -379,6 +446,7 @@ export class AgentTeamOrchestrator {
         sections: writtenSections,
         images: imageResults,
         reviews: reviewResult,
+        research: researchResult || null,
         metadata: {
           totalTime: elapsed,
           tokenUsage: totalTokens,
