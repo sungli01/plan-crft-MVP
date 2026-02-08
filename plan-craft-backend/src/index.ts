@@ -59,6 +59,19 @@ app.get('/ws/progress/:projectId', upgradeWebSocket((c) => {
   };
 }));
 
+// Security headers
+app.use('*', async (c, next) => {
+  await next();
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('X-Frame-Options', 'DENY');
+  c.header('X-XSS-Protection', '1; mode=block');
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  if (process.env.NODE_ENV === 'production') {
+    c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+});
+
 // Middleware
 app.use('*', logger());
 app.use('*', prettyJSON());
@@ -138,6 +151,25 @@ app.route('/api/mockup', mockupRouter);
 app.route('/api/share', sharingRouter);
 app.route('/api/versions', versionsRouter);
 app.route('/api/comments', commentsRouter);
+
+// Performance metrics endpoint
+app.get('/metrics', (c) => {
+  const uptime = process.uptime();
+  const memory = process.memoryUsage();
+
+  return c.json({
+    uptime: Math.floor(uptime),
+    uptimeHuman: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m`,
+    memory: {
+      rss: `${Math.round(memory.rss / 1024 / 1024)}MB`,
+      heapUsed: `${Math.round(memory.heapUsed / 1024 / 1024)}MB`,
+      heapTotal: `${Math.round(memory.heapTotal / 1024 / 1024)}MB`,
+    },
+    nodeVersion: process.version,
+    environment: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString(),
+  });
+});
 
 // 404 handler
 app.notFound((c) => {
