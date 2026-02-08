@@ -54,6 +54,11 @@ export async function initializeDatabase(): Promise<boolean> {
       END $$
     `;
 
+    // Auto-approve existing users (pre-v5 migration)
+    await client`
+      UPDATE users SET approved = true WHERE approved IS NULL OR approved = false
+    `;
+
     // Auto-set admin user (sungli01@naver.com)
     await client`
       UPDATE users

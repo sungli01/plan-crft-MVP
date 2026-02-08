@@ -7,7 +7,7 @@ import SidebarLayout from "./components/SidebarLayout";
 export const metadata: Metadata = {
   metadataBase: new URL('https://plan-crft-mvp-ot41.vercel.app'),
   title: {
-    default: 'Plan-Craft v4.0 — AI 멀티에이전트 사업계획서 생성',
+    default: 'Plan-Craft v5.0 — AI 멀티에이전트 사업계획서 생성',
     template: '%s | Plan-Craft',
   },
   description: '4개의 AI 에이전트가 협력하여 전문가 수준의 사업계획서를 자동 생성합니다. 87+/100 품질 보장, 8-10분 완성.',
