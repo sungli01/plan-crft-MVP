@@ -2,9 +2,11 @@
  * Plan-Craft Backend API Server
  */
 
-import { config } from 'dotenv';
-// dotenv: 기존 환경변수를 덮어쓰지 않도록 override: false
-config({ override: false });
+// dotenv: production에서는 로드하지 않음 (Railway 환경변수 사용)
+if (process.env.NODE_ENV !== 'production') {
+  const { config } = require('dotenv');
+  config();
+}
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
