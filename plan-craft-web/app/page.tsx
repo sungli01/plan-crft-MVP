@@ -6,94 +6,86 @@ import Header from './components/Header';
 import { useToast } from './components/Toast';
 import api from './lib/api';
 import TEMPLATES, { type RichTemplate } from './data/templates';
-import RecentProjects from './components/RecentProjects';
-import PopularTemplates from './components/PopularTemplates';
-import TemplateCard from './components/TemplateCard';
-import {
-  ArchitectStepIcon,
-  WriterStepIcon,
-  ImageStepIcon,
-  ReviewerStepIcon,
-} from './components/Icons';
 
-/* ── Category config ── */
-const TEMPLATE_CATEGORIES = ['전체', '국가 사업', '개발 기획', '연구 보고', '비즈니스', '마케팅', '투자 유치', '기술 문서'];
-
-/* ── Process Steps ── */
-const PROCESS_STEPS = [
-  {
-    IconComponent: ArchitectStepIcon,
-    step: '01',
-    title: '구조 설계',
-    desc: 'AI가 사업 아이디어를 분석하여 최적의 문서 구조를 자동 설계합니다.',
-    tech: 'Claude Opus 4.6',
-    color: 'text-blue-600 dark:text-blue-400',
-    iconBg: 'bg-blue-50 dark:bg-blue-900/20',
-  },
-  {
-    IconComponent: WriterStepIcon,
-    step: '02',
-    title: '콘텐츠 작성',
-    desc: '5개의 Writer 에이전트가 동시에 각 섹션을 병렬로 작성합니다.',
-    tech: 'Claude Opus 4.6 × 5',
-    color: 'text-purple-600 dark:text-purple-400',
-    iconBg: 'bg-purple-50 dark:bg-purple-900/20',
-  },
-  {
-    IconComponent: ImageStepIcon,
-    step: '03',
-    title: '이미지 큐레이션',
-    desc: '각 섹션의 맥락에 맞는 이미지를 자동으로 검색·배치합니다.',
-    tech: 'Sonnet 4.5 + Unsplash',
-    color: 'text-orange-600 dark:text-orange-400',
-    iconBg: 'bg-orange-50 dark:bg-orange-900/20',
-  },
-  {
-    IconComponent: ReviewerStepIcon,
-    step: '04',
-    title: '품질 검수',
-    desc: '독립 Reviewer가 전체 문서를 평가하고 87+점 품질을 보장합니다.',
-    tech: 'Sonnet 4.5 · 자동 QA',
-    color: 'text-green-600 dark:text-green-400',
-    iconBg: 'bg-green-50 dark:bg-green-900/20',
-  },
+/* ══════════════════════════════════════════════════════ */
+/*  Category config (Skywork-style circular icons)       */
+/* ══════════════════════════════════════════════════════ */
+const CATEGORIES = [
+  { id: 'all', label: '전체', icon: '✨', gradient: 'from-gray-400 to-gray-500', lightBg: 'bg-gray-100 dark:bg-gray-700', ring: 'ring-gray-300 dark:ring-gray-600' },
+  { id: 'business-plan', label: '사업계획서', icon: '📄', gradient: 'from-blue-400 to-blue-600', lightBg: 'bg-blue-50 dark:bg-blue-900/30', ring: 'ring-blue-300 dark:ring-blue-600', category: '비즈니스' },
+  { id: 'market', label: '시장분석', icon: '📊', gradient: 'from-emerald-400 to-emerald-600', lightBg: 'bg-emerald-50 dark:bg-emerald-900/30', ring: 'ring-emerald-300 dark:ring-emerald-600', category: '마케팅' },
+  { id: 'invest', label: '투자유치', icon: '💰', gradient: 'from-amber-400 to-orange-500', lightBg: 'bg-amber-50 dark:bg-amber-900/30', ring: 'ring-amber-300 dark:ring-amber-600', category: '투자 유치' },
+  { id: 'research', label: '연구보고서', icon: '🔬', gradient: 'from-violet-400 to-purple-600', lightBg: 'bg-violet-50 dark:bg-violet-900/30', ring: 'ring-violet-300 dark:ring-violet-600', category: '연구 보고', pro: true },
+  { id: 'gov', label: '국가사업', icon: '🏢', gradient: 'from-rose-400 to-red-500', lightBg: 'bg-rose-50 dark:bg-rose-900/30', ring: 'ring-rose-300 dark:ring-rose-600', category: '국가 사업' },
+  { id: 'mockup', label: '목업사이트', icon: '🎨', gradient: 'from-pink-400 to-fuchsia-500', lightBg: 'bg-pink-50 dark:bg-pink-900/30', ring: 'ring-pink-300 dark:ring-pink-600', pro: true },
+  { id: 'marketing', label: '마케팅', icon: '📈', gradient: 'from-cyan-400 to-teal-500', lightBg: 'bg-cyan-50 dark:bg-cyan-900/30', ring: 'ring-cyan-300 dark:ring-cyan-600', category: '마케팅' },
+  { id: 'tech', label: '기술문서', icon: '⚙️', gradient: 'from-slate-400 to-gray-500', lightBg: 'bg-slate-100 dark:bg-slate-800/50', ring: 'ring-slate-300 dark:ring-slate-600', category: '기술 문서' },
 ];
+
+/* ── Sample popular projects for "인기 프로젝트" tab ── */
+const POPULAR_PROJECTS = [
+  { id: 'pop-1', title: 'AI 물류 최적화 플랫폼', desc: '딥러닝 기반 라스트마일 배송 최적화', gradient: 'from-blue-500 to-indigo-600', category: '사업계획서' },
+  { id: 'pop-2', title: '스마트팜 자동화 시스템', desc: 'IoT 센서 기반 정밀 농업 모니터링', gradient: 'from-emerald-500 to-green-600', category: '국가 사업' },
+  { id: 'pop-3', title: 'SaaS 프로젝트 관리 도구', desc: 'Jira 대체 클라우드 네이티브 솔루션', gradient: 'from-violet-500 to-purple-600', category: '개발 기획' },
+  { id: 'pop-4', title: '전고체 배터리 연구', desc: '황화물계 고체전해질 소재 기술 분석', gradient: 'from-amber-500 to-orange-600', category: '연구 보고' },
+  { id: 'pop-5', title: '글로벌 이커머스 진출', desc: '동남아 크로스보더 마케팅 전략', gradient: 'from-rose-500 to-pink-600', category: '투자 유치' },
+  { id: 'pop-6', title: 'AI 의료 영상 진단', desc: 'CT/MRI 딥러닝 분석 솔루션', gradient: 'from-cyan-500 to-teal-600', category: '국가 사업' },
+  { id: 'pop-7', title: '디지털 트윈 스마트공장', desc: '실시간 시뮬레이션 예측 정비', gradient: 'from-sky-500 to-blue-600', category: '기술 문서' },
+  { id: 'pop-8', title: '생성형 AI 모델 연구', desc: 'LLM 한국어 특화 파인튜닝', gradient: 'from-fuchsia-500 to-purple-600', category: '연구 보고' },
+  { id: 'pop-9', title: '프랜차이즈 카페 사업', desc: '프리미엄 커피 체인 수도권 확장', gradient: 'from-orange-500 to-red-500', category: '비즈니스' },
+  { id: 'pop-10', title: 'DevOps CI/CD 자동화', desc: 'GitOps 기반 배포 파이프라인', gradient: 'from-slate-500 to-gray-600', category: '개발 기획' },
+];
+
+/* ── Gradient configs for recent project cards ── */
+const CARD_GRADIENTS = [
+  'from-blue-500 to-indigo-600',
+  'from-emerald-500 to-teal-600',
+  'from-violet-500 to-purple-600',
+  'from-amber-500 to-orange-600',
+  'from-rose-500 to-pink-600',
+  'from-cyan-500 to-sky-600',
+  'from-fuchsia-500 to-pink-600',
+  'from-slate-500 to-gray-600',
+];
+
+interface RecentProject {
+  id: string;
+  title: string;
+  status: string;
+  createdAt: string;
+}
 
 export default function Home() {
   const router = useRouter();
   const { showToast } = useToast();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('전체');
-  const [showAllTemplates, setShowAllTemplates] = useState(false);
+  const [proMode, setProMode] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [activeTab, setActiveTab] = useState<'popular' | 'recent'>('popular');
+  const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
+  const [loadingRecent, setLoadingRecent] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const templateSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) setIsLoggedIn(true);
+    if (token) {
+      setIsLoggedIn(true);
+      loadRecentProjects();
+    }
   }, []);
 
-  /* ── Template click handler ── */
-  const handleTemplateClick = async (template: RichTemplate) => {
-    if (!isLoggedIn) {
-      router.push('/register');
-      return;
-    }
+  const loadRecentProjects = async () => {
+    setLoadingRecent(true);
     try {
-      const response = await api.post('/api/projects', {
-        title: template.title,
-        idea: template.overview || template.desc,
-      });
-      router.push(`/project/${response.data.project.id}`);
-    } catch (error: any) {
-      const msg = error?.response?.data?.error || error?.message || '알 수 없는 오류';
-      showToast(`프로젝트 생성 실패: ${msg}`, 'error');
-    }
+      const response = await api.get('/api/projects');
+      setRecentProjects((response.data.projects || []).slice(0, 10));
+    } catch {}
+    setLoadingRecent(false);
   };
 
-  /* ── Create from search ── */
-  const handleSearchCreate = async () => {
+  /* ── Create from prompt ── */
+  const handleCreate = async () => {
     if (!searchText.trim()) return;
     if (!isLoggedIn) {
       router.push('/register');
@@ -105,229 +97,360 @@ export default function Home() {
         idea: searchText,
       });
       router.push(`/project/${response.data.project.id}`);
-    } catch (error) {
-      showToast('프로젝트 생성에 실패했습니다', 'error');
+    } catch (error: any) {
+      const msg = error?.response?.data?.error || error?.message || '알 수 없는 오류';
+      showToast(`프로젝트 생성 실패: ${msg}`, 'error');
     }
   };
 
-  /* ── Filtered templates ── */
-  const filteredTemplates = selectedCategory === '전체'
-    ? TEMPLATES
-    : TEMPLATES.filter(t => t.category === selectedCategory);
+  /* ── Click popular project card ── */
+  const handlePopularClick = async (title: string, desc: string) => {
+    if (!isLoggedIn) {
+      router.push('/register');
+      return;
+    }
+    try {
+      const response = await api.post('/api/projects', {
+        title,
+        idea: desc,
+      });
+      router.push(`/project/${response.data.project.id}`);
+    } catch (error: any) {
+      const msg = error?.response?.data?.error || error?.message || '알 수 없는 오류';
+      showToast(`프로젝트 생성 실패: ${msg}`, 'error');
+    }
+  };
 
-  const displayedTemplates = showAllTemplates ? filteredTemplates : filteredTemplates.slice(0, 12);
+  /* ── Category filter for popular ── */
+  const getFilteredPopular = () => {
+    if (selectedCategory === 'all') return POPULAR_PROJECTS;
+    const cat = CATEGORIES.find(c => c.id === selectedCategory);
+    if (!cat?.category) return POPULAR_PROJECTS;
+    return POPULAR_PROJECTS.filter(p => p.category === cat.category);
+  };
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(hours / 24);
+    if (hours < 1) return '방금 전';
+    if (hours < 24) return `${hours}시간 전`;
+    if (days < 7) return `${days}일 전`;
+    return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0B0F1A] flex flex-col">
+    <div className="flex flex-col min-h-screen">
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" className="hidden" accept=".txt,.pdf,.doc,.docx" />
 
-      {/* Header */}
+      {/* Header — slim top bar (desktop only, mobile handled by SidebarLayout) */}
       <Header />
 
       {/* Main Content */}
-      <main className="flex-1">
-        {/* ═══════════════════════════════════════════════ */}
-        {/* HERO SECTION — Clean, Skywork-style            */}
-        {/* ═══════════════════════════════════════════════ */}
-        <section className="relative overflow-hidden">
-          {/* Subtle gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-b from-blue-50/50 via-transparent to-transparent dark:from-blue-950/20 dark:via-transparent dark:to-transparent" />
-          
-          <div className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24 pb-12 sm:pb-16">
-            {/* Main heading */}
-            <div className="text-center max-w-3xl mx-auto mb-10">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4 leading-tight tracking-tight">
-                AI가 만드는
-                <br />
-                <span className="text-blue-600 dark:text-blue-400">전문가급 사업계획서</span>
-              </h1>
-              <p className="text-base sm:text-lg text-gray-500 dark:text-gray-400 leading-relaxed max-w-xl mx-auto">
-                아이디어를 입력하면 4개의 AI 에이전트가 협업하여
-                <br className="hidden sm:block" />
-                완성도 높은 문서를 자동으로 생성합니다
-              </p>
-            </div>
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-16">
 
-            {/* Search / Create input — Clean, minimal */}
-            <div className="max-w-2xl mx-auto">
-              <div className="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center">
-                  <div className="pl-5 pr-3 text-gray-400">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.5v15m7.5-7.5h-15" />
+          {/* ═══════════════════════════════════════════ */}
+          {/*  TITLE                                      */}
+          {/* ═══════════════════════════════════════════ */}
+          <div className="text-center mb-10 sm:mb-12">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-3 leading-tight tracking-tight">
+              AI 멀티에이전트가 만드는
+              <br />
+              <span className="bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">
+                전문가급 사업계획서
+              </span>
+            </h1>
+            <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 max-w-lg mx-auto">
+              아이디어를 입력하면 멀티에이전트가 협업하여 완성도 높은 문서를 자동 생성합니다
+            </p>
+          </div>
+
+          {/* ═══════════════════════════════════════════ */}
+          {/*  PROMPT BAR (Skywork-style)                 */}
+          {/* ═══════════════════════════════════════════ */}
+          <div className="mb-10 sm:mb-12">
+            <div className="relative bg-white dark:bg-[#161b22] rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg shadow-gray-200/50 dark:shadow-black/30 hover:shadow-xl hover:shadow-gray-300/50 dark:hover:shadow-black/40 transition-shadow duration-300">
+              {/* Top row: Agent label + Pro toggle */}
+              <div className="flex items-center justify-between px-4 pt-3 pb-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                    <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
-                  <input
-                    type="text"
-                    value={searchText}
-                    onChange={(e) => setSearchText(e.target.value)}
-                    placeholder="어떤 문서를 만들고 싶으신가요?"
-                    className="flex-1 py-4 pr-4 text-sm bg-transparent border-none focus:outline-none text-gray-900 dark:text-white placeholder-gray-400"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && searchText.trim()) handleSearchCreate();
-                    }}
-                  />
-                  <div className="pr-3">
-                    <button
-                      onClick={handleSearchCreate}
-                      disabled={!searchText.trim()}
-                      className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white text-sm font-medium rounded-xl transition-colors disabled:cursor-not-allowed"
-                    >
-                      생성
-                    </button>
-                  </div>
+                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">에이전트</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 font-medium">멀티에이전트</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  {/* Pro Mode toggle */}
+                  <button
+                    onClick={() => setProMode(!proMode)}
+                    className="flex items-center gap-1.5 group"
+                  >
+                    <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors">Pro</span>
+                    <div className={`relative w-8 h-[18px] rounded-full transition-colors duration-200 ${proMode ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-600'}`}>
+                      <div className={`absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white shadow-sm transition-transform duration-200 ${proMode ? 'translate-x-[16px]' : 'translate-x-[2px]'}`} />
+                    </div>
+                  </button>
                 </div>
               </div>
 
-              {/* Quick suggestions */}
-              <div className="flex items-center gap-2 mt-4 flex-wrap justify-center">
-                <span className="text-xs text-gray-400 dark:text-gray-500">예시:</span>
-                {['AI 물류 플랫폼', '스마트팜 자동화', 'SaaS 개발 기획'].map((suggestion) => (
+              {/* Input row */}
+              <div className="flex items-center px-4 pb-3 gap-2">
+                <input
+                  type="text"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  placeholder="사업 아이디어를 입력하세요..."
+                  className="flex-1 py-2.5 text-sm sm:text-base bg-transparent border-none focus:outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchText.trim()) handleCreate();
+                  }}
+                />
+                <div className="flex items-center gap-1.5">
+                  {/* Attachment */}
                   <button
-                    key={suggestion}
-                    onClick={() => setSearchText(suggestion)}
-                    className="px-3 py-1 text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full hover:border-blue-300 dark:hover:border-blue-600 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                    title="파일 첨부"
                   >
-                    {suggestion}
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
                   </button>
-                ))}
+                  {/* Send */}
+                  <button
+                    onClick={handleCreate}
+                    disabled={!searchText.trim()}
+                    className="w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 dark:disabled:bg-gray-700 flex items-center justify-center transition-colors disabled:cursor-not-allowed shadow-md shadow-blue-500/30 disabled:shadow-none"
+                  >
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
               </div>
+            </div>
+
+            {/* Quick suggestions */}
+            <div className="flex items-center gap-2 mt-3 flex-wrap justify-center">
+              <span className="text-[11px] text-gray-400 dark:text-gray-500">예시:</span>
+              {['AI 물류 플랫폼 사업', '스마트팜 국가과제', 'SaaS 개발 기획', '시장분석 보고서'].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSearchText(s)}
+                  className="px-3 py-1 text-[11px] text-gray-500 dark:text-gray-400 bg-white dark:bg-[#161b22] border border-gray-200 dark:border-gray-700 rounded-full hover:border-blue-300 dark:hover:border-blue-600 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
+                >
+                  {s}
+                </button>
+              ))}
             </div>
           </div>
-        </section>
 
-        {/* ═══════════════════════════════════════════════ */}
-        {/* CONTENT SECTIONS                               */}
-        {/* ═══════════════════════════════════════════════ */}
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-16">
-
-          {/* ── Recent Projects ── */}
-          <RecentProjects />
-
-          {/* ── Popular Templates ── */}
-          <PopularTemplates />
-
-          {/* ── How It Works — Minimal 4-step ── */}
-          <section className="mb-16">
-            <div className="text-center mb-10">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">작동 방식</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">4개의 전문 AI 에이전트가 순차적으로 협업합니다</p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {PROCESS_STEPS.map((step, idx) => {
-                const StepIcon = step.IconComponent;
-                return (
-                  <div key={idx} className="relative text-center">
-                    {/* Icon */}
-                    <div className={`w-14 h-14 mx-auto mb-4 rounded-2xl ${step.iconBg} flex items-center justify-center`}>
-                      <StepIcon className="w-8 h-8" />
-                    </div>
-
-                    {/* Step number */}
-                    <div className={`text-xs font-bold ${step.color} mb-1`}>{step.step}</div>
-
-                    {/* Title */}
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">{step.title}</h3>
-
-                    {/* Desc */}
-                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{step.desc}</p>
-
-                    {/* Tech badge */}
-                    <div className="mt-3">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full text-[10px] font-medium text-gray-500 dark:text-gray-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-                        {step.tech}
+          {/* ═══════════════════════════════════════════ */}
+          {/*  CATEGORY ICONS (Skywork circular)          */}
+          {/* ═══════════════════════════════════════════ */}
+          <div className="mb-10 sm:mb-12">
+            <div className="flex gap-4 sm:gap-5 overflow-x-auto pb-2 scrollbar-hide justify-start sm:justify-center">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className="flex flex-col items-center gap-2 min-w-[60px] group"
+                >
+                  <div
+                    className={`
+                      relative w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center
+                      transition-all duration-200 ease-out
+                      ${selectedCategory === cat.id
+                        ? `bg-gradient-to-br ${cat.gradient} shadow-lg scale-105 ring-2 ${cat.ring} ring-offset-2 ring-offset-white dark:ring-offset-[#0B0F1A]`
+                        : `${cat.lightBg} hover:scale-110 hover:shadow-md`
+                      }
+                    `}
+                  >
+                    <span className={`text-xl sm:text-2xl ${selectedCategory === cat.id ? 'drop-shadow-md' : ''}`}>
+                      {cat.icon}
+                    </span>
+                    {cat.pro && (
+                      <span className="absolute -top-1 -right-1 text-[8px] font-bold px-1.5 py-0.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full shadow-sm">
+                        PRO
                       </span>
-                    </div>
-
-                    {/* Connector arrow (desktop, not last) */}
-                    {idx < PROCESS_STEPS.length - 1 && (
-                      <div className="hidden lg:block absolute top-7 -right-3 text-gray-300 dark:text-gray-600">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
                     )}
                   </div>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* ── All Templates Section ── */}
-          <section ref={templateSectionRef}>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">전체 템플릿</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{TEMPLATES.length}개의 전문 문서 템플릿</p>
-              </div>
-            </div>
-
-            {/* Category tabs — horizontal scroll */}
-            <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
-              {TEMPLATE_CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    setSelectedCategory(cat);
-                    setShowAllTemplates(false);
-                  }}
-                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                    selectedCategory === cat
-                      ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
-                      : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  {cat}
+                  <span className={`text-[11px] font-medium transition-colors whitespace-nowrap ${
+                    selectedCategory === cat.id
+                      ? 'text-gray-900 dark:text-white'
+                      : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
+                  }`}>
+                    {cat.label}
+                  </span>
                 </button>
               ))}
             </div>
+          </div>
 
-            {/* Template grid — 4 cols desktop, 2 cols mobile */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {displayedTemplates.map((template) => (
-                <TemplateCard
-                  key={template.id}
-                  template={template}
-                  onClick={handleTemplateClick}
-                />
+          {/* ═══════════════════════════════════════════ */}
+          {/*  TABS: 인기 프로젝트 | 최근 프로젝트         */}
+          {/* ═══════════════════════════════════════════ */}
+          <div className="mb-6">
+            <div className="flex items-center gap-1 border-b border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setActiveTab('popular')}
+                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'popular'
+                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                🔥 인기 프로젝트
+              </button>
+              <button
+                onClick={() => setActiveTab('recent')}
+                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'recent'
+                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                🕐 최근 프로젝트
+              </button>
+              {isLoggedIn && activeTab === 'recent' && (
+                <button
+                  onClick={() => router.push('/projects')}
+                  className="ml-auto text-xs text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
+                >
+                  전체 보기 →
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ═══════════════════════════════════════════ */}
+          {/*  TAB CONTENT                                */}
+          {/* ═══════════════════════════════════════════ */}
+
+          {/* ── 인기 프로젝트 Tab ── */}
+          {activeTab === 'popular' && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 animate-fade-in">
+              {getFilteredPopular().map((project) => (
+                <button
+                  key={project.id}
+                  onClick={() => handlePopularClick(project.title, project.desc)}
+                  className="group relative overflow-hidden rounded-2xl aspect-[4/3] text-left transition-all duration-200 hover:scale-[1.03] hover:shadow-xl"
+                >
+                  {/* Gradient background */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${project.gradient} opacity-90 group-hover:opacity-100 transition-opacity`} />
+                  {/* Decorative pattern */}
+                  <div className="absolute inset-0 opacity-10">
+                    <div className="absolute top-2 right-2 w-16 h-16 border border-white/30 rounded-full" />
+                    <div className="absolute bottom-4 left-4 w-8 h-8 border border-white/20 rounded-full" />
+                  </div>
+                  {/* Content overlay */}
+                  <div className="absolute inset-0 flex flex-col justify-end p-3 sm:p-4">
+                    <span className="text-[10px] sm:text-[11px] text-white/70 font-medium mb-1">{project.category}</span>
+                    <h3 className="text-xs sm:text-sm font-bold text-white leading-tight line-clamp-2">
+                      {project.title}
+                    </h3>
+                  </div>
+                </button>
               ))}
             </div>
+          )}
 
-            {/* Show more / Show less */}
-            {filteredTemplates.length > 12 && (
-              <div className="text-center mt-8">
-                <button
-                  onClick={() => setShowAllTemplates(!showAllTemplates)}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  {showAllTemplates ? (
-                    <>
-                      접기
-                      <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </>
-                  ) : (
-                    <>
-                      더 보기 ({filteredTemplates.length - 12}개)
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-          </section>
+          {/* ── 최근 프로젝트 Tab ── */}
+          {activeTab === 'recent' && (
+            <div className="animate-fade-in">
+              {!isLoggedIn ? (
+                <div className="text-center py-16 bg-white dark:bg-[#161b22] rounded-2xl border border-gray-200 dark:border-gray-700/50 border-dashed">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </div>
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">
+                    프로젝트를 시작해보세요
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+                    로그인하면 AI가 자동으로 전문가급 사업계획서를 생성해 드립니다
+                  </p>
+                  <button
+                    onClick={() => router.push('/register')}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
+                  >
+                    무료로 시작하기
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              ) : loadingRecent ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="rounded-2xl aspect-[4/3] bg-gray-200 dark:bg-gray-800 animate-pulse" />
+                  ))}
+                </div>
+              ) : recentProjects.length === 0 ? (
+                <div className="text-center py-16 bg-white dark:bg-[#161b22] rounded-2xl border border-gray-200 dark:border-gray-700/50 border-dashed">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    아직 프로젝트가 없습니다. 위의 프롬프트에 아이디어를 입력해보세요!
+                  </p>
+                  <button
+                    onClick={() => router.push('/create')}
+                    className="inline-flex items-center gap-2 px-5 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors font-medium"
+                  >
+                    새 프로젝트 만들기 →
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+                  {recentProjects.map((project, idx) => (
+                    <button
+                      key={project.id}
+                      onClick={() => router.push(`/project/${project.id}`)}
+                      className="group relative overflow-hidden rounded-2xl aspect-[4/3] text-left transition-all duration-200 hover:scale-[1.03] hover:shadow-xl"
+                    >
+                      {/* Gradient background */}
+                      <div className={`absolute inset-0 bg-gradient-to-br ${CARD_GRADIENTS[idx % CARD_GRADIENTS.length]} opacity-85 group-hover:opacity-100 transition-opacity`} />
+                      {/* Decorative */}
+                      <div className="absolute inset-0 opacity-10">
+                        <div className="absolute top-2 right-2 w-14 h-14 border border-white/30 rounded-full" />
+                      </div>
+                      {/* Content */}
+                      <div className="absolute inset-0 flex flex-col justify-between p-3 sm:p-4">
+                        <div className="flex items-center justify-between">
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                            project.status === 'completed'
+                              ? 'bg-white/20 text-white'
+                              : project.status === 'generating'
+                              ? 'bg-white/30 text-white'
+                              : 'bg-white/15 text-white/80'
+                          }`}>
+                            {project.status === 'completed' ? '✅ 완료' : project.status === 'generating' ? '⏳ 생성 중' : '📝 초안'}
+                          </span>
+                          <span className="text-[9px] text-white/60">{formatDate(project.createdAt)}</span>
+                        </div>
+                        <h3 className="text-xs sm:text-sm font-bold text-white leading-tight line-clamp-2">
+                          {project.title}
+                        </h3>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-          {/* ── Bottom CTA (non-logged-in) ── */}
+          {/* ═══════════════════════════════════════════ */}
+          {/*  BOTTOM CTA (non-logged-in)                 */}
+          {/* ═══════════════════════════════════════════ */}
           {!isLoggedIn && (
             <section className="mt-16 text-center">
-              <div className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/50 rounded-2xl p-8 sm:p-12 max-w-2xl mx-auto">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-3">
+              <div className="bg-white dark:bg-[#161b22] border border-gray-200 dark:border-gray-700/50 rounded-2xl p-8 sm:p-12 max-w-xl mx-auto">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
                   지금 바로 시작하세요
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
@@ -348,12 +471,11 @@ export default function Home() {
         </div>
       </main>
 
-      {/* ── Footer — Minimal ── */}
-      <footer className="border-t border-gray-200 dark:border-gray-800 py-8">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
-          <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Plan-Craft</p>
+      {/* ── Footer ── */}
+      <footer className="border-t border-gray-200 dark:border-gray-800 py-6">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <p className="text-xs text-gray-400 dark:text-gray-500">
-            AI 멀티에이전트 문서 생성 플랫폼 · 87+/100 품질 · 8-10분 완성
+            Plan-Craft · AI 멀티에이전트 문서 생성 플랫폼 · 87+/100 품질 · 8-10분 완성
           </p>
         </div>
       </footer>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ToastProvider } from "./components/Toast";
 import { ThemeProvider } from "./components/ThemeProvider";
+import SidebarLayout from "./components/SidebarLayout";
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://plan-crft-mvp-ot41.vercel.app'),
@@ -48,7 +49,9 @@ export default function RootLayout({
     <html lang="ko" suppressHydrationWarning>
       <body className="antialiased">
         <ThemeProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            <SidebarLayout>{children}</SidebarLayout>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>
