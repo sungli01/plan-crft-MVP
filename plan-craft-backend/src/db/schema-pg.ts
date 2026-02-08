@@ -11,6 +11,11 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash').notNull(),
   name: text('name'),
   plan: text('plan').default('free'),
+  oauthProvider: text('oauth_provider'),   // 'google' | 'github' | null
+  oauthId: text('oauth_id'),
+  tier: text('tier').default('free'),       // 'free' | 'pro'
+  loginAttempts: integer('login_attempts').default(0),
+  lockedUntil: text('locked_until'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow()
 });

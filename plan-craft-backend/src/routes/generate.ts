@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { authMiddleware, verifyToken } from '../middleware/auth';
+import { tierCheck } from '../middleware/tier';
 import { db } from '../db/index';
 import { projects, documents, tokenUsage } from '../db/schema-pg';
 import { eq, and, desc } from 'drizzle-orm';
@@ -9,8 +10,8 @@ import { progressTracker } from '../utils/progress-tracker';
 
 const generate = new Hono();
 
-// POST /api/generate/:projectId - 문서 생성
-generate.post('/:projectId', authMiddleware, async (c) => {
+// POST /api/generate/:projectId - 문서 생성 (tier check applied)
+generate.post('/:projectId', authMiddleware, tierCheck(), async (c) => {
   try {
     const userId = c.get('userId') as string;
     const projectId = c.req.param('projectId');

@@ -1,24 +1,81 @@
 /**
  * Reviewer Agent (검수자 에이전트)
- * 
- * 역할:
- * - 문서 품질 검증
- * - 논리적 일관성 체크
- * - 개선 제안
- * - 재작성 필요 여부 판단
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 
+export interface ReviewerConfig {
+  model?: string;
+}
+
+export interface ReviewScores {
+  structure: number;
+  style: number;
+  content: number;
+  emphasis: number;
+}
+
+export interface ReviewImprovement {
+  issue: string;
+  suggestion: string;
+  priority: string;
+}
+
+export interface SectionReview {
+  overallScore: number;
+  scores?: ReviewScores;
+  strengths?: string[];
+  weaknesses?: string[];
+  improvements?: ReviewImprovement[];
+  needsRewrite?: boolean;
+  verdict: string;
+  error?: string;
+}
+
+export interface ReviewResult {
+  sectionId: string;
+  review: SectionReview;
+  tokens?: any;
+  reviewedAt?: string;
+  error?: string;
+}
+
+export interface ReviewSummary {
+  reviews: ReviewResult[];
+  summary: {
+    averageScore: number;
+    passCount: number;
+    totalCount: number;
+    passRate: string;
+  };
+}
+
+export interface DocumentReview {
+  documentScore: number;
+  completeness?: number;
+  logicalFlow?: number;
+  overallQuality?: number;
+  missingElements?: string[];
+  redundancies?: string[];
+  globalImprovements?: string[];
+  readyForDelivery?: boolean;
+  error?: string;
+}
+
 export class ReviewerAgent {
-  constructor(apiKey, config = {}) {
+  anthropic: Anthropic;
+  model: string;
+  name: string;
+  role: string;
+
+  constructor(apiKey: string, config: ReviewerConfig = {}) {
     this.anthropic = new Anthropic({ apiKey });
-    this.model = config.model || 'claude-sonnet-4-5-20250929'; // Reviewer는 Sonnet으로 충분
+    this.model = config.model || 'claude-sonnet-4-5-20250929';
     this.name = 'Reviewer';
     this.role = '품질 검수자';
   }
 
-  async reviewSection(section, content, criteria = {}) {
+  async reviewSection(section: { id?: string; title: string }, content: string, criteria: any = {}): Promise<ReviewResult> {
     console.log(`\n✅ [${this.name}] 섹션 검수: ${section.title}`);
 
     const prompt = `당신은 국가 R&D 사업계획서 품질 검수 전문가입니다.
@@ -92,25 +149,25 @@ JSON 형식으로만 출력하세요.`;
         messages: [{ role: 'user', content: prompt }]
       });
 
-      const responseContent = message.content[0].text;
+      const responseContent = (message.content[0] as any).text;
       let jsonStr = responseContent.match(/```json\n([\s\S]*?)\n```/)?.[1] || responseContent;
       if (jsonStr.includes('```')) {
         jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/```\n?/g, '');
       }
 
-      const review = JSON.parse(jsonStr);
+      const review: SectionReview = JSON.parse(jsonStr);
 
       console.log(`   📊 점수: ${review.overallScore}/100 (${review.verdict.toUpperCase()})`);
-      console.log(`      구조: ${review.scores.structure}/30`);
-      console.log(`      개조식: ${review.scores.style}/25`);
-      console.log(`      내용: ${review.scores.content}/30`);
-      console.log(`      강조: ${review.scores.emphasis}/15`);
+      console.log(`      구조: ${review.scores?.structure}/30`);
+      console.log(`      개조식: ${review.scores?.style}/25`);
+      console.log(`      내용: ${review.scores?.content}/30`);
+      console.log(`      강조: ${review.scores?.emphasis}/15`);
 
-      if (review.weaknesses.length > 0) {
+      if (review.weaknesses && review.weaknesses.length > 0) {
         console.log(`   ⚠️  약점: ${review.weaknesses.length}개`);
       }
 
-      if (review.improvements.length > 0) {
+      if (review.improvements && review.improvements.length > 0) {
         console.log(`   💡 개선 제안: ${review.improvements.length}개`);
       }
 
@@ -121,10 +178,9 @@ JSON 형식으로만 출력하세요.`;
         reviewedAt: new Date().toISOString()
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(`   ❌ 검수 오류: ${error.message}`);
       
-      // 오류 시 기본 점수 반환
       return {
         sectionId: section.id || section.title,
         review: {
@@ -137,16 +193,15 @@ JSON 형식으로만 출력하세요.`;
     }
   }
 
-  async reviewMultipleSections(sections, contents) {
+  async reviewMultipleSections(sections: Array<{ id?: string; title: string }>, contents: string[]): Promise<ReviewSummary> {
     console.log(`\n✅ [${this.name}] ${sections.length}개 섹션 검수 시작...`);
 
-    const reviews = [];
+    const reviews: ReviewResult[] = [];
 
     for (let i = 0; i < sections.length; i++) {
       const review = await this.reviewSection(sections[i], contents[i]);
       reviews.push(review);
 
-      // Rate limiting
       if (i < sections.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
@@ -170,7 +225,7 @@ JSON 형식으로만 출력하세요.`;
     };
   }
 
-  async reviewDocument(documentStructure, sectionContents) {
+  async reviewDocument(documentStructure: any, sectionContents: string[]): Promise<{ documentReview: DocumentReview; tokens?: any; error?: string }> {
     console.log(`\n✅ [${this.name}] 전체 문서 검수 중...`);
 
     const prompt = `당신은 국가 R&D 사업계획서 최종 검수자입니다.
@@ -214,13 +269,13 @@ JSON 형식으로 출력하세요.`;
         messages: [{ role: 'user', content: prompt }]
       });
 
-      const content = message.content[0].text;
+      const content = (message.content[0] as any).text;
       let jsonStr = content.match(/```json\n([\s\S]*?)\n```/)?.[1] || content;
       if (jsonStr.includes('```')) {
         jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/```\n?/g, '');
       }
 
-      const documentReview = JSON.parse(jsonStr);
+      const documentReview: DocumentReview = JSON.parse(jsonStr);
 
       console.log(`   📊 문서 종합 점수: ${documentReview.documentScore}/100`);
       console.log(`   📋 완성도: ${documentReview.completeness}/100`);
@@ -233,7 +288,7 @@ JSON 형식으로 출력하세요.`;
         tokens: message.usage
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(`   ❌ 문서 검수 오류: ${error.message}`);
       
       return {

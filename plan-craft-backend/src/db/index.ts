@@ -30,9 +30,26 @@ export async function initializeDatabase(): Promise<boolean> {
         password_hash TEXT NOT NULL,
         name TEXT,
         plan TEXT DEFAULT 'free',
+        oauth_provider TEXT,
+        oauth_id TEXT,
+        tier TEXT DEFAULT 'free',
+        login_attempts INTEGER DEFAULT 0,
+        locked_until TEXT,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )
+    `;
+
+    // Add new columns to existing tables (safe to run multiple times)
+    await client`
+      DO $$ BEGIN
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_id TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS tier TEXT DEFAULT 'free';
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS login_attempts INTEGER DEFAULT 0;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TEXT;
+      EXCEPTION WHEN OTHERS THEN NULL;
+      END $$
     `;
 
     await client`

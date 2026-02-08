@@ -12,8 +12,10 @@ import { createNodeWebSocket } from '@hono/node-ws';
 import type { Context, Next } from 'hono';
 import { checkDatabaseConnection, initializeDatabase } from './db/index';
 import authRoutes from './routes/auth';
+import oauthRouter from './routes/oauth';
 import projectsRoutes from './routes/projects';
 import generateRoutes from './routes/generate';
+import usageRoutes from './routes/usage';
 import { addConnection, removeConnection, getConnectionCount } from './ws/progress-ws';
 import { progressTracker } from './utils/progress-tracker';
 import { getCache } from './cache/redis';
@@ -124,8 +126,10 @@ app.get('/health', async (c) => {
 
 // Routes
 app.route('/api/auth', authRoutes);
+app.route('/api/oauth', oauthRouter);
 app.route('/api/projects', projectsRoutes);
 app.route('/api/generate', generateRoutes);
+app.route('/api/usage', usageRoutes);
 
 // 404 handler
 app.notFound((c) => {
@@ -162,6 +166,11 @@ const server = serve({
   console.log(`   POST /api/auth/register             - 회원가입`);
   console.log(`   POST /api/auth/login                - 로그인`);
   console.log(`   GET  /api/auth/me                   - 현재 사용자`);
+  console.log(`   POST /api/auth/refresh              - 토큰 갱신`);
+  console.log(`   POST /api/auth/change-password       - 비밀번호 변경`);
+  console.log(`   GET  /api/oauth/providers            - OAuth 제공자 상태`);
+  console.log(`   GET  /api/oauth/google               - Google OAuth`);
+  console.log(`   GET  /api/oauth/github               - GitHub OAuth`);
   console.log(`   GET  /api/projects                  - 프로젝트 목록`);
   console.log(`   POST /api/projects                  - 프로젝트 생성`);
   console.log(`   GET  /api/projects/:id              - 프로젝트 상세`);
@@ -170,6 +179,7 @@ const server = serve({
   console.log(`   POST /api/generate/:projectId           - 문서 생성`);
   console.log(`   GET  /api/generate/:projectId/status    - 생성 상태 확인`);
   console.log(`   GET  /api/generate/:projectId/download  - HTML 다운로드`);
+  console.log(`   GET  /api/usage                            - 사용량 조회`);
   console.log('');
 });
 

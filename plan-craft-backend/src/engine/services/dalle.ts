@@ -3,20 +3,42 @@
  * Fallback chain: DALL-E 3 API → Professional SVG diagrams
  */
 
+export interface GenerateImageOptions {
+  size?: string;
+  quality?: string;
+  style?: string;
+}
+
+export interface ImageResult {
+  url: string;
+  revisedPrompt: string;
+  source: string;
+  generatedAt: string;
+}
+
+interface ColorScheme {
+  primary: string;
+  secondary: string;
+  text: string;
+  accent: string;
+}
+
 export class DalleService {
-  constructor(apiKey) {
+  apiKey: string | undefined;
+  baseUrl: string;
+
+  constructor(apiKey?: string) {
     this.apiKey = apiKey;
     this.baseUrl = 'https://api.openai.com/v1';
   }
 
-  async generateImage(prompt, options = {}) {
+  async generateImage(prompt: string, options: GenerateImageOptions = {}): Promise<ImageResult> {
     const {
       size = '1024x1024',
       quality = 'standard',
       style = 'natural'
     } = options;
 
-    // Try DALL-E 3 if key available
     if (this.apiKey && this.apiKey !== 'undefined' && this.apiKey.trim() !== '') {
       try {
         console.log(`🎨 DALL-E 3 이미지 생성 중...`);
@@ -53,23 +75,21 @@ export class DalleService {
           };
         } else {
           const error = await response.json().catch(() => ({}));
-          throw new Error(`DALL-E API 오류: ${error.error?.message || response.status}`);
+          throw new Error(`DALL-E API 오류: ${(error as any).error?.message || response.status}`);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.warn(`   ⚠️  DALL-E 실패, SVG 폴백 사용: ${error.message}`);
       }
     } else {
       console.log('ℹ️  OpenAI API 키 없음 - SVG 다이어그램 생성');
     }
 
-    // Fallback: Generate professional SVG
     return this.generateSvgDiagram(prompt, 'default');
   }
 
-  async generateDiagram(description, type = 'architecture') {
-    // Try DALL-E if key available
+  async generateDiagram(description: string, type: string = 'architecture'): Promise<ImageResult> {
     if (this.apiKey && this.apiKey !== 'undefined' && this.apiKey.trim() !== '') {
-      const diagramPrompts = {
+      const diagramPrompts: Record<string, string> = {
         architecture: `Professional system architecture diagram showing ${description}. Clean, minimal design with boxes, arrows, and labels. Technical illustration style.`,
         flowchart: `Professional flowchart diagram for ${description}. Clear flow with decision points, processes, and connectors. Business process style.`,
         chart: `Professional data visualization chart showing ${description}. Clean graph or chart with clear labels and legend. Infographic style.`,
@@ -87,17 +107,16 @@ export class DalleService {
         if (result.source === 'dalle-3') {
           return result;
         }
-      } catch (e) {
+      } catch (e: any) {
         console.warn(`DALL-E 다이어그램 생성 실패, SVG 폴백: ${e.message}`);
       }
     }
 
-    // Fallback: Professional SVG diagram
     return this.generateSvgDiagram(description, type);
   }
 
-  generateSvgDiagram(prompt, type) {
-    const colors = {
+  generateSvgDiagram(prompt: string, type: string): ImageResult {
+    const colors: Record<string, ColorScheme> = {
       architecture: { primary: '#3B82F6', secondary: '#DBEAFE', text: '#1E40AF', accent: '#93C5FD' },
       flowchart: { primary: '#8B5CF6', secondary: '#EDE9FE', text: '#5B21B6', accent: '#C4B5FD' },
       chart: { primary: '#10B981', secondary: '#D1FAE5', text: '#065F46', accent: '#6EE7B7' },
@@ -107,7 +126,7 @@ export class DalleService {
     const c = colors[type] || colors.default;
     const title = this._escapeXml(prompt.slice(0, 60));
 
-    const typeLabel = {
+    const typeLabel: Record<string, string> = {
       architecture: '시스템 아키텍처',
       flowchart: '프로세스 흐름도',
       chart: '데이터 분석',
@@ -146,7 +165,7 @@ export class DalleService {
     };
   }
 
-  _getDiagramContent(type, c) {
+  private _getDiagramContent(type: string, c: ColorScheme): string {
     switch (type) {
       case 'architecture': return this._archDiagramContent(c);
       case 'flowchart': return this._flowchartContent(c);
@@ -156,7 +175,7 @@ export class DalleService {
     }
   }
 
-  _archDiagramContent(c) {
+  private _archDiagramContent(c: ColorScheme): string {
     return `
       <rect x="300" y="105" width="200" height="46" fill="${c.primary}" rx="8" filter="url(#shadow)"/>
       <text x="400" y="133" text-anchor="middle" fill="white" font-size="14" font-weight="bold">사용자 인터페이스</text>
@@ -183,7 +202,7 @@ export class DalleService {
       <line x1="510" y1="283" x2="480" y2="341" stroke="${c.accent}" stroke-width="1.5" stroke-dasharray="4"/>`;
   }
 
-  _flowchartContent(c) {
+  private _flowchartContent(c: ColorScheme): string {
     return `
       <rect x="320" y="105" width="160" height="38" fill="${c.primary}" rx="19" filter="url(#shadow)"/>
       <text x="400" y="129" text-anchor="middle" fill="white" font-size="13" font-weight="bold">시작</text>
@@ -210,7 +229,7 @@ export class DalleService {
       <text x="400" y="341" text-anchor="middle" fill="${c.text}" font-size="13">결과 출력</text>`;
   }
 
-  _chartContent(c) {
+  private _chartContent(c: ColorScheme): string {
     const bars = [
       { x: 120, h: 80, label: '1분기', pct: '40%' },
       { x: 230, h: 150, label: '2분기', pct: '75%' },
@@ -220,7 +239,6 @@ export class DalleService {
     ];
     const baseY = 350;
     let content = `<line x1="100" y1="${baseY}" x2="680" y2="${baseY}" stroke="#CBD5E1" stroke-width="1.5"/>`;
-    // grid lines
     for (let i = 0; i < 4; i++) {
       const y = baseY - (i + 1) * 50;
       content += `<line x1="100" y1="${y}" x2="680" y2="${y}" stroke="#F1F5F9" stroke-width="1"/>`;
@@ -235,7 +253,7 @@ export class DalleService {
     return content;
   }
 
-  _workflowContent(c) {
+  private _workflowContent(c: ColorScheme): string {
     const steps = [
       { x: 80, label: '기획' },
       { x: 230, label: '설계' },
@@ -254,7 +272,6 @@ export class DalleService {
         content += `<line x1="${s.x + 32}" y1="${y}" x2="${steps[i + 1].x - 32}" y2="${y}" stroke="${c.primary}" stroke-width="2" marker-end="url(#arrow-workflow)"/>`;
       }
     });
-    // progress bar
     content += `
       <rect x="80" y="300" width="630" height="8" fill="#E5E7EB" rx="4"/>
       <rect x="80" y="300" width="378" height="8" fill="${c.primary}" rx="4"/>
@@ -262,7 +279,7 @@ export class DalleService {
     return content;
   }
 
-  _escapeXml(str) {
+  private _escapeXml(str: string): string {
     return str
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')

@@ -3,21 +3,38 @@
  * Fallback chain: Unsplash API → Picsum Photos → SVG placeholder
  */
 
+export interface UnsplashPhoto {
+  id: string;
+  url: string;
+  thumb: string;
+  alt: string;
+  credit: string;
+  authorUrl: string;
+  source: string;
+}
+
+export interface SearchOptions {
+  count?: number;
+  orientation?: string;
+}
+
 export class UnsplashService {
-  constructor(accessKey) {
+  accessKey: string | undefined;
+  baseUrl: string;
+
+  constructor(accessKey?: string) {
     this.accessKey = accessKey;
     this.baseUrl = 'https://api.unsplash.com';
   }
 
-  async searchPhotos(query, options = {}) {
+  async searchPhotos(query: string, options: SearchOptions = {}): Promise<UnsplashPhoto[]> {
     const { count = 3, orientation = 'landscape' } = options;
 
-    // 1. Try Unsplash API if key is available and valid
     if (this.accessKey && this.accessKey !== 'undefined' && this.accessKey.trim() !== '') {
       try {
         const params = new URLSearchParams({
           query,
-          per_page: count,
+          per_page: String(count),
           orientation
         });
 
@@ -30,7 +47,7 @@ export class UnsplashService {
         if (response.ok) {
           const data = await response.json();
           if (data.results && data.results.length > 0) {
-            return data.results.map(photo => ({
+            return data.results.map((photo: any) => ({
               id: photo.id,
               url: photo.urls.regular,
               thumb: photo.urls.thumb,
@@ -43,19 +60,18 @@ export class UnsplashService {
         } else {
           console.warn(`⚠️  Unsplash API 응답 오류: ${response.status}`);
         }
-      } catch (e) {
+      } catch (e: any) {
         console.warn('⚠️  Unsplash API 호출 실패, 폴백 사용:', e.message);
       }
     } else {
       console.log('ℹ️  Unsplash API 키 없음 - 폴백 이미지 사용');
     }
 
-    // 2. Fallback: Picsum Photos (no API key needed, real photos)
     return this.getPicsumPhotos(query, count);
   }
 
-  getPicsumPhotos(query, count) {
-    const images = [];
+  getPicsumPhotos(query: string, count: number): UnsplashPhoto[] {
+    const images: UnsplashPhoto[] = [];
     for (let i = 0; i < count; i++) {
       const seed = encodeURIComponent(`${query}-${i}`);
       images.push({
@@ -71,10 +87,7 @@ export class UnsplashService {
     return images;
   }
 
-  /**
-   * Generate an SVG placeholder when no external images are desired
-   */
-  generateSvgPlaceholder(query, width = 800, height = 450) {
+  generateSvgPlaceholder(query: string, width: number = 800, height: number = 450): UnsplashPhoto {
     const colors = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#6366F1'];
     const color = colors[Math.abs(this.hashCode(query)) % colors.length];
     const label = query.length > 40 ? query.slice(0, 37) + '...' : query;
@@ -95,11 +108,12 @@ export class UnsplashService {
       thumb: dataUri,
       alt: query,
       credit: 'SVG Placeholder',
+      authorUrl: '',
       source: 'svg-placeholder'
     };
   }
 
-  hashCode(str) {
+  hashCode(str: string): number {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const chr = str.charCodeAt(i);
@@ -109,7 +123,7 @@ export class UnsplashService {
     return hash;
   }
 
-  escapeXml(str) {
+  escapeXml(str: string): string {
     return str
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')

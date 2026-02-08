@@ -1,21 +1,41 @@
 /**
  * Progress Tracker
  * 프로젝트 생성 진행 상황을 메모리에 저장하고 추적
- * WebSocket을 통해 실시간으로 클라이언트에 브로드캐스트
  */
 
-import { broadcastProgress } from '../ws/progress-ws';
+export interface AgentProgress {
+  status: string;
+  progress: number;
+  detail: string;
+  currentSection?: number | null;
+  totalSections?: number;
+  updatedAt?: number;
+}
+
+export interface ProgressLog {
+  timestamp: number;
+  time: string;
+  agent: string;
+  level: string;
+  message: string;
+}
+
+export interface ProjectProgress {
+  phase: string;
+  agents: Record<string, AgentProgress>;
+  logs: ProgressLog[];
+  startedAt: number;
+  updatedAt: number;
+}
 
 class ProgressTracker {
+  progressMap: Map<string, ProjectProgress>;
+
   constructor() {
-    // projectId -> progress 매핑
     this.progressMap = new Map();
   }
 
-  /**
-   * 진행 상황 초기화
-   */
-  init(projectId) {
+  init(projectId: string): void {
     this.progressMap.set(projectId, {
       phase: 'initializing',
       agents: {
@@ -30,10 +50,7 @@ class ProgressTracker {
     });
   }
 
-  /**
-   * 에이전트 상태 업데이트
-   */
-  updateAgent(projectId, agentName, data) {
+  updateAgent(projectId: string, agentName: string, data: Partial<AgentProgress>): void {
     const progress = this.progressMap.get(projectId);
     if (!progress) return;
 
@@ -44,22 +61,10 @@ class ProgressTracker {
         updatedAt: Date.now()
       };
       progress.updatedAt = Date.now();
-
-      // Broadcast to WebSocket clients
-      broadcastProgress(projectId, {
-        type: 'agent_update',
-        phase: progress.phase,
-        agents: progress.agents,
-        overallProgress: this.calculateOverallProgress(projectId),
-        updatedAt: progress.updatedAt
-      });
     }
   }
 
-  /**
-   * 로그 추가
-   */
-  addLog(projectId, log) {
+  addLog(projectId: string, log: { agent: string; level: string; message: string }): void {
     const progress = this.progressMap.get(projectId);
     if (!progress) return;
 
@@ -69,61 +74,30 @@ class ProgressTracker {
       ...log
     });
 
-    // 최근 100개만 유지
     if (progress.logs.length > 100) {
       progress.logs = progress.logs.slice(-100);
     }
 
     progress.updatedAt = Date.now();
-
-    // Broadcast log to WebSocket clients
-    broadcastProgress(projectId, {
-      type: 'log',
-      log: progress.logs[progress.logs.length - 1],
-      phase: progress.phase,
-      overallProgress: this.calculateOverallProgress(projectId),
-      updatedAt: progress.updatedAt
-    });
   }
 
-  /**
-   * Phase 업데이트
-   */
-  updatePhase(projectId, phase) {
+  updatePhase(projectId: string, phase: string): void {
     const progress = this.progressMap.get(projectId);
     if (!progress) return;
 
     progress.phase = phase;
     progress.updatedAt = Date.now();
-
-    // Broadcast phase change to WebSocket clients
-    broadcastProgress(projectId, {
-      type: 'phase_update',
-      phase: progress.phase,
-      agents: progress.agents,
-      overallProgress: this.calculateOverallProgress(projectId),
-      updatedAt: progress.updatedAt
-    });
   }
 
-  /**
-   * 진행 상황 조회
-   */
-  get(projectId) {
+  get(projectId: string): ProjectProgress | undefined {
     return this.progressMap.get(projectId);
   }
 
-  /**
-   * 진행 상황 삭제 (완료/실패 시)
-   */
-  clear(projectId) {
+  clear(projectId: string): void {
     this.progressMap.delete(projectId);
   }
 
-  /**
-   * 전체 진행률 계산
-   */
-  calculateOverallProgress(projectId) {
+  calculateOverallProgress(projectId: string): number {
     const progress = this.progressMap.get(projectId);
     if (!progress) return 0;
 

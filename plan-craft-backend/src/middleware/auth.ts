@@ -15,19 +15,55 @@ const JWT_SECRET: string = process.env.JWT_SECRET || (() => {
   return crypto.randomBytes(32).toString('hex');
 })();
 
+const JWT_REFRESH_SECRET: string = process.env.JWT_REFRESH_SECRET || (JWT_SECRET + '_refresh');
+
+export { JWT_SECRET, JWT_REFRESH_SECRET };
+
 export interface TokenPayload extends JwtPayload {
   userId: string;
+  email?: string;
 }
 
-// JWT 토큰 생성
+// Access Token 생성 (15분)
+export function generateAccessToken(userId: string, email?: string): string {
+  const payload: Record<string, string> = { userId };
+  if (email) payload.email = email;
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' });
+}
+
+// Refresh Token 생성 (7일)
+export function generateRefreshToken(userId: string, email?: string): string {
+  const payload: Record<string, string> = { userId };
+  if (email) payload.email = email;
+  return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+}
+
+// Access + Refresh 토큰 쌍 생성
+export function generateTokenPair(userId: string, email?: string): { accessToken: string; refreshToken: string } {
+  return {
+    accessToken: generateAccessToken(userId, email),
+    refreshToken: generateRefreshToken(userId, email),
+  };
+}
+
+// 하위 호환: 기존 코드에서 사용하던 generateToken
 export function generateToken(userId: string): string {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
+  return generateAccessToken(userId);
 }
 
-// JWT 토큰 검증
+// Access Token 검증
 export function verifyToken(token: string): TokenPayload | null {
   try {
     return jwt.verify(token, JWT_SECRET) as TokenPayload;
+  } catch (error) {
+    return null;
+  }
+}
+
+// Refresh Token 검증
+export function verifyRefreshToken(token: string): TokenPayload | null {
+  try {
+    return jwt.verify(token, JWT_REFRESH_SECRET) as TokenPayload;
   } catch (error) {
     return null;
   }

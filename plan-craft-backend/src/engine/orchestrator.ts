@@ -1,33 +1,56 @@
 /**
  * Orchestrator (오케스트레이터)
- * 
- * 역할:
- * - 멀티 에이전트 조율
- * - 작업 스케줄링
- * - 진행 상황 관리
- * - 토큰 추적
  *
  * Token optimization (v3.1):
  * - ModelRouter: per-section model routing
  * - TokenTracker: cost tracking and optimization reports
  */
 
-import { ArchitectAgent } from './agents/architect.js';
-import { WriterAgent } from './agents/writer.js';
-import { ImageCuratorAgent } from './agents/image-curator.js';
-import { ReviewerAgent } from './agents/reviewer.js';
-import { ModelRouter } from './model-router.js';
-import { TokenTracker } from './token-tracker.js';
+import { ArchitectAgent } from './agents/architect';
+import type { ProjectInfo } from './agents/architect';
+import { WriterAgent } from './agents/writer';
+import { ImageCuratorAgent } from './agents/image-curator';
+import { ReviewerAgent } from './agents/reviewer';
+import { ModelRouter } from './model-router';
+import { TokenTracker } from './token-tracker';
+
+export interface OrchestratorConfig {
+  apiKey: string;
+  architectModel?: string;
+  writerModel?: string;
+  curatorModel?: string;
+  reviewerModel?: string;
+  unsplashKey?: string;
+  openaiKey?: string;
+  proMode?: boolean;
+}
+
+interface TokenUsageMap {
+  [key: string]: { input: number; output: number };
+}
 
 export class Orchestrator {
-  constructor(config) {
+  config: OrchestratorConfig;
+  modelRouter: ModelRouter;
+  tokenTracker: TokenTracker;
+  architect: ArchitectAgent;
+  writer: WriterAgent;
+  imageCurator: ImageCuratorAgent;
+  reviewer: ReviewerAgent;
+  tokenUsage: TokenUsageMap;
+  progress: {
+    phase: string;
+    currentStep: number;
+    totalSteps: number;
+    percentage: number | string;
+  };
+
+  constructor(config: OrchestratorConfig) {
     this.config = config;
     
-    // Model router + token tracker
     this.modelRouter = new ModelRouter({ proMode: config.proMode || false });
     this.tokenTracker = new TokenTracker();
     
-    // 에이전트 초기화 (models selected by router)
     this.architect = new ArchitectAgent(config.apiKey, {
       model: config.architectModel || this.modelRouter.getArchitectModel()
     });
@@ -43,7 +66,6 @@ export class Orchestrator {
       model: config.reviewerModel || this.modelRouter.getReviewerModel()
     });
     
-    // 토큰 추적
     this.tokenUsage = {
       architect: { input: 0, output: 0 },
       writer: { input: 0, output: 0 },
@@ -51,7 +73,6 @@ export class Orchestrator {
       reviewer: { input: 0, output: 0 }
     };
     
-    // 진행 상황
     this.progress = {
       phase: 'idle',
       currentStep: 0,
@@ -60,14 +81,14 @@ export class Orchestrator {
     };
   }
 
-  updateTokenUsage(agent, tokens) {
+  updateTokenUsage(agent: string, tokens: any): void {
     if (tokens && this.tokenUsage[agent]) {
       this.tokenUsage[agent].input += tokens.input_tokens || 0;
       this.tokenUsage[agent].output += tokens.output_tokens || 0;
     }
   }
 
-  getTotalTokenUsage() {
+  getTotalTokenUsage(): { input: number; output: number; total: number } {
     let totalInput = 0;
     let totalOutput = 0;
     
@@ -83,11 +104,11 @@ export class Orchestrator {
     };
   }
 
-  calculateCost(model, tokens) {
+  calculateCost(model: string, tokens: { input?: number; output?: number }): number {
     return ModelRouter.estimateCost(model, tokens.input || 0, tokens.output || 0);
   }
 
-  updateProgress(phase, step, total) {
+  updateProgress(phase: string, step: number, total: number): void {
     this.progress.phase = phase;
     this.progress.currentStep = step;
     this.progress.totalSteps = total;
@@ -96,7 +117,7 @@ export class Orchestrator {
     console.log(`\n📊 진행률: ${this.progress.percentage}% (${step}/${total}) - ${phase}`);
   }
 
-  async generateDocument(projectInfo, options = {}) {
+  async generateDocument(projectInfo: ProjectInfo, options: any = {}): Promise<any> {
     console.log('╔═══════════════════════════════════════════════════════════╗');
     console.log('║         Plan-Craft v3.0 - 멀티 에이전트 시스템          ║');
     console.log('╚═══════════════════════════════════════════════════════════╝\n');
@@ -104,9 +125,7 @@ export class Orchestrator {
     const startTime = Date.now();
 
     try {
-      // ========================================================================
       // Phase 1: 문서 설계 (Architect)
-      // ========================================================================
       this.updateProgress('설계', 0, 4);
       
       const designResult = await this.architect.designStructure(projectInfo);
@@ -122,12 +141,10 @@ export class Orchestrator {
       console.log(`   📐 대제목: ${design.structure.length}개`);
       console.log(`   🖼️  이미지: ${design.imageRequirements?.length || 0}개 필요`);
 
-      // ========================================================================
       // Phase 2: 내용 작성 (Writer)
-      // ========================================================================
       this.updateProgress('작성', 1, 4);
       
-      const sections = [];
+      const sections: any[] = [];
       design.structure.forEach(section => {
         section.subsections?.forEach(sub => {
           sections.push({
@@ -141,7 +158,6 @@ export class Orchestrator {
         });
       });
       
-      // Attach model and maxTokens per section via ModelRouter
       const totalSections = sections.length;
       for (let i = 0; i < totalSections; i++) {
         const s = sections[i];
@@ -169,7 +185,6 @@ export class Orchestrator {
         
         this.updateProgress('작성', 1 + (i / sections.length) * 0.5, 4);
         
-        // Rate limiting
         if (i < sections.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
@@ -179,9 +194,7 @@ export class Orchestrator {
       console.log(`   ✍️  작성 섹션: ${writtenSections.length}개`);
       console.log(`   📝 총 단어: ${writtenSections.reduce((sum, s) => sum + s.wordCount, 0)}단어`);
 
-      // ========================================================================
       // Phase 3: 이미지 큐레이션 (Image Curator)
-      // ========================================================================
       this.updateProgress('이미지 큐레이션', 2, 4);
       
       console.log(`\n🖼️  Phase 3 시작: 이미지 큐레이션`);
@@ -206,9 +219,7 @@ export class Orchestrator {
       console.log(`\n✅ Phase 3 완료: 이미지 큐레이션`);
       console.log(`   🖼️  이미지: ${totalImages}개`);
 
-      // ========================================================================
       // Phase 4: 품질 검수 (Reviewer)
-      // ========================================================================
       this.updateProgress('품질 검수', 3, 4);
       
       console.log(`\n✅ Phase 4 시작: 품질 검수`);
@@ -233,14 +244,11 @@ export class Orchestrator {
       console.log(`   📊 평균 점수: ${reviewResult.summary.averageScore.toFixed(1)}/100`);
       console.log(`   ✔️  통과율: ${reviewResult.summary.passRate}%`);
 
-      // ========================================================================
       // 최종 문서 조합
-      // ========================================================================
       this.updateProgress('문서 생성', 4, 4);
       
       const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
       const totalTokens = this.getTotalTokenUsage();
-      // Token optimization report
       const tokenSummary = this.tokenTracker.getSummary();
       const optimizationReport = this.tokenTracker.getOptimizationReport();
       const totalCost = this.tokenTracker.usage.total.cost;
@@ -279,7 +287,7 @@ export class Orchestrator {
         }
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('\n❌ 문서 생성 오류:', error.message);
       throw error;
     }

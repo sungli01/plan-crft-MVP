@@ -1,32 +1,60 @@
 /**
  * Agent Team Orchestrator
- * Claude Opus 4.6 Agent Teams 기능 활용
  * 병렬 에이전트 실행으로 문서 생성 속도 향상
  *
  * Token optimization (v3.1):
  * - ModelRouter: routes each agent/section to optimal model tier
  * - TokenTracker: per-agent cost tracking and optimization reports
- * - Compressed prompts: reduced input tokens across all agents
  */
 
-import { ArchitectAgent } from './agents/architect.js';
-import { WriterAgent } from './agents/writer.js';
-import { ImageCuratorAgent } from './agents/image-curator.js';
-import { ReviewerAgent } from './agents/reviewer.js';
-import { ModelRouter } from './model-router.js';
-import { TokenTracker } from './token-tracker.js';
+import { ArchitectAgent } from './agents/architect';
+import type { ProjectInfo } from './agents/architect';
+import { WriterAgent } from './agents/writer';
+import { ImageCuratorAgent } from './agents/image-curator';
+import { ReviewerAgent } from './agents/reviewer';
+import { ModelRouter } from './model-router';
+import { TokenTracker } from './token-tracker';
+
+export interface AgentTeamConfig {
+  apiKey: string;
+  architectModel?: string;
+  writerModel?: string;
+  curatorModel?: string;
+  reviewerModel?: string;
+  unsplashKey?: string;
+  openaiKey?: string;
+  proMode?: boolean;
+  writerTeamSize?: number;
+}
+
+interface TokenUsageMap {
+  [key: string]: { input: number; output: number };
+}
+
+export interface ProgressTrackerLike {
+  updateAgent(projectId: string, agentName: string, data: any): void;
+  addLog(projectId: string, log: any): void;
+  updatePhase?(projectId: string, phase: string): void;
+}
 
 export class AgentTeamOrchestrator {
-  constructor(config) {
+  config: AgentTeamConfig;
+  modelRouter: ModelRouter;
+  tokenTracker: TokenTracker;
+  architect: ArchitectAgent;
+  imageCurator: ImageCuratorAgent;
+  reviewer: ReviewerAgent;
+  writerTeamSize: number;
+  writerTeam: WriterAgent[];
+  tokenUsage: TokenUsageMap;
+  onProgress: ((phase: string, data: any) => void) | null;
+
+  constructor(config: AgentTeamConfig) {
     this.config = config;
     
-    // Model router — decides which model each agent/section uses
     this.modelRouter = new ModelRouter({ proMode: config.proMode || false });
-    
-    // Token tracker — per-agent cost tracking
     this.tokenTracker = new TokenTracker();
     
-    // 메인 에이전트 (models selected by router)
     this.architect = new ArchitectAgent(config.apiKey, {
       model: config.architectModel || this.modelRouter.getArchitectModel()
     });
@@ -39,7 +67,6 @@ export class AgentTeamOrchestrator {
       model: config.reviewerModel || this.modelRouter.getReviewerModel()
     });
     
-    // Writer 팀 (병렬 실행) — model set per-section in parallelWriteSections
     this.writerTeamSize = config.writerTeamSize || 5;
     this.writerTeam = [];
     for (let i = 0; i < this.writerTeamSize; i++) {
@@ -51,7 +78,6 @@ export class AgentTeamOrchestrator {
       );
     }
     
-    // 토큰 추적 (legacy — kept for backward compat, tokenTracker is primary)
     this.tokenUsage = {
       architect: { input: 0, output: 0 },
       writerTeam: { input: 0, output: 0 },
@@ -59,10 +85,8 @@ export class AgentTeamOrchestrator {
       reviewer: { input: 0, output: 0 }
     };
     
-    // 진행 추적 콜백
     this.onProgress = null;
     
-    // Log routing config
     console.log(`🔀 ModelRouter: proMode=${this.modelRouter.proMode}`);
     console.log(`   Architect  → ${this.architect.model}`);
     console.log(`   ImageCurator → ${this.imageCurator.model}`);
@@ -70,25 +94,24 @@ export class AgentTeamOrchestrator {
     console.log(`   Writer default → ${this.modelRouter.defaultModel}`);
   }
 
-  setProgressCallback(callback) {
+  setProgressCallback(callback: (phase: string, data: any) => void): void {
     this.onProgress = callback;
   }
 
-  updateProgress(phase, data) {
+  updateProgress(phase: string, data: any): void {
     if (this.onProgress) {
       this.onProgress(phase, data);
     }
   }
 
-  updateTokenUsage(agent, tokens, meta = {}) {
+  updateTokenUsage(agent: string, tokens: any, meta: { model?: string; sectionTitle?: string } = {}): void {
     if (tokens && this.tokenUsage[agent]) {
       this.tokenUsage[agent].input += tokens.input_tokens || 0;
       this.tokenUsage[agent].output += tokens.output_tokens || 0;
     }
-    // Also feed the TokenTracker
     if (tokens) {
       const trackerAgent = agent === 'writerTeam' ? 'writer' : agent;
-      this.tokenTracker.recordUsage(trackerAgent, {
+      this.tokenTracker.recordUsage(trackerAgent as any, {
         input_tokens: tokens.input_tokens || 0,
         output_tokens: tokens.output_tokens || 0,
         model: meta.model || '',
@@ -97,7 +120,7 @@ export class AgentTeamOrchestrator {
     }
   }
 
-  getTotalTokenUsage() {
+  getTotalTokenUsage(): { input: number; output: number; total: number } {
     let totalInput = 0;
     let totalOutput = 0;
     
@@ -113,10 +136,7 @@ export class AgentTeamOrchestrator {
     };
   }
 
-  /**
-   * 병렬 문서 생성
-   */
-  async generateDocument(projectInfo, progressTracker = null) {
+  async generateDocument(projectInfo: ProjectInfo & { projectId?: string }, progressTracker: ProgressTrackerLike | null = null): Promise<any> {
     console.log('╔═══════════════════════════════════════════════════════════╗');
     console.log('║   Plan-Craft v3.0 - Agent Teams (병렬 처리)             ║');
     console.log('╚═══════════════════════════════════════════════════════════╝\n');
@@ -124,13 +144,11 @@ export class AgentTeamOrchestrator {
     const startTime = Date.now();
 
     try {
-      // ========================================================================
       // Phase 1: 문서 설계 (Architect)
-      // ========================================================================
       console.log('\n📐 Phase 1: 문서 설계 (Architect)');
       this.updateProgress('architect', { status: 'running', progress: 10 });
       
-      if (progressTracker) {
+      if (progressTracker && projectInfo.projectId) {
         progressTracker.updateAgent(projectInfo.projectId, 'architect', {
           status: 'running',
           progress: 10,
@@ -153,7 +171,7 @@ export class AgentTeamOrchestrator {
       
       this.updateProgress('architect', { status: 'completed', progress: 100 });
       
-      if (progressTracker) {
+      if (progressTracker && projectInfo.projectId) {
         progressTracker.updateAgent(projectInfo.projectId, 'architect', {
           status: 'completed',
           progress: 100,
@@ -166,13 +184,10 @@ export class AgentTeamOrchestrator {
         });
       }
 
-      // ========================================================================
       // Phase 2: 병렬 작성 (Writer Team)
-      // ========================================================================
       console.log(`\n✍️  Phase 2: 병렬 작성 (Writer Team x${this.writerTeamSize})`);
       
-      // 섹션 목록 생성 + ModelRouter로 모델/토큰 예산 결정
-      const sections = [];
+      const sections: any[] = [];
       design.structure.forEach(section => {
         section.subsections?.forEach(sub => {
           sections.push({
@@ -186,7 +201,6 @@ export class AgentTeamOrchestrator {
         });
       });
       
-      // Attach model and maxTokens per section via ModelRouter
       const sectionCount = sections.length;
       for (let i = 0; i < sectionCount; i++) {
         const s = sections[i];
@@ -204,7 +218,7 @@ export class AgentTeamOrchestrator {
         completedSections: 0
       });
       
-      if (progressTracker) {
+      if (progressTracker && projectInfo.projectId) {
         progressTracker.updateAgent(projectInfo.projectId, 'writer', {
           status: 'running',
           progress: 0,
@@ -219,7 +233,6 @@ export class AgentTeamOrchestrator {
         });
       }
 
-      // 섹션을 팀별로 분배
       const writtenSections = await this.parallelWriteSections(
         sections, 
         projectInfo,
@@ -227,11 +240,11 @@ export class AgentTeamOrchestrator {
       );
       
       console.log(`\n✅ 작성 완료: ${writtenSections.length}개 섹션`);
-      console.log(`   총 단어 수: ${writtenSections.reduce((sum, s) => sum + s.wordCount, 0)}`);
+      console.log(`   총 단어 수: ${writtenSections.reduce((sum: number, s: any) => sum + s.wordCount, 0)}`);
       
       this.updateProgress('writerTeam', { status: 'completed', progress: 100 });
       
-      if (progressTracker) {
+      if (progressTracker && projectInfo.projectId) {
         progressTracker.updateAgent(projectInfo.projectId, 'writer', {
           status: 'completed',
           progress: 100,
@@ -240,18 +253,16 @@ export class AgentTeamOrchestrator {
         progressTracker.addLog(projectInfo.projectId, {
           agent: 'writer',
           level: 'success',
-          message: `병렬 작성 완료: ${sections.length}개 섹션, ${writtenSections.reduce((sum, s) => sum + s.wordCount, 0)}단어`
+          message: `병렬 작성 완료: ${sections.length}개 섹션, ${writtenSections.reduce((sum: number, s: any) => sum + s.wordCount, 0)}단어`
         });
       }
 
-      // ========================================================================
       // Phase 3: 이미지 큐레이션 (Image Curator)
-      // ========================================================================
       console.log('\n🖼️  Phase 3: 이미지 큐레이션');
       
       this.updateProgress('imageCurator', { status: 'running', progress: 50 });
       
-      if (progressTracker) {
+      if (progressTracker && projectInfo.projectId) {
         progressTracker.updateAgent(projectInfo.projectId, 'imageCurator', {
           status: 'running',
           progress: 50,
@@ -266,7 +277,7 @@ export class AgentTeamOrchestrator {
 
       const imageResults = await this.imageCurator.batchCurateImages(
         sections,
-        writtenSections.map(s => s.content)
+        writtenSections.map((s: any) => s.content)
       );
       
       imageResults.forEach(result => {
@@ -280,7 +291,7 @@ export class AgentTeamOrchestrator {
       
       this.updateProgress('imageCurator', { status: 'completed', progress: 100 });
       
-      if (progressTracker) {
+      if (progressTracker && projectInfo.projectId) {
         progressTracker.updateAgent(projectInfo.projectId, 'imageCurator', {
           status: 'completed',
           progress: 100,
@@ -293,14 +304,12 @@ export class AgentTeamOrchestrator {
         });
       }
 
-      // ========================================================================
       // Phase 4: 품질 검수 (Reviewer)
-      // ========================================================================
       console.log('\n✅ Phase 4: 품질 검수');
       
       this.updateProgress('reviewer', { status: 'running', progress: 50 });
       
-      if (progressTracker) {
+      if (progressTracker && projectInfo.projectId) {
         progressTracker.updateAgent(projectInfo.projectId, 'reviewer', {
           status: 'running',
           progress: 50,
@@ -315,7 +324,7 @@ export class AgentTeamOrchestrator {
 
       const reviewResult = await this.reviewer.reviewMultipleSections(
         sections,
-        writtenSections.map(s => s.content)
+        writtenSections.map((s: any) => s.content)
       );
       
       reviewResult.reviews.forEach(review => {
@@ -328,7 +337,7 @@ export class AgentTeamOrchestrator {
       
       this.updateProgress('reviewer', { status: 'completed', progress: 100 });
       
-      if (progressTracker) {
+      if (progressTracker && projectInfo.projectId) {
         progressTracker.updateAgent(projectInfo.projectId, 'reviewer', {
           status: 'completed',
           progress: 100,
@@ -341,9 +350,7 @@ export class AgentTeamOrchestrator {
         });
       }
 
-      // ========================================================================
       // 최종 결과
-      // ========================================================================
       const elapsed = Date.now() - startTime;
       const totalTokens = this.getTotalTokenUsage();
       
@@ -353,11 +360,10 @@ export class AgentTeamOrchestrator {
       console.log(`⏱️  소요 시간: ${(elapsed / 1000 / 60).toFixed(1)}분`);
       console.log(`📊 품질 점수: ${reviewResult.summary.averageScore}/100`);
       console.log(`📝 섹션 수: ${writtenSections.length}개`);
-      console.log(`📖 총 단어: ${writtenSections.reduce((sum, s) => sum + s.wordCount, 0).toLocaleString()}개`);
+      console.log(`📖 총 단어: ${writtenSections.reduce((sum: number, s: any) => sum + s.wordCount, 0).toLocaleString()}개`);
       console.log(`🖼️  이미지: ${totalImages}개`);
       console.log(`💰 토큰 사용: ${totalTokens.total.toLocaleString()} (입력: ${totalTokens.input.toLocaleString()}, 출력: ${totalTokens.output.toLocaleString()})`);
       
-      // Token optimization report
       const tokenSummary = this.tokenTracker.getSummary();
       const optimizationReport = this.tokenTracker.getOptimizationReport();
       
@@ -382,10 +388,10 @@ export class AgentTeamOrchestrator {
         }
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('문서 생성 실패:', error);
       
-      if (progressTracker) {
+      if (progressTracker && projectInfo.projectId) {
         progressTracker.addLog(projectInfo.projectId, {
           agent: 'system',
           level: 'error',
@@ -397,28 +403,22 @@ export class AgentTeamOrchestrator {
     }
   }
 
-  /**
-   * 병렬 섹션 작성
-   */
-  async parallelWriteSections(sections, projectInfo, progressTracker = null) {
-    const results = [];
+  async parallelWriteSections(sections: any[], projectInfo: ProjectInfo & { projectId?: string }, progressTracker: ProgressTrackerLike | null = null): Promise<any[]> {
+    const results: any[] = [];
     const totalSections = sections.length;
     let completedSections = 0;
     
-    // 섹션을 청크로 나누기 (팀 크기만큼)
-    const chunks = [];
+    const chunks: any[][] = [];
     for (let i = 0; i < sections.length; i += this.writerTeamSize) {
       chunks.push(sections.slice(i, i + this.writerTeamSize));
     }
     
     console.log(`   ${chunks.length}개 라운드로 병렬 처리 (라운드당 최대 ${this.writerTeamSize}개)`);
     
-    // 각 청크를 병렬로 처리
     for (let round = 0; round < chunks.length; round++) {
       const chunk = chunks[round];
       console.log(`\n   라운드 ${round + 1}/${chunks.length}: ${chunk.length}개 섹션 동시 작성`);
       
-      // 병렬 실행 — pass prev/next context for each section
       const promises = chunk.map((section, idx) => {
         const writer = this.writerTeam[idx];
         const globalIdx = round * this.writerTeamSize + idx;
@@ -430,9 +430,7 @@ export class AgentTeamOrchestrator {
       
       const roundResults = await Promise.all(promises);
       
-      // 결과 수집
       roundResults.forEach((result, idx) => {
-        const globalIdx = round * this.writerTeamSize + idx;
         const section = chunk[idx];
         results.push(result);
         this.updateTokenUsage('writerTeam', result.tokens, {
@@ -443,7 +441,7 @@ export class AgentTeamOrchestrator {
         
         const progress = Math.round((completedSections / totalSections) * 100);
         
-        if (progressTracker) {
+        if (progressTracker && projectInfo.projectId) {
           progressTracker.updateAgent(projectInfo.projectId, 'writer', {
             status: 'running',
             progress: progress,
@@ -464,7 +462,6 @@ export class AgentTeamOrchestrator {
       
       console.log(`   ✓ 라운드 ${round + 1} 완료 (${completedSections}/${totalSections})`);
       
-      // Rate limiting (마지막 라운드 제외)
       if (round < chunks.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
