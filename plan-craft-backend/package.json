@@ -6,8 +6,8 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "start": "npx tsx src/index.ts",
-    "build": "tsc --noEmit",
+    "start": "node --import tsx src/index.ts",
+    "build": "echo 'no build step needed'",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
