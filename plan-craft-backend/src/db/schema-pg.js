@@ -24,6 +24,7 @@ export const projects = pgTable('projects', {
   referenceDoc: text('reference_doc'),
   status: text('status').default('draft'),
   model: text('model').default('claude-opus-4'),
+  errorMessage: text('error_message'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow()
 });

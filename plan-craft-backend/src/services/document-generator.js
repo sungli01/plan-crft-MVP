@@ -5,7 +5,7 @@
 
 import { Orchestrator } from '../../../plan-craft-v3/orchestrator.js';
 import { db } from '../db/index.js';
-import { projects, documents, tokenUsage } from '../db/schema.js';
+import { projects, documents, tokenUsage } from '../db/schema-pg.js';
 import { eq } from 'drizzle-orm';
 
 export class DocumentGeneratorService {

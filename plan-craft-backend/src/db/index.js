@@ -44,6 +44,7 @@ export async function initializeDatabase() {
         reference_doc TEXT,
         status TEXT DEFAULT 'draft',
         model TEXT DEFAULT 'claude-opus-4',
+        error_message TEXT,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )

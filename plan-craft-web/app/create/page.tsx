@@ -2,41 +2,22 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  plan: string;
-}
+import Header from '../components/Header';
+import { useToast } from '../components/Toast';
+import api from '../lib/api';
 
 export default function CreatePage() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const { showToast } = useToast();
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-
     if (!token) {
       router.push('/login');
       return;
     }
-
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
   }, [router]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/');
-  };
 
   const handleCreateProject = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -55,18 +36,13 @@ export default function CreatePage() {
         referenceDoc = await readFileAsText(file);
       }
 
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `${API_URL}/api/projects`,
-        { title, idea, referenceDoc },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await api.post('/api/projects', { title, idea, referenceDoc });
 
       // 프로젝트 생성 후 상세 페이지로 이동
       router.push(`/project/${response.data.project.id}`);
     } catch (error) {
       console.error('프로젝트 생성 실패:', error);
-      alert('프로젝트 생성에 실패했습니다');
+      showToast('프로젝트 생성에 실패했습니다', 'error');
     } finally {
       setCreating(false);
     }
@@ -84,42 +60,7 @@ export default function CreatePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* 헤더 */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex justify-between items-center">
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push('/')}>
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                <span className="text-white text-lg font-bold">P</span>
-              </div>
-              <span className="text-lg font-semibold text-gray-900">Plan-Craft</span>
-            </div>
-            <nav className="hidden md:flex items-center gap-6">
-              <button 
-                onClick={() => router.push('/')}
-                className="text-sm text-gray-600 hover:text-gray-900"
-              >
-                홈
-              </button>
-              <button 
-                onClick={() => router.push('/projects')}
-                className="text-sm text-gray-600 hover:text-gray-900"
-              >
-                내 프로젝트
-              </button>
-              <button className="text-sm text-gray-600 hover:text-gray-900">사용자 사례</button>
-            </nav>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-700">{user?.name}</span>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-1.5 text-sm text-gray-600 hover:text-gray-900"
-            >
-              로그아웃
-            </button>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* 메인 컨텐츠 */}
       <main className="max-w-3xl mx-auto px-4 py-8 sm:px-6 lg:px-8">

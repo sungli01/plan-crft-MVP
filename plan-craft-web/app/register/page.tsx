@@ -1,10 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import api from '../lib/api';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -32,6 +30,23 @@ export default function RegisterPage() {
     });
   };
 
+  // Password strength calculation
+  const passwordStrength = useMemo(() => {
+    const pw = formData.password;
+    if (!pw) return { score: 0, label: '', color: '' };
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (pw.length >= 12) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+    if (score <= 1) return { score: 1, label: '약함', color: 'bg-red-500' };
+    if (score <= 2) return { score: 2, label: '보통', color: 'bg-yellow-500' };
+    if (score <= 3) return { score: 3, label: '강함', color: 'bg-blue-500' };
+    return { score: 4, label: '매우 강함', color: 'bg-green-500' };
+  }, [formData.password]);
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -41,15 +56,15 @@ export default function RegisterPage() {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('비밀번호는 최소 6자 이상이어야 합니다');
+    if (formData.password.length < 8) {
+      setError('비밀번호는 최소 8자 이상이어야 합니다');
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/api/auth/register`, {
+      const response = await api.post('/api/auth/register', {
         email: formData.email,
         password: formData.password,
         name: formData.name
@@ -123,9 +138,30 @@ export default function RegisterPage() {
               value={formData.password}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="최소 6자 이상"
+              placeholder="최소 8자 이상"
               required
             />
+            {formData.password && (
+              <div className="mt-2">
+                <div className="flex gap-1 mb-1">
+                  {[1, 2, 3, 4].map((level) => (
+                    <div
+                      key={level}
+                      className={`h-1.5 flex-1 rounded-full transition-colors ${
+                        level <= passwordStrength.score ? passwordStrength.color : 'bg-gray-200'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className={`text-xs ${
+                  passwordStrength.score <= 1 ? 'text-red-600' :
+                  passwordStrength.score <= 2 ? 'text-yellow-600' :
+                  passwordStrength.score <= 3 ? 'text-blue-600' : 'text-green-600'
+                }`}>
+                  비밀번호 강도: {passwordStrength.label}
+                </p>
+              </div>
+            )}
           </div>
 
           <div>

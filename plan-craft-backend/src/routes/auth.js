@@ -5,9 +5,9 @@
 import { Hono } from 'hono';
 import bcrypt from 'bcryptjs';
 import { db } from '../db/index.js';
-import { users } from '../db/schema.js';
+import { users } from '../db/schema-pg.js';
 import { eq } from 'drizzle-orm';
-import { generateToken } from '../middleware/auth.js';
+import { generateToken, authMiddleware } from '../middleware/auth.js';
 import { z } from 'zod';
 
 const auth = new Hono();
@@ -134,12 +134,8 @@ auth.post('/login', async (c) => {
 });
 
 // 현재 사용자 정보 조회 (인증 필요)
-auth.get('/me', async (c) => {
+auth.get('/me', authMiddleware, async (c) => {
   const user = c.get('user');
-  
-  if (!user) {
-    return c.json({ error: '인증이 필요합니다' }, 401);
-  }
 
   return c.json({
     user: {

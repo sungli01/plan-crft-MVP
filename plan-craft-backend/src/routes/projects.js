@@ -4,7 +4,7 @@
 
 import { Hono } from 'hono';
 import { db } from '../db/index.js';
-import { projects, documents } from '../db/schema.js';
+import { projects, documents } from '../db/schema-pg.js';
 import { eq, desc } from 'drizzle-orm';
 import { authMiddleware } from '../middleware/auth.js';
 import { z } from 'zod';

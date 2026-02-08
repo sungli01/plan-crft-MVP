@@ -4,10 +4,13 @@
 
 import jwt from 'jsonwebtoken';
 import { db } from '../db/index.js';
-import { users, sessions } from '../db/schema.js';
+import { users } from '../db/schema-pg.js';
 import { eq } from 'drizzle-orm';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
 // JWT 토큰 생성
 export function generateToken(userId) {

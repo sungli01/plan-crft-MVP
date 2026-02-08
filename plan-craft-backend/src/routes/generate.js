@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
-import { authMiddleware } from '../middleware/auth.js';
-import { sqlite } from '../db/index.js';
-import { Orchestrator } from '../engine/orchestrator.js';
+import { authMiddleware, verifyToken } from '../middleware/auth.js';
+import { db } from '../db/index.js';
+import { projects, documents, tokenUsage } from '../db/schema-pg.js';
+import { eq, and, desc } from 'drizzle-orm';
 import { AgentTeamOrchestrator } from '../engine/agent-team-orchestrator.js';
 import { generateHTML, extractSummary } from '../utils/html-generator.js';
 import { progressTracker } from '../utils/progress-tracker.js';
@@ -17,9 +18,7 @@ generate.post('/:projectId', authMiddleware, async (c) => {
     console.log('[Generate] userId:', userId, 'projectId:', projectId);
 
     // 프로젝트 존재 및 권한 확인
-    const project = sqlite.prepare(
-      'SELECT * FROM projects WHERE id = ? AND user_id = ?'
-    ).get(projectId, userId);
+    const [project] = await db.select().from(projects).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).limit(1);
 
     console.log('[Generate] project:', project);
 
@@ -28,9 +27,7 @@ generate.post('/:projectId', authMiddleware, async (c) => {
     }
 
     // 프로젝트 상태 업데이트: generating
-    sqlite.prepare(
-      'UPDATE projects SET status = ?, updated_at = ? WHERE id = ?'
-    ).run('generating', Date.now(), projectId);
+    await db.update(projects).set({ status: 'generating', updatedAt: new Date() }).where(eq(projects.id, projectId));
 
     // 진행 상황 초기화
     progressTracker.init(projectId);
@@ -65,9 +62,7 @@ generate.get('/:projectId/status', authMiddleware, async (c) => {
     const projectId = c.req.param('projectId');
 
     // 프로젝트 조회
-    const project = sqlite.prepare(
-      'SELECT * FROM projects WHERE id = ? AND user_id = ?'
-    ).get(projectId, userId);
+    const [project] = await db.select().from(projects).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).limit(1);
 
     if (!project) {
       return c.json({ error: 'Project not found' }, 404);
@@ -77,9 +72,7 @@ generate.get('/:projectId/status', authMiddleware, async (c) => {
     const realtimeProgress = progressTracker.get(projectId);
 
     // 문서 조회
-    const document = sqlite.prepare(
-      'SELECT * FROM documents WHERE project_id = ? ORDER BY generated_at DESC LIMIT 1'
-    ).get(projectId);
+    const [document] = await db.select().from(documents).where(eq(documents.projectId, projectId)).orderBy(desc(documents.generatedAt)).limit(1);
 
     return c.json({
       projectId,
@@ -94,16 +87,114 @@ generate.get('/:projectId/status', authMiddleware, async (c) => {
       } : null,
       document: document ? {
         id: document.id,
-        qualityScore: document.quality_score,
-        sectionCount: document.section_count,
-        wordCount: document.word_count,
-        imageCount: document.image_count,
-        createdAt: document.generated_at
+        qualityScore: document.qualityScore,
+        sectionCount: document.sectionCount,
+        wordCount: document.wordCount,
+        imageCount: document.imageCount,
+        createdAt: document.generatedAt
       } : null
     });
   } catch (error) {
     console.error('Status check error:', error);
     return c.json({ error: 'Failed to check status' }, 500);
+  }
+});
+
+// GET /api/generate/:projectId/download/pdf - PDF 다운로드 (print-optimized HTML)
+generate.get('/:projectId/download/pdf', async (c) => {
+  try {
+    // Support both Authorization header and ?token= query param (for new-tab opens)
+    let userId;
+    const authHeader = c.req.header('Authorization');
+    const tokenParam = c.req.query('token');
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const payload = verifyToken(authHeader.substring(7));
+      if (payload) userId = payload.userId;
+    }
+    if (!userId && tokenParam) {
+      const payload = verifyToken(tokenParam);
+      if (payload) userId = payload.userId;
+    }
+    if (!userId) {
+      return c.json({ error: '인증 토큰이 필요합니다' }, 401);
+    }
+
+    const projectId = c.req.param('projectId');
+
+    const [project] = await db.select().from(projects).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).limit(1);
+    if (!project) return c.json({ error: 'Project not found' }, 404);
+
+    const [document] = await db.select().from(documents).where(eq(documents.projectId, projectId)).orderBy(desc(documents.generatedAt)).limit(1);
+    if (!document) return c.json({ error: 'Document not found' }, 404);
+
+    // Return HTML with print-optimized styles
+    const pdfHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${project.title}</title>
+  <style>
+    @media print {
+      body { margin: 0; padding: 20mm; }
+      @page { size: A4; margin: 20mm; }
+      .no-print { display: none; }
+    }
+    body {
+      font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      line-height: 1.8;
+      color: #1a1a1a;
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 20mm;
+    }
+    h1 { font-size: 28px; border-bottom: 3px solid #2563eb; padding-bottom: 12px; margin-bottom: 24px; color: #1e40af; }
+    h2 { font-size: 22px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-top: 32px; color: #1e3a5f; }
+    h3 { font-size: 18px; color: #374151; margin-top: 24px; }
+    p { margin: 8px 0; text-align: justify; }
+    img { max-width: 100%; height: auto; margin: 16px 0; border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    th, td { border: 1px solid #d1d5db; padding: 10px; text-align: left; font-size: 14px; }
+    th { background: #f3f4f6; font-weight: 600; }
+    .cover-page { text-align: center; padding: 60px 0; page-break-after: always; }
+    .cover-page h1 { font-size: 36px; border: none; }
+    .cover-page .subtitle { color: #6b7280; font-size: 16px; margin-top: 16px; }
+    .cover-page .meta { margin-top: 40px; color: #9ca3af; font-size: 14px; }
+    .print-btn {
+      position: fixed; top: 20px; right: 20px;
+      padding: 12px 24px; background: #2563eb; color: white;
+      border: none; border-radius: 8px; cursor: pointer; font-size: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .print-btn:hover { background: #1d4ed8; }
+  </style>
+</head>
+<body>
+  <button class="print-btn no-print" onclick="window.print()">📥 PDF로 저장</button>
+  <div class="cover-page">
+    <h1>${project.title}</h1>
+    <p class="subtitle">${project.idea}</p>
+    <p class="meta">
+      Plan-Craft AI 사업계획서<br>
+      생성일: ${new Date().toLocaleDateString('ko-KR')}<br>
+      품질 점수: ${document.qualityScore?.toFixed(1) || 'N/A'}/100 ·
+      ${document.sectionCount || 0}개 섹션 ·
+      ${document.wordCount?.toLocaleString() || 0} 단어
+    </p>
+  </div>
+  ${document.contentHtml}
+</body>
+</html>`;
+
+    const filename = `${project.title.replace(/[^a-zA-Z0-9가-힣]/g, '_')}_사업계획서.html`;
+
+    c.header('Content-Type', 'text/html; charset=utf-8');
+    c.header('Content-Disposition', `inline; filename="${encodeURIComponent(filename)}"`);
+
+    return c.body(pdfHtml);
+  } catch (error) {
+    console.error('PDF download error:', error);
+    return c.json({ error: 'Failed to generate PDF' }, 500);
   }
 });
 
@@ -114,18 +205,14 @@ generate.get('/:projectId/download', authMiddleware, async (c) => {
     const projectId = c.req.param('projectId');
 
     // 프로젝트 권한 확인
-    const project = sqlite.prepare(
-      'SELECT * FROM projects WHERE id = ? AND user_id = ?'
-    ).get(projectId, userId);
+    const [project] = await db.select().from(projects).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).limit(1);
 
     if (!project) {
       return c.json({ error: 'Project not found' }, 404);
     }
 
     // 문서 조회
-    const document = sqlite.prepare(
-      'SELECT * FROM documents WHERE project_id = ? ORDER BY generated_at DESC LIMIT 1'
-    ).get(projectId);
+    const [document] = await db.select().from(documents).where(eq(documents.projectId, projectId)).orderBy(desc(documents.generatedAt)).limit(1);
 
     if (!document) {
       return c.json({ error: 'Document not found' }, 404);
@@ -137,7 +224,7 @@ generate.get('/:projectId/download', authMiddleware, async (c) => {
     c.header('Content-Type', 'text/html; charset=utf-8');
     c.header('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
     
-    return c.body(document.content_html);
+    return c.body(document.contentHtml);
   } catch (error) {
     console.error('Download error:', error);
     return c.json({ error: 'Failed to download document' }, 500);
@@ -199,47 +286,34 @@ async function generateDocumentBackground(projectId, projectData, userId) {
     const summary = extractSummary(result);
 
     // 문서 저장
-    const docId = crypto.randomUUID();
-    sqlite.prepare(`
-      INSERT INTO documents (id, project_id, content_html, quality_score, section_count, word_count, image_count, metadata, generated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      docId,
-      projectId,
-      html,
-      summary.qualityScore,
-      summary.sectionCount,
-      summary.wordCount,
-      summary.imageCount,
-      JSON.stringify({
+    await db.insert(documents).values({
+      projectId: projectId,
+      contentHtml: html,
+      qualityScore: summary.qualityScore,
+      sectionCount: summary.sectionCount,
+      wordCount: summary.wordCount,
+      imageCount: summary.imageCount,
+      metadata: JSON.stringify({
         title: projectData.title,
         generatedAt: new Date().toISOString(),
         tokenUsage: summary.tokenUsage
       }),
-      Date.now()
-    );
+      generatedAt: new Date()
+    });
 
     // 토큰 사용량 저장
-    const tokenId = crypto.randomUUID();
-    sqlite.prepare(`
-      INSERT INTO token_usage (id, user_id, project_id, model, input_tokens, output_tokens, total_tokens, cost_usd, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      tokenId,
-      userId,
-      projectId,
-      projectData.model || 'claude-opus-4-6',
-      summary.tokenUsage.input,
-      summary.tokenUsage.output,
-      summary.tokenUsage.total,
-      summary.estimatedCost,
-      Date.now()
-    );
+    await db.insert(tokenUsage).values({
+      userId: userId,
+      projectId: projectId,
+      model: projectData.model || 'claude-opus-4-6',
+      inputTokens: summary.tokenUsage.input,
+      outputTokens: summary.tokenUsage.output,
+      totalTokens: summary.tokenUsage.total,
+      costUsd: summary.estimatedCost
+    });
 
     // 프로젝트 상태 업데이트: completed
-    sqlite.prepare(
-      'UPDATE projects SET status = ?, updated_at = ? WHERE id = ?'
-    ).run('completed', Date.now(), projectId);
+    await db.update(projects).set({ status: 'completed', updatedAt: new Date() }).where(eq(projects.id, projectId));
 
     progressTracker.addLog(projectId, {
       agent: 'system',
@@ -256,148 +330,11 @@ async function generateDocumentBackground(projectId, projectData, userId) {
   } catch (error) {
     console.error(`[Background] Generation failed for project ${projectId}:`, error);
 
-    // 프로젝트 상태 업데이트: failed
-    sqlite.prepare(
-      'UPDATE projects SET status = ?, updated_at = ? WHERE id = ?'
-    ).run('failed', Date.now(), projectId);
+    // 프로젝트 상태 업데이트: failed (with error message)
+    await db.update(projects).set({ status: 'failed', errorMessage: error.message, updatedAt: new Date() }).where(eq(projects.id, projectId));
     
     // 진행 상황 정리
     progressTracker.clear(projectId);
-  }
-}
-
-// 진행 상황 추적과 함께 문서 생성
-async function generateWithProgressTracking(orchestrator, projectInfo, projectId) {
-  try {
-    // Architect 완료 시뮬레이션
-    progressTracker.updateAgent(projectId, 'architect', {
-      status: 'running',
-      progress: 50,
-      detail: '섹션 구조 분석 중...'
-    });
-    
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    progressTracker.updateAgent(projectId, 'architect', {
-      status: 'completed',
-      progress: 100,
-      detail: '25개 섹션 구조 완료'
-    });
-    progressTracker.addLog(projectId, {
-      agent: 'architect',
-      level: 'success',
-      message: '문서 구조 설계 완료: 25개 섹션'
-    });
-    
-    // Writer 시작
-    progressTracker.updateAgent(projectId, 'writer', {
-      status: 'running',
-      progress: 0,
-      detail: '섹션 작성 시작...',
-      currentSection: 1,
-      totalSections: 25
-    });
-    progressTracker.addLog(projectId, {
-      agent: 'writer',
-      level: 'info',
-      message: '본문 작성 시작 (25개 섹션)'
-    });
-    
-    // 실제 문서 생성
-    const result = await orchestrator.generateDocument(projectInfo);
-    
-    // Writer 진행 상황 시뮬레이션 (실제로는 Orchestrator 내부에서 업데이트되어야 함)
-    const totalSections = result.sections?.length || 25;
-    for (let i = 1; i <= totalSections; i++) {
-      const progress = Math.round((i / totalSections) * 100);
-      progressTracker.updateAgent(projectId, 'writer', {
-        status: 'running',
-        progress: progress,
-        detail: `${i}/${totalSections} 섹션 작성 중...`,
-        currentSection: i,
-        totalSections: totalSections
-      });
-      
-      if (i % 5 === 0) {
-        progressTracker.addLog(projectId, {
-          agent: 'writer',
-          level: 'info',
-          message: `섹션 ${i}/${totalSections} 완료`
-        });
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-    
-    progressTracker.updateAgent(projectId, 'writer', {
-      status: 'completed',
-      progress: 100,
-      detail: `${totalSections}개 섹션 작성 완료`
-    });
-    progressTracker.addLog(projectId, {
-      agent: 'writer',
-      level: 'success',
-      message: `본문 작성 완료: ${totalSections}개 섹션`
-    });
-    
-    // Image Curator
-    progressTracker.updateAgent(projectId, 'imageCurator', {
-      status: 'running',
-      progress: 50,
-      detail: '이미지 수집 중...'
-    });
-    progressTracker.addLog(projectId, {
-      agent: 'imageCurator',
-      level: 'info',
-      message: '이미지 큐레이션 시작'
-    });
-    
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    progressTracker.updateAgent(projectId, 'imageCurator', {
-      status: 'completed',
-      progress: 100,
-      detail: '이미지 큐레이션 완료'
-    });
-    progressTracker.addLog(projectId, {
-      agent: 'imageCurator',
-      level: 'success',
-      message: '이미지 큐레이션 완료: 93개 이미지'
-    });
-    
-    // Reviewer
-    progressTracker.updateAgent(projectId, 'reviewer', {
-      status: 'running',
-      progress: 50,
-      detail: '품질 검토 중...'
-    });
-    progressTracker.addLog(projectId, {
-      agent: 'reviewer',
-      level: 'info',
-      message: '품질 검토 시작'
-    });
-    
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    progressTracker.updateAgent(projectId, 'reviewer', {
-      status: 'completed',
-      progress: 100,
-      detail: '품질 검토 완료'
-    });
-    progressTracker.addLog(projectId, {
-      agent: 'reviewer',
-      level: 'success',
-      message: `품질 검토 완료: ${result.reviews?.summary?.averageScore || 87.6}/100점`
-    });
-    
-    return result;
-  } catch (error) {
-    progressTracker.addLog(projectId, {
-      agent: 'system',
-      level: 'error',
-      message: `오류 발생: ${error.message}`
-    });
-    throw error;
   }
 }
 

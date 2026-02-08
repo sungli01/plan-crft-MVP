@@ -19,9 +19,43 @@ const app = new Hono();
 app.use('*', logger());
 app.use('*', prettyJSON());
 app.use('*', cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin) => {
+    const allowed = (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || 'http://localhost:3000').split(',');
+    return allowed.includes(origin) ? origin : allowed[0];
+  },
   credentials: true
 }));
+
+// Simple rate limiter
+const rateLimitMap = new Map();
+function rateLimit(keyFn, maxRequests, windowMs) {
+  return async (c, next) => {
+    const key = keyFn(c);
+    const now = Date.now();
+    const windowStart = now - windowMs;
+    
+    if (!rateLimitMap.has(key)) rateLimitMap.set(key, []);
+    const requests = rateLimitMap.get(key).filter(t => t > windowStart);
+    rateLimitMap.set(key, requests);
+    
+    if (requests.length >= maxRequests) {
+      return c.json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, 429);
+    }
+    
+    requests.push(now);
+    await next();
+  };
+}
+
+// Apply rate limits
+app.use('/api/generate/*', rateLimit(
+  (c) => c.req.header('Authorization') || c.req.header('x-forwarded-for') || 'anonymous',
+  5, 60 * 60 * 1000  // 5 requests per hour for generation
+));
+app.use('/api/auth/*', rateLimit(
+  (c) => c.req.header('x-forwarded-for') || 'anonymous',
+  20, 15 * 60 * 1000  // 20 requests per 15 min for auth
+));
 
 // Health check
 app.get('/', (c) => {
@@ -65,7 +99,7 @@ console.log('╔═════════════════════�
 console.log('║       Plan-Craft Backend API Server Starting...         ║');
 console.log('╚═══════════════════════════════════════════════════════════╝\n');
 
-console.log('📦 Initializing SQLite database...');
+console.log('📦 Initializing PostgreSQL database...');
 initializeDatabase();
 
 console.log(`\n🚀 Starting server on port ${port}...`);
