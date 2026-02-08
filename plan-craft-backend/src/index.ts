@@ -125,6 +125,17 @@ app.get('/', (c) => {
   });
 });
 
+// Debug: API key check (temporary)
+app.get('/debug/env', (c) => {
+  const key = process.env.ANTHROPIC_API_KEY || '';
+  return c.json({
+    keyLength: key.length,
+    keyPrefix: key.slice(0, 12) + '...',
+    keySuffix: '...' + key.slice(-6),
+    hasKey: key.length > 0,
+  });
+});
+
 app.get('/health', async (c) => {
   const dbConnected = await checkDatabaseConnection();
   let cacheType = 'initializing';
