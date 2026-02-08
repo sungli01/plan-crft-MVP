@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 import type { User } from '../types';
+import UsageBadge from './UsageBadge';
 
 export default function Header() {
   const router = useRouter();
@@ -51,6 +52,7 @@ export default function Header() {
               <button onClick={() => navigate('/projects')} className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">내 프로젝트</button>
             )}
             <button onClick={() => navigate('/templates')} className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">템플릿</button>
+            <button onClick={() => navigate('/pricing')} className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">요금제</button>
           </nav>
         </div>
 
@@ -72,6 +74,7 @@ export default function Header() {
             </>
           ) : (
             <>
+              <UsageBadge />
               <span className="text-sm text-gray-700 dark:text-gray-300">{user?.name || user?.email}</span>
               <button onClick={handleLogout} className="px-4 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">로그아웃</button>
             </>
@@ -130,6 +133,12 @@ export default function Header() {
               className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
             >
               📋 템플릿
+            </button>
+            <button
+              onClick={() => navigate('/pricing')}
+              className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+            >
+              💎 요금제
             </button>
           </nav>
           <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700">
