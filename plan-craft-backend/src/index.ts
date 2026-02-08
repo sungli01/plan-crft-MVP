@@ -17,6 +17,9 @@ import projectsRoutes from './routes/projects';
 import generateRoutes from './routes/generate';
 import usageRoutes from './routes/usage';
 import mockupRouter from './routes/mockup';
+import sharingRouter from './routes/sharing';
+import versionsRouter from './routes/versions';
+import commentsRouter from './routes/comments';
 import { addConnection, removeConnection, getConnectionCount } from './ws/progress-ws';
 import { progressTracker } from './utils/progress-tracker';
 import { getCache } from './cache/redis';
@@ -132,6 +135,9 @@ app.route('/api/projects', projectsRoutes);
 app.route('/api/generate', generateRoutes);
 app.route('/api/usage', usageRoutes);
 app.route('/api/mockup', mockupRouter);
+app.route('/api/share', sharingRouter);
+app.route('/api/versions', versionsRouter);
+app.route('/api/comments', commentsRouter);
 
 // 404 handler
 app.notFound((c) => {
@@ -185,6 +191,15 @@ const server = serve({
   console.log(`   POST /api/mockup/:projectId/generate       - 목업 생성`);
   console.log(`   GET  /api/mockup/:projectId                - 목업 목록`);
   console.log(`   GET  /api/mockup/:projectId/preview/:id    - 목업 미리보기`);
+  console.log(`   POST /api/share/:projectId/share            - 공유 링크 생성`);
+  console.log(`   GET  /api/share/view/:shareToken             - 공유 문서 보기`);
+  console.log(`   GET  /api/versions/:projectId                - 버전 목록`);
+  console.log(`   GET  /api/versions/:projectId/:versionId     - 버전 상세`);
+  console.log(`   POST /api/versions/:projectId/:versionId/restore - 버전 복원`);
+  console.log(`   POST /api/comments/:projectId                - 댓글 추가`);
+  console.log(`   GET  /api/comments/:projectId                - 댓글 목록`);
+  console.log(`   POST /api/comments/:projectId/:commentId/reply - 답글`);
+  console.log(`   DELETE /api/comments/:projectId/:commentId   - 댓글 삭제`);
   console.log('');
 });
 
