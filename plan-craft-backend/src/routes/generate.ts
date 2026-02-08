@@ -244,13 +244,22 @@ async function generateDocumentBackground(projectId: string, projectData: any, u
       message: 'Orchestrator 초기화 중...'
     });
 
+    // 모델명 매핑 (DB 약칭 → Anthropic 실제 모델명)
+    const MODEL_MAP: Record<string, string> = {
+      'claude-opus-4': 'claude-opus-4-6',
+      'claude-sonnet-4': 'claude-sonnet-4-5-20250929',
+      'claude-sonnet-4-5': 'claude-sonnet-4-5-20250929',
+      'claude-opus-4-20250514': 'claude-opus-4-6',
+    };
+    const resolveModel = (m?: string) => MODEL_MAP[m || ''] || m || 'claude-opus-4-6';
+
     // Agent Team Orchestrator 설정
     const config = {
       apiKey: process.env.ANTHROPIC_API_KEY!,
-      architectModel: projectData.model || 'claude-opus-4-6',
-      writerModel: projectData.model || 'claude-opus-4-6',
-      curatorModel: 'claude-sonnet-4-5',
-      reviewerModel: 'claude-sonnet-4-5',
+      architectModel: resolveModel(projectData.model),
+      writerModel: resolveModel(projectData.model),
+      curatorModel: 'claude-sonnet-4-5-20250929',
+      reviewerModel: 'claude-sonnet-4-5-20250929',
       writerTeamSize: 5, // 병렬 Writer 에이전트 수
       unsplashKey: process.env.UNSPLASH_ACCESS_KEY,
       openaiKey: process.env.OPENAI_API_KEY
