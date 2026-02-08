@@ -2,39 +2,56 @@
  * Agent Team Orchestrator
  * Claude Opus 4.6 Agent Teams 기능 활용
  * 병렬 에이전트 실행으로 문서 생성 속도 향상
+ *
+ * Token optimization (v3.1):
+ * - ModelRouter: routes each agent/section to optimal model tier
+ * - TokenTracker: per-agent cost tracking and optimization reports
+ * - Compressed prompts: reduced input tokens across all agents
  */
 
 import { ArchitectAgent } from './agents/architect.js';
 import { WriterAgent } from './agents/writer.js';
 import { ImageCuratorAgent } from './agents/image-curator.js';
 import { ReviewerAgent } from './agents/reviewer.js';
+import { ModelRouter } from './model-router.js';
+import { TokenTracker } from './token-tracker.js';
 
 export class AgentTeamOrchestrator {
   constructor(config) {
     this.config = config;
     
-    // 메인 에이전트
-    this.architect = new ArchitectAgent(config.apiKey, { model: config.architectModel });
+    // Model router — decides which model each agent/section uses
+    this.modelRouter = new ModelRouter({ proMode: config.proMode || false });
+    
+    // Token tracker — per-agent cost tracking
+    this.tokenTracker = new TokenTracker();
+    
+    // 메인 에이전트 (models selected by router)
+    this.architect = new ArchitectAgent(config.apiKey, {
+      model: config.architectModel || this.modelRouter.getArchitectModel()
+    });
     this.imageCurator = new ImageCuratorAgent(config.apiKey, { 
-      model: config.curatorModel,
+      model: config.curatorModel || this.modelRouter.getImageCuratorModel(),
       unsplashKey: config.unsplashKey,
       openaiKey: config.openaiKey
     });
-    this.reviewer = new ReviewerAgent(config.apiKey, { model: config.reviewerModel });
+    this.reviewer = new ReviewerAgent(config.apiKey, {
+      model: config.reviewerModel || this.modelRouter.getReviewerModel()
+    });
     
-    // Writer 팀 (병렬 실행)
+    // Writer 팀 (병렬 실행) — model set per-section in parallelWriteSections
     this.writerTeamSize = config.writerTeamSize || 5;
     this.writerTeam = [];
     for (let i = 0; i < this.writerTeamSize; i++) {
       this.writerTeam.push(
         new WriterAgent(config.apiKey, { 
-          model: config.writerModel,
+          model: config.writerModel || this.modelRouter.defaultModel,
           name: `Writer-${i + 1}`
         })
       );
     }
     
-    // 토큰 추적
+    // 토큰 추적 (legacy — kept for backward compat, tokenTracker is primary)
     this.tokenUsage = {
       architect: { input: 0, output: 0 },
       writerTeam: { input: 0, output: 0 },
@@ -44,6 +61,13 @@ export class AgentTeamOrchestrator {
     
     // 진행 추적 콜백
     this.onProgress = null;
+    
+    // Log routing config
+    console.log(`🔀 ModelRouter: proMode=${this.modelRouter.proMode}`);
+    console.log(`   Architect  → ${this.architect.model}`);
+    console.log(`   ImageCurator → ${this.imageCurator.model}`);
+    console.log(`   Reviewer   → ${this.reviewer.model}`);
+    console.log(`   Writer default → ${this.modelRouter.defaultModel}`);
   }
 
   setProgressCallback(callback) {
@@ -56,10 +80,20 @@ export class AgentTeamOrchestrator {
     }
   }
 
-  updateTokenUsage(agent, tokens) {
+  updateTokenUsage(agent, tokens, meta = {}) {
     if (tokens && this.tokenUsage[agent]) {
       this.tokenUsage[agent].input += tokens.input_tokens || 0;
       this.tokenUsage[agent].output += tokens.output_tokens || 0;
+    }
+    // Also feed the TokenTracker
+    if (tokens) {
+      const trackerAgent = agent === 'writerTeam' ? 'writer' : agent;
+      this.tokenTracker.recordUsage(trackerAgent, {
+        input_tokens: tokens.input_tokens || 0,
+        output_tokens: tokens.output_tokens || 0,
+        model: meta.model || '',
+        sectionTitle: meta.sectionTitle || '',
+      });
     }
   }
 
@@ -110,7 +144,7 @@ export class AgentTeamOrchestrator {
       }
 
       const designResult = await this.architect.designStructure(projectInfo);
-      this.updateTokenUsage('architect', designResult.tokens);
+      this.updateTokenUsage('architect', designResult.tokens, { model: this.architect.model });
       
       const design = designResult.design;
       const totalSections = design.structure.reduce((sum, s) => sum + (s.subsections?.length || 0), 0);
@@ -137,7 +171,7 @@ export class AgentTeamOrchestrator {
       // ========================================================================
       console.log(`\n✍️  Phase 2: 병렬 작성 (Writer Team x${this.writerTeamSize})`);
       
-      // 섹션 목록 생성
+      // 섹션 목록 생성 + ModelRouter로 모델/토큰 예산 결정
       const sections = [];
       design.structure.forEach(section => {
         section.subsections?.forEach(sub => {
@@ -146,10 +180,20 @@ export class AgentTeamOrchestrator {
             title: sub.title,
             level: sub.level,
             estimatedWords: sub.estimatedWords || 500,
-            requirements: sub.requirements
+            requirements: sub.requirements,
+            importance: sub.importance || this.modelRouter.classifySection(sub.title),
           });
         });
       });
+      
+      // Attach model and maxTokens per section via ModelRouter
+      const totalSections = sections.length;
+      for (let i = 0; i < totalSections; i++) {
+        const s = sections[i];
+        s.model = this.modelRouter.getWriterModel(s.title, i, totalSections);
+        const budget = this.modelRouter.getTokenBudget(s.title, i, totalSections);
+        s.maxTokens = budget.maxTokens;
+      }
       
       console.log(`📝 총 ${sections.length}개 섹션을 ${this.writerTeamSize}개 팀으로 분산`);
       
@@ -227,7 +271,7 @@ export class AgentTeamOrchestrator {
       
       imageResults.forEach(result => {
         if (result.totalTokens) {
-          this.updateTokenUsage('imageCurator', result.totalTokens);
+          this.updateTokenUsage('imageCurator', result.totalTokens, { model: this.imageCurator.model });
         }
       });
       

@@ -6,6 +6,12 @@
  * - 섹션 분할 및 우선순위 결정
  * - 이미지 필요 영역 식별
  * - 작업 계획 수립
+ *
+ * Token optimization:
+ * - Static instructions in system prompt (auto-cached by Anthropic)
+ * - Compressed user prompt with only dynamic data
+ * - max_tokens reduced from 8000 → 4000 (structure JSON doesn't need 8k)
+ * - importance field added to output schema for ModelRouter
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -13,73 +19,41 @@ import Anthropic from '@anthropic-ai/sdk';
 export class ArchitectAgent {
   constructor(apiKey, config = {}) {
     this.anthropic = new Anthropic({ apiKey });
-    this.model = config.model || 'claude-opus-4-6';
+    this.model = config.model || 'claude-sonnet-4-5-20250929';
     this.name = 'Architect';
     this.role = '문서 설계자';
+  }
+
+  /**
+   * Static system prompt — Anthropic auto-caches system prompts,
+   * so repeated calls only pay for tokens once.
+   */
+  getSystemPrompt() {
+    return `사업계획서 구조 설계 전문가. 25개 섹션 구성.
+각 섹션에 importance 분류 필수: core(핵심)/standard(일반)/simple(부록).
+순수 JSON만 출력 (마크다운 코드블록 없이).
+
+출력 스키마:
+{"documentTitle":"","structure":[{"level":1,"title":"","priority":"high|medium|low","subsections":[{"level":2,"title":"","importance":"core|standard|simple","needsImage":true,"imageType":"diagram|flowchart|chart|photo","estimatedWords":500}]}],"imageRequirements":[{"sectionId":"","type":"diagram","description":""}],"estimatedTotalPages":200}`;
   }
 
   async designStructure(projectInfo) {
     console.log(`\n📐 [${this.name}] 문서 구조 설계 시작...`);
 
-    const prompt = `사업계획서 구조 설계 전문가. 25개 섹션 구성.
+    // Compressed: only send title + truncated idea (100 chars)
+    const ideaSummary = projectInfo.idea?.length > 100
+      ? projectInfo.idea.slice(0, 100) + '…'
+      : projectInfo.idea;
 
-과제: ${projectInfo.title}
-아이디어: ${projectInfo.idea}
-
-JSON 형식으로 출력:
-{
-  "structure": [
-    {"title": "대제목", "subsections": [
-      {"id": "s1", "title": "중제목", "level": 2, "estimatedWords": 800}
-    ]}
-  ]
-}
-
-출력:
-JSON 형식으로 출력하되, 마크다운 코드 블록 없이 순수 JSON만 출력하세요.
-
-\`\`\`json
-{
-  "documentTitle": "문서 제목",
-  "structure": [
-    {
-      "level": 1,
-      "title": "1. 대제목",
-      "priority": "high",
-      "subsections": [
-        {
-          "level": 2,
-          "title": "1.1 중제목",
-          "needsImage": true,
-          "imageType": "diagram",
-          "subsections": [
-            {
-              "level": 3,
-              "title": "1.1.1 소제목",
-              "estimatedWords": 500
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  "imageRequirements": [
-    {
-      "sectionId": "1.1",
-      "type": "diagram",
-      "description": "전체 시스템 아키텍처 다이어그램"
-    }
-  ],
-  "estimatedTotalPages": 200
-}
-\`\`\``;
+    const userPrompt = `과제: ${projectInfo.title}\n아이디어: ${ideaSummary}`;
 
     try {
       const message = await this.anthropic.messages.create({
         model: this.model,
-        max_tokens: 8000,
+        max_tokens: 4000,
         temperature: 0.7,
-        messages: [{ role: 'user', content: prompt }]
+        system: this.getSystemPrompt(),
+        messages: [{ role: 'user', content: userPrompt }]
       });
 
       const content = message.content[0].text;
@@ -114,18 +88,14 @@ JSON 형식으로 출력하되, 마크다운 코드 블록 없이 순수 JSON만
   async refineStructure(design, feedback) {
     console.log(`\n📐 [${this.name}] 구조 개선 중...`);
 
-    const prompt = `# 기존 설계
-${JSON.stringify(design, null, 2)}
-
-# 피드백
-${feedback}
-
-위 피드백을 반영하여 구조를 개선하세요. JSON 형식으로 출력하세요.`;
+    // Compact JSON (no pretty-print) to save input tokens
+    const prompt = `기존 설계:\n${JSON.stringify(design)}\n\n피드백: ${feedback}\n\n위 피드백 반영하여 개선. 순수 JSON 출력.`;
 
     const message = await this.anthropic.messages.create({
       model: this.model,
-      max_tokens: 8000,
+      max_tokens: 4000,
       temperature: 0.7,
+      system: this.getSystemPrompt(),
       messages: [{ role: 'user', content: prompt }]
     });
 

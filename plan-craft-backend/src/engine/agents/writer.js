@@ -6,6 +6,12 @@
  * - 계층 구조 적용
  * - 개조식 표현 사용
  * - 품질 기준 준수
+ *
+ * Token optimization:
+ * - Static system prompt (auto-cached by Anthropic on repeated calls)
+ * - User prompt compressed: only current/prev/next section titles, truncated idea
+ * - max_tokens set per section importance via ModelRouter budget
+ * - Model selected per section via ModelRouter
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -13,7 +19,7 @@ import Anthropic from '@anthropic-ai/sdk';
 export class WriterAgent {
   constructor(apiKey, config = {}) {
     this.anthropic = new Anthropic({ apiKey });
-    this.model = config.model || 'claude-opus-4-6';
+    this.model = config.model || 'claude-sonnet-4-5-20250929';
     this.name = config.name || 'Writer';
     this.role = '내용 작성자';
   }
@@ -33,31 +39,37 @@ export class WriterAgent {
   async writeSection(section, projectInfo, context = {}) {
     console.log(`\n✍️  [${this.name}] 섹션 작성 중: ${section.title}`);
 
+    // Compressed idea: max 100 chars
+    const ideaSummary = projectInfo.idea?.length > 100
+      ? projectInfo.idea.slice(0, 100) + '…'
+      : (projectInfo.idea || '');
+
+    // Context-aware: only prev/next section titles (not full outline)
+    let contextLine = '';
+    if (context.prevTitle || context.nextTitle) {
+      const parts = [];
+      if (context.prevTitle) parts.push(`이전: ${context.prevTitle}`);
+      if (context.nextTitle) parts.push(`다음: ${context.nextTitle}`);
+      contextLine = `\n흐름: ${parts.join(' → ')}`;
+    }
+
     const userPrompt = `섹션: ${section.title}
-
 과제: ${projectInfo.title}
-개요: ${projectInfo.idea}
+개요: ${ideaSummary}${contextLine}
+${section.requirements ? `내용: ${section.requirements.join(', ')}` : ''}
+${section.estimatedWords ? `목표: ${section.estimatedWords}자 이상` : ''}`;
 
-요구사항:
-- 개조식 작성
-- 구체적 내용
-- 500-1000자
-${section.requirements ? `\n내용: ${section.requirements.join(', ')}` : ''}
-
-출력:
-
-위 지침에 따라 **${section.title}** 섹션을 작성해주세요.
-
-${section.estimatedWords ? `목표 단어 수: ${section.estimatedWords}단어 이상` : ''}
-
-반드시 Markdown 형식으로 출력하고, 계층 구조와 개조식을 정확히 따라주세요.`;
+    // Use per-section model if provided (from ModelRouter), else instance default
+    const model = section.model || this.model;
+    // Use per-section maxTokens budget if provided, else default
+    const maxTokens = section.maxTokens || 2000;
 
     try {
       const startTime = Date.now();
 
       const message = await this.anthropic.messages.create({
-        model: this.model,
-        max_tokens: section.maxTokens || 8000,
+        model,
+        max_tokens: maxTokens,
         temperature: 0.7,
         system: this.getSystemPrompt(),
         messages: [{ role: 'user', content: userPrompt }]
@@ -105,17 +117,11 @@ ${section.estimatedWords ? `목표 단어 수: ${section.estimatedWords}단어 �
   async improveSection(sectionContent, feedback) {
     console.log(`\n✍️  [${this.name}] 섹션 개선 중...`);
 
-    const prompt = `# 기존 내용
-${sectionContent}
-
-# 개선 요청
-${feedback}
-
-위 피드백을 반영하여 내용을 개선하세요. Markdown 형식으로 출력하세요.`;
+    const prompt = `기존:\n${sectionContent}\n\n개선 요청: ${feedback}\n\nMarkdown 출력.`;
 
     const message = await this.anthropic.messages.create({
       model: this.model,
-      max_tokens: 8000,
+      max_tokens: 2000,
       temperature: 0.7,
       system: this.getSystemPrompt(),
       messages: [{ role: 'user', content: prompt }]
