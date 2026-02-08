@@ -64,12 +64,11 @@ export class ArchitectAgent {
   }
 
   getSystemPrompt(): string {
-    return `사업계획서 구조 설계 전문가. 25개 섹션 구성.
-각 섹션에 importance 분류 필수: core(핵심)/standard(일반)/simple(부록).
-순수 JSON만 출력 (마크다운 코드블록 없이).
+    return `사업계획서 구조 설계 전문가. 10~15개 대섹션, 서브섹션은 제목만.
+순수 JSON만 출력 (마크다운 코드블록 없이). 간결하게.
 
 출력 스키마:
-{"documentTitle":"","structure":[{"level":1,"title":"","priority":"high|medium|low","subsections":[{"level":2,"title":"","importance":"core|standard|simple","needsImage":true,"imageType":"diagram|flowchart|chart|photo","estimatedWords":500}]}],"imageRequirements":[{"sectionId":"","type":"diagram","description":""}],"estimatedTotalPages":200}`;
+{"documentTitle":"","structure":[{"level":1,"title":"","priority":"high","subsections":[{"level":2,"title":"","importance":"core","needsImage":false,"estimatedWords":400}]}],"imageRequirements":[],"estimatedTotalPages":50}`;
   }
 
   async designStructure(projectInfo: ProjectInfo): Promise<DesignResult> {
