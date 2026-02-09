@@ -283,8 +283,8 @@ export function generateHTML(result, projectInfo) {
       <p><strong>총 섹션:</strong> ${sections.length}개</p>
       <p><strong>평균 품질:</strong> ${avgQuality.toFixed(1)}/100점</p>
       <p><strong>이미지:</strong> ${totalImageCount}개</p>
-      <p><strong>토큰 사용:</strong> ${metadata.totalTokens.total.toLocaleString()} tokens</p>
-      <p><strong>예상 비용:</strong> $${metadata.estimatedCost.toFixed(4)}</p>
+      <p><strong>토큰 사용:</strong> ${metadata.totalTokens?.total?.toLocaleString() || 'N/A'} tokens</p>
+      <p><strong>예상 비용:</strong> $${metadata.estimatedCost?.toFixed(4) || 'N/A'}</p>
       <p><strong>생성 시간:</strong> ${metadata.totalTime}초</p>
     </div>
   </div>
