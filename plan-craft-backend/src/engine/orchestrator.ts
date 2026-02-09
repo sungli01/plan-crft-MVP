@@ -251,7 +251,7 @@ export class Orchestrator {
       const totalTokens = this.getTotalTokenUsage();
       const tokenSummary = this.tokenTracker.getSummary();
       const optimizationReport = this.tokenTracker.getOptimizationReport();
-      const totalCost = this.tokenTracker.usage.total.cost;
+      const totalCost = this.tokenTracker?.usage?.total?.cost || 0;
 
       console.log('\n╔═══════════════════════════════════════════════════════════╗');
       console.log('║  ✅ 문서 생성 완료!                                       ║');
