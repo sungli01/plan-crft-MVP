@@ -81,25 +81,29 @@ export class ModelRouter {
   // ──────────────────────────────────────────────
 
   getWriterModel(sectionTitle: string, sectionIndex: number, totalSections: number): string {
+    // Free tier: 모든 섹션 Sonnet 사용
+    // Pro tier: 중요 섹션만 Opus, 나머지 Sonnet
     const importance = this.classifySection(sectionTitle);
 
-    if (importance === 'core') {
-      return this.proMode ? MODEL_TIERS.opus : MODEL_TIERS.sonnet;
+    if (importance === 'core' && this.proMode) {
+      return MODEL_TIERS.opus;
     }
 
     if (importance === 'simple') {
       return MODEL_TIERS.sonnet;
     }
 
-    if (sectionIndex < 3 || sectionIndex >= totalSections - 2) {
-      return this.proMode ? MODEL_TIERS.opus : MODEL_TIERS.sonnet;
+    // 첫 3개 or 마지막 2개 섹션은 Pro에서만 Opus
+    if ((sectionIndex < 3 || sectionIndex >= totalSections - 2) && this.proMode) {
+      return MODEL_TIERS.opus;
     }
 
     return MODEL_TIERS.sonnet;
   }
 
   getArchitectModel(): string {
-    return MODEL_TIERS.sonnet;
+    // Architect는 문서 전체 설계를 담당하므로 항상 Opus 사용
+    return MODEL_TIERS.opus;
   }
 
   getReviewerModel(): string {
