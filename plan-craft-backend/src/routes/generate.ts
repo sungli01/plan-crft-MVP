@@ -318,10 +318,10 @@ async function generateDocumentBackground(projectId: string, projectData: any, u
       userId: userId,
       projectId: projectId,
       model: projectData.model || 'claude-opus-4-6',
-      inputTokens: summary.tokenUsage.input,
-      outputTokens: summary.tokenUsage.output,
-      totalTokens: summary.tokenUsage.total,
-      costUsd: summary.estimatedCost
+      inputTokens: summary.totalTokens?.input || 0,
+      outputTokens: summary.totalTokens?.output || 0,
+      totalTokens: summary.totalTokens?.total || 0,
+      costUsd: summary.estimatedCost || 0
     });
 
     // 프로젝트 상태 업데이트: completed
