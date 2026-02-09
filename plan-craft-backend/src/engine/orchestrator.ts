@@ -249,8 +249,8 @@ export class Orchestrator {
       
       const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
       const totalTokens = this.getTotalTokenUsage();
-      const tokenSummary = this.tokenTracker.getSummary();
-      const optimizationReport = this.tokenTracker.getOptimizationReport();
+      const tokenSummary = this.tokenTracker?.getSummary() || { total: { cost: 'N/A' } };
+      const optimizationReport = this.tokenTracker?.getOptimizationReport() || { suggestions: [] };
       const totalCost = this.tokenTracker?.usage?.total?.cost || 0;
 
       console.log('\n╔═══════════════════════════════════════════════════════════╗');
@@ -266,7 +266,7 @@ export class Orchestrator {
       console.log(`💰 예상 비용: $${totalCost.toFixed(4)}`);
       
       console.log(`\n📊 Token Optimization Report:`);
-      console.log(`   총 비용: ${tokenSummary.total.cost}`);
+      console.log(`   총 비용: ${tokenSummary?.total?.cost || 'N/A'}`);
       optimizationReport.suggestions.forEach(s => {
         console.log(`   ${s.type === 'cost_ok' ? '✅' : '⚠️'}  ${s.message}`);
       });
