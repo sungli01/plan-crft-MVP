@@ -254,8 +254,24 @@ async function generateDocumentBackground(projectId: string, projectData: any, u
     const resolveModel = (m?: string) => MODEL_MAP[m || ''] || m || 'claude-opus-4-6';
 
     // Agent Team Orchestrator 설정
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    
+    // API 키 검증
+    if (!apiKey) {
+      const error = new Error('ANTHROPIC_API_KEY is not set in environment variables');
+      console.error(`❌ ${error.message}`);
+      progressTracker.addLog(projectId, {
+        agent: 'system',
+        level: 'error',
+        message: 'API 키 설정 오류'
+      });
+      throw error;
+    }
+    
+    console.log(`[Background] API Key exists: ${apiKey.substring(0, 10)}... (length: ${apiKey.length})`);
+    
     const config = {
-      apiKey: process.env.ANTHROPIC_API_KEY!,
+      apiKey: apiKey,
       architectModel: resolveModel(projectData.model),
       writerModel: resolveModel(projectData.model),
       curatorModel: 'claude-sonnet-4-5-20250929',
@@ -264,6 +280,12 @@ async function generateDocumentBackground(projectId: string, projectData: any, u
       unsplashKey: process.env.UNSPLASH_ACCESS_KEY,
       openaiKey: process.env.OPENAI_API_KEY
     };
+    
+    console.log(`[Background] Config prepared:`, {
+      architectModel: config.architectModel,
+      writerModel: config.writerModel,
+      writerTeamSize: config.writerTeamSize
+    });
 
     // 프로젝트 정보
     const projectInfo = {
@@ -285,9 +307,40 @@ async function generateDocumentBackground(projectId: string, projectData: any, u
     });
 
     // Agent Team Orchestrator로 문서 생성 (병렬 처리)
-    const orchestrator = new AgentTeamOrchestrator(config);
+    console.log(`[Background] Creating Orchestrator...`);
+    progressTracker.addLog(projectId, {
+      agent: 'system',
+      level: 'info',
+      message: 'Orchestrator 생성 중...'
+    });
+    
+    let orchestrator: AgentTeamOrchestrator;
+    try {
+      orchestrator = new AgentTeamOrchestrator(config);
+      console.log(`✅ Orchestrator created successfully`);
+      progressTracker.addLog(projectId, {
+        agent: 'system',
+        level: 'success',
+        message: 'Orchestrator 생성 완료'
+      });
+    } catch (orchError: any) {
+      console.error(`❌ Orchestrator creation failed:`, orchError);
+      progressTracker.addLog(projectId, {
+        agent: 'system',
+        level: 'error',
+        message: `Orchestrator 생성 실패: ${orchError.message}`
+      });
+      throw orchError;
+    }
     
     // 진행 상황 추적과 함께 생성
+    console.log(`[Background] Starting document generation...`);
+    progressTracker.addLog(projectId, {
+      agent: 'system',
+      level: 'info',
+      message: '문서 생성 시작...'
+    });
+    
     const result = await orchestrator.generateDocument(projectInfo, progressTracker);
 
     console.log(`[Background] Generation complete for project ${projectId}`);
