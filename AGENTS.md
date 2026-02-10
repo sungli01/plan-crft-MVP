@@ -45,6 +45,43 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
 - When you make a mistake → document it so future-you doesn't repeat it
 - **Text > Brain** 📝
 
+## Performance & Scalability (성능 원칙)
+
+As conversations grow, speed matters. Follow these scaling rules:
+
+### 📈 Scaling Thresholds
+
+**Current State (2 projects):**
+- Use `memory/index.json` for fast metadata access (14x faster)
+- Direct URL/docs lookup instead of full file search
+- Keep daily logs, prune old details
+
+**10+ Projects:**
+- Implement Vector Database (Pinecone recommended)
+- Semantic search for all documents
+- Auto-compress old conversations
+
+**100+ Projects:**
+- Add Knowledge Graph (Neo4j) for relationship tracking
+- Complex queries across projects
+- Automated cross-project insights
+
+**1000+ Projects (Enterprise):**
+- Consider Data Fabric architecture
+- Real-time data integration
+- Multi-source synchronization
+
+### ⚡ Optimization Rules
+
+1. **Use index.json first**: Check `memory/index.json` before memory_search
+2. **Session isolation**: Spawn separate sessions for big projects (`sessions_spawn`)
+3. **Summarize at 50K tokens**: Don't let context bloat beyond 50K
+4. **Right tool for scale**: Don't over-engineer (no Data Fabric for 2 projects!)
+
+**Reference:** See `PERFORMANCE-OPTIMIZATION.md` for detailed strategies.
+
+---
+
 ## Safety
 
 - Don't exfiltrate private data. Ever.
