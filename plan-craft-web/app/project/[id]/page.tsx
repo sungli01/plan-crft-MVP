@@ -252,6 +252,35 @@ export default function ProjectDetailPage() {
     return Object.values(realtimeProgress.agents).filter((a: any) => a.status === 'running').length;
   };
 
+  /* ── Start document generation ── */
+  const [generating, setGenerating] = useState(false);
+  
+  const handleStartGeneration = async () => {
+    if (generating) return;
+    
+    setGenerating(true);
+    try {
+      console.log('[Frontend] Starting document generation for project:', projectId);
+      const response = await api.post(`/api/generate/${projectId}`);
+      console.log('[Frontend] Generation started:', response.data);
+      
+      // Update status immediately
+      setProjectStatus('generating');
+      statusRef.current = 'generating';
+      
+      showToast('문서 생성을 시작했습니다', 'success');
+      
+      // Reload project data
+      await loadProjectData();
+    } catch (error: any) {
+      console.error('[Frontend] Generation start failed:', error);
+      const message = error.response?.data?.error || '문서 생성 시작에 실패했습니다';
+      showToast(message, 'error');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const handleDownloadHtml = async () => {
     setShowDownloadMenu(false);
     setDownloading(true);
@@ -570,6 +599,49 @@ export default function ProjectDetailPage() {
               {/* ═══ COMPLETED / OTHER STATES ═══ */}
               {project.status !== 'generating' && (
                 <div className="space-y-6">
+                  {/* Draft State - Start Generation Button */}
+                  {project.status === 'draft' && (
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 rounded-2xl p-8 text-center">
+                      <div className="max-w-md mx-auto space-y-4">
+                        <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                          <span className="text-3xl">🚀</span>
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-blue-900 dark:text-blue-200 mb-2">
+                            AI 사업계획서 생성 준비 완료
+                          </h3>
+                          <p className="text-sm text-blue-700 dark:text-blue-400 leading-relaxed">
+                            멀티 AI 에이전트 팀이 고품질 사업계획서를 생성합니다.<br />
+                            예상 소요 시간: 약 15-20분
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleStartGeneration}
+                          disabled={generating}
+                          className="w-full py-4 px-6 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                        >
+                          {generating ? (
+                            <>
+                              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              <span>생성 시작 중...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>⚡</span>
+                              <span>사업계획서 생성 시작</span>
+                            </>
+                          )}
+                        </button>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          💡 생성 중에도 다른 작업을 진행할 수 있습니다
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Completion Banner */}
                   {project.status === 'completed' && (
                     <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-6">
