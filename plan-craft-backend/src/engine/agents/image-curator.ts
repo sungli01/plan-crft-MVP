@@ -68,22 +68,31 @@ export class ImageCuratorAgent {
   }
 
   getSystemPrompt(): string {
-    return `이미지 큐레이터. 섹션별 이미지 필요성 분석.
-타입: diagram/flowchart/chart/photo/icon/table
-방법: search(사진) / generate(도식도,차트)
-위치: top/middle/bottom
-순수 JSON 출력:
-{"needsImage":true,"images":[{"type":"diagram","method":"generate","position":"top","description":"","searchKeywords":"","generatePrompt":"","caption":""}]}`;
+    return `You are an image curator. Analyze if a section needs images.
+
+Rules:
+1. Return ONLY valid JSON (no markdown, no code blocks)
+2. Use double quotes for all strings
+3. Escape special characters properly
+4. Image types: diagram, flowchart, chart, photo, icon, table
+5. Methods: "search" (photos) or "generate" (diagrams/charts)
+6. Positions: top, middle, bottom
+
+Required JSON format:
+{"needsImage":true,"images":[{"type":"diagram","method":"generate","position":"top","description":"Brief description","searchKeywords":"","generatePrompt":"","caption":"Image caption"}]}
+
+If no images needed:
+{"needsImage":false,"images":[]}`;
   }
 
-  async analyzeImageNeeds(section: { title: string }, content: string): Promise<{ analysis: ImageAnalysis; tokens?: any }> {
+  async analyzeImageNeeds(section: { title: string }, content: string, retryCount: number = 0): Promise<{ analysis: ImageAnalysis; tokens?: any }> {
     console.log(`\n🖼️  [${this.name}] 이미지 필요성 분석: ${section.title}`);
 
     const contentSnippet = content?.length > 200
       ? content.slice(0, 200) + '…'
       : (content || '');
 
-    const userPrompt = `제목: ${section.title}\n내용: ${contentSnippet}`;
+    const userPrompt = `Title: ${section.title}\nContent: ${contentSnippet}\n\nReturn valid JSON only.`;
 
     try {
       const message = await this.anthropic.messages.create({
@@ -95,15 +104,53 @@ export class ImageCuratorAgent {
       });
 
       const responseText = (message.content[0] as any).text;
-      let jsonStr = responseText.match(/```json\n?([\s\S]*?)\n?```/)?.[1] || responseText;
-      if (jsonStr.includes('```')) {
-        jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-      }
-      jsonStr = jsonStr.trim();
       
-      const analysis: ImageAnalysis = JSON.parse(jsonStr);
+      // Clean JSON extraction
+      let jsonStr = responseText.trim();
+      
+      // Remove markdown code blocks if present
+      const codeBlockMatch = jsonStr.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+      if (codeBlockMatch) {
+        jsonStr = codeBlockMatch[1].trim();
+      }
+      
+      // Remove any remaining backticks
+      jsonStr = jsonStr.replace(/^`+|`+$/g, '').trim();
+      
+      // Extract JSON object if embedded in text
+      const jsonObjectMatch = jsonStr.match(/\{[\s\S]*\}/);
+      if (jsonObjectMatch) {
+        jsonStr = jsonObjectMatch[0];
+      }
+      
+      // Attempt to parse
+      let analysis: ImageAnalysis;
+      try {
+        analysis = JSON.parse(jsonStr);
+      } catch (parseError: any) {
+        console.error(`   ❌ JSON 파싱 실패: ${parseError.message}`);
+        console.error(`   📄 원본 응답 (처음 500자):\n${responseText.slice(0, 500)}`);
+        console.error(`   🔍 추출된 JSON:\n${jsonStr.slice(0, 500)}`);
+        
+        // Retry once with more explicit prompt
+        if (retryCount === 0) {
+          console.log(`   🔄 재시도 중...`);
+          await new Promise(resolve => setTimeout(resolve, 500));
+          return this.analyzeImageNeeds(section, content, 1);
+        }
+        
+        throw parseError;
+      }
 
-      if (analysis.needsImage && analysis.images && analysis.images.length > 0) {
+      // Validate structure
+      if (typeof analysis.needsImage !== 'boolean') {
+        analysis.needsImage = false;
+      }
+      if (!Array.isArray(analysis.images)) {
+        analysis.images = [];
+      }
+
+      if (analysis.needsImage && analysis.images.length > 0) {
         console.log(`   ✅ 이미지 ${analysis.images.length}개 필요`);
         analysis.images.forEach((img, i) => {
           console.log(`      ${i + 1}. ${img.type} (${img.method}) - ${img.caption || img.description}`);
@@ -120,7 +167,7 @@ export class ImageCuratorAgent {
       };
 
     } catch (error: any) {
-      console.error(`   ❌ 분석 오류: ${error.message}`);
+      console.error(`   ❌ 분석 오류 (최종): ${error.message}`);
       return {
         analysis: { needsImage: false, images: [] },
       };
