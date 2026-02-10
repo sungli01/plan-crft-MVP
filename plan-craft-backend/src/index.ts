@@ -107,10 +107,26 @@ function rateLimit(keyFn: (c: Context) => string, maxRequests: number, windowMs:
 }
 
 // Apply rate limits
-app.use('/api/generate/*', rateLimit(
+// Generation endpoint: strict limit (시간당 5회)
+app.use('/api/generate/:projectId', async (c, next) => {
+  const path = c.req.path;
+  // status, download endpoint는 rate limit 제외
+  if (path.includes('/status') || path.includes('/download')) {
+    return next();
+  }
+  return rateLimit(
+    (c) => c.req.header('Authorization') || c.req.header('x-forwarded-for') || 'anonymous',
+    5, 60 * 60 * 1000  // 5 requests per hour for generation
+  )(c, next);
+});
+
+// Status endpoint: 관대한 limit (분당 60회)
+app.use('/api/generate/:projectId/status', rateLimit(
   (c) => c.req.header('Authorization') || c.req.header('x-forwarded-for') || 'anonymous',
-  5, 60 * 60 * 1000  // 5 requests per hour for generation
+  60, 60 * 1000  // 60 requests per minute for status polling
 ));
+
+// Auth endpoint rate limit
 app.use('/api/auth/*', rateLimit(
   (c) => c.req.header('x-forwarded-for') || 'anonymous',
   20, 15 * 60 * 1000  // 20 requests per 15 min for auth
