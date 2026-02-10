@@ -297,32 +297,47 @@ async function generateDocumentBackground(projectId: string, projectData: any, u
     const html = generateHTML(result, projectInfo);
     const summary = extractSummary(result);
 
+    console.log(`[Background] Saving document to DB...`);
+    console.log(`Summary:`, JSON.stringify(summary, null, 2));
+
     // 문서 저장
-    await db.insert(documents).values({
-      projectId: projectId,
-      contentHtml: html,
-      qualityScore: summary.qualityScore,
-      sectionCount: summary.sectionCount,
-      wordCount: summary.wordCount,
-      imageCount: summary.imageCount,
-      metadata: JSON.stringify({
-        title: projectData.title,
-        generatedAt: new Date().toISOString(),
-        tokenUsage: summary.tokenUsage
-      }),
-      generatedAt: new Date()
-    });
+    try {
+      await db.insert(documents).values({
+        projectId: projectId,
+        contentHtml: html,
+        qualityScore: summary.qualityScore,
+        sectionCount: summary.sectionCount,
+        wordCount: summary.wordCount,
+        imageCount: summary.imageCount,
+        metadata: JSON.stringify({
+          title: projectData.title,
+          generatedAt: new Date().toISOString(),
+          tokenUsage: summary.tokenUsage || {}
+        }),
+        generatedAt: new Date()
+      });
+      console.log(`✅ Document saved successfully`);
+    } catch (err: any) {
+      console.error(`❌ Document save failed:`, err.message);
+      console.error(`Full error:`, err);
+      throw err;
+    }
 
     // 토큰 사용량 저장
-    await db.insert(tokenUsage).values({
-      userId: userId,
-      projectId: projectId,
-      model: projectData.model || 'claude-opus-4-6',
-      inputTokens: summary.totalTokens?.input || 0,
-      outputTokens: summary.totalTokens?.output || 0,
-      totalTokens: summary.totalTokens?.total || 0,
-      costUsd: summary.estimatedCost || 0
-    });
+    try {
+      await db.insert(tokenUsage).values({
+        userId: userId,
+        projectId: projectId,
+        model: projectData.model || 'claude-opus-4-6',
+        inputTokens: summary.totalTokens?.input || 0,
+        outputTokens: summary.totalTokens?.output || 0,
+        totalTokens: summary.totalTokens?.total || 0,
+        costUsd: summary.estimatedCost || 0
+      });
+      console.log(`✅ Token usage saved successfully`);
+    } catch (err: any) {
+      console.error(`⚠️  Token usage save failed (non-critical):`, err.message);
+    }
 
     // 프로젝트 상태 업데이트: completed
     await db.update(projects).set({ status: 'completed', updatedAt: new Date() }).where(eq(projects.id, projectId));
