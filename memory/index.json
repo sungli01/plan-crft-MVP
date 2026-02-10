@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "lastUpdate": "2026-02-10T15:38:00+09:00",
+  "projects": {
+    "1": {
+      "name": "Plan-Craft v5.0",
+      "status": "debugging",
+      "priority": "high",
+      "urls": {
+        "frontend": "https://plan-crft-mvp-ot41.vercel.app",
+        "backend": "https://plan-crft-mvp-production.up.railway.app",
+        "github": "https://github.com/sungli01/plan-crft-MVP"
+      },
+      "docs": {
+        "config": "memory/projects/1-plan-craft/config.md",
+        "issues": "memory/projects/1-plan-craft/issues.md",
+        "timeline": "memory/projects/1-plan-craft/timeline.md"
+      },
+      "currentIssue": "ImageCurator JSON parsing - fix deployed, testing needed",
+      "tags": ["ai", "anthropic", "document-generation", "railway", "vercel"]
+    },
+    "2": {
+      "name": "Travelagent",
+      "status": "completed",
+      "priority": "low",
+      "urls": {
+        "frontend": "https://traver-ai.vercel.app",
+        "backend": "https://traverai-production.up.railway.app",
+        "github": "https://github.com/sungli01/Traver_AI"
+      },
+      "docs": {
+        "config": "memory/projects/2-travelagent/config.md",
+        "issues": "memory/projects/2-travelagent/issues.md",
+        "handover": "travelagent/HANDOVER-TRAVELAGENT.md"
+      },
+      "currentIssue": null,
+      "tags": ["ai", "anthropic", "travel", "railway", "vercel", "completed"]
+    }
+  },
+  "quickAccess": {
+    "activeProjects": ["1"],
+    "completedProjects": ["2"],
+    "needsAttention": ["1"]
+  },
+  "stats": {
+    "totalProjects": 2,
+    "activeCount": 1,
+    "completedCount": 1
+  }
+}
