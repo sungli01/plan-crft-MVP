@@ -75,10 +75,11 @@ async function runMigration() {
       ORDER BY tc.table_name
     `);
 
+    const rows = Array.isArray(result) ? result : (result as any).rows ?? [];
     console.log('\n📋 Constraints verification:');
-    console.table(result.rows);
+    console.table(rows);
 
-    const allCascade = result.rows.every((row: any) => row.delete_rule === 'CASCADE');
+    const allCascade = rows.length > 0 && rows.every((row: any) => row.delete_rule === 'CASCADE');
     
     if (allCascade) {
       console.log('\n✅ Migration completed successfully! All constraints have CASCADE delete.');
