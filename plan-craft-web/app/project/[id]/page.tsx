@@ -134,7 +134,13 @@ export default function ProjectDetailPage() {
   /* ── Data loading ── */
   const loadProjectData = useCallback(async () => {
     try {
-      const projectResponse = await api.get(`/api/projects/${projectId}`);
+      // 병렬 실행으로 속도 개선 (순차 → 병렬)
+      const [projectResponse, statusResponse] = await Promise.all([
+        api.get(`/api/projects/${projectId}`),
+        api.get(`/api/generate/${projectId}/status`)
+      ]);
+
+      // 프로젝트 데이터 설정
       const projectData = projectResponse.data.project;
       setProject(projectData);
       setProjectStatus(projectData.status);
@@ -144,8 +150,7 @@ export default function ProjectDetailPage() {
         setResearchData(projectData.researchData);
       }
 
-      const statusResponse = await api.get(`/api/generate/${projectId}/status`);
-
+      // 진행 상황 데이터 설정
       if (statusResponse.data.progress) {
         setRealtimeProgress(statusResponse.data.progress);
         if (statusResponse.data.progress.startedAt) {
@@ -169,7 +174,11 @@ export default function ProjectDetailPage() {
 
   const pollStatus = useCallback(async () => {
     try {
-      const statusResponse = await api.get(`/api/generate/${projectId}/status`);
+      // 병렬 실행으로 폴링 속도 개선
+      const [statusResponse, projectResponse] = await Promise.all([
+        api.get(`/api/generate/${projectId}/status`),
+        api.get(`/api/projects/${projectId}`)
+      ]);
       
       // Update progress (force re-render)
       if (statusResponse.data.progress) {
@@ -182,7 +191,6 @@ export default function ProjectDetailPage() {
         setDocument(statusResponse.data.document);
       }
 
-      const projectResponse = await api.get(`/api/projects/${projectId}`);
       const newStatus = projectResponse.data.project.status;
       
       if (newStatus !== statusRef.current) {
