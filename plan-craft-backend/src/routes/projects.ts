@@ -33,24 +33,34 @@ const updateProjectSchema = z.object({
 // 프로젝트 목록 조회
 projectsRouter.get('/', async (c) => {
   const user = c.get('user') as any;
+  const startTime = Date.now();
   
   try {
+    const queryStart = Date.now();
     const userProjects = await db
       .select()
       .from(projects)
       .where(eq(projects.userId, user.id))
       .orderBy(desc(projects.createdAt));
+    const queryTime = Date.now() - queryStart;
+
+    const mappingStart = Date.now();
+    const result = userProjects.map(p => ({
+      id: p.id,
+      title: p.title,
+      idea: p.idea.length > 100 ? p.idea.slice(0, 100) + '...' : p.idea,
+      status: p.status,
+      model: p.model,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt
+    }));
+    const mappingTime = Date.now() - mappingStart;
+    
+    const totalTime = Date.now() - startTime;
+    console.log(`[Projects List] User ${user.id}: ${userProjects.length} projects, Query: ${queryTime}ms, Mapping: ${mappingTime}ms, Total: ${totalTime}ms`);
 
     return c.json({
-      projects: userProjects.map(p => ({
-        id: p.id,
-        title: p.title,
-        idea: p.idea.slice(0, 100) + '...',
-        status: p.status,
-        model: p.model,
-        createdAt: p.createdAt,
-        updatedAt: p.updatedAt
-      }))
+      projects: result
     });
 
   } catch (error: any) {
