@@ -4,7 +4,7 @@
 
 import { Hono } from 'hono';
 import { db } from '../db/index';
-import { projects, documents } from '../db/schema-pg';
+import { projects, documents, mockups, tokenUsage } from '../db/schema-pg';
 import { eq, desc } from 'drizzle-orm';
 import { authMiddleware } from '../middleware/auth';
 import { z } from 'zod';
@@ -232,10 +232,24 @@ projectsRouter.delete('/:id', async (c) => {
       return c.json({ error: '권한이 없습니다' }, 403);
     }
 
-    // 삭제 (문서는 CASCADE로 자동 삭제)
-    await db
-      .delete(projects)
-      .where(eq(projects.id, projectId));
+    // 연관 레코드를 수동으로 먼저 삭제 (CASCADE 대신)
+    console.log(`[Delete] Deleting project ${projectId} and related records...`);
+    
+    // 1. Documents 삭제
+    await db.delete(documents).where(eq(documents.projectId, projectId));
+    console.log(`[Delete] Documents deleted`);
+    
+    // 2. Mockups 삭제
+    await db.delete(mockups).where(eq(mockups.projectId, projectId));
+    console.log(`[Delete] Mockups deleted`);
+    
+    // 3. Token usage 삭제
+    await db.delete(tokenUsage).where(eq(tokenUsage.projectId, projectId));
+    console.log(`[Delete] Token usage deleted`);
+    
+    // 4. 프로젝트 삭제
+    await db.delete(projects).where(eq(projects.id, projectId));
+    console.log(`[Delete] Project deleted successfully`);
 
     return c.json({
       message: '프로젝트가 삭제되었습니다'
