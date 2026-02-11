@@ -211,6 +211,69 @@ projectsRouter.patch('/:id', async (c) => {
   }
 });
 
+// 일괄 프로젝트 삭제
+projectsRouter.post('/bulk-delete', async (c) => {
+  const user = c.get('user') as any;
+
+  try {
+    const body = await c.req.json();
+    const { projectIds } = body;
+
+    if (!Array.isArray(projectIds) || projectIds.length === 0) {
+      return c.json({ error: '삭제할 프로젝트를 선택해주세요' }, 400);
+    }
+
+    console.log(`[Bulk Delete] User ${user.id} deleting ${projectIds.length} projects`);
+
+    let deletedCount = 0;
+    const errors: string[] = [];
+
+    for (const projectId of projectIds) {
+      try {
+        // 프로젝트 소유권 확인
+        const [project] = await db
+          .select()
+          .from(projects)
+          .where(eq(projects.id, projectId))
+          .limit(1);
+
+        if (!project) {
+          errors.push(`${projectId}: 프로젝트를 찾을 수 없습니다`);
+          continue;
+        }
+
+        if (project.userId !== user.id) {
+          errors.push(`${projectId}: 권한이 없습니다`);
+          continue;
+        }
+
+        // 연관 레코드 삭제
+        await db.delete(documents).where(eq(documents.projectId, projectId));
+        await db.delete(mockups).where(eq(mockups.projectId, projectId));
+        await db.delete(tokenUsage).where(eq(tokenUsage.projectId, projectId));
+        await db.delete(projects).where(eq(projects.id, projectId));
+
+        deletedCount++;
+        console.log(`[Bulk Delete] Project ${projectId} deleted`);
+      } catch (error: any) {
+        console.error(`[Bulk Delete] Error deleting project ${projectId}:`, error);
+        errors.push(`${projectId}: ${error.message}`);
+      }
+    }
+
+    return c.json({
+      message: `${deletedCount}개의 프로젝트가 삭제되었습니다`,
+      deletedCount,
+      totalRequested: projectIds.length,
+      errors: errors.length > 0 ? errors : undefined
+    });
+
+  } catch (error: any) {
+    console.error('일괄 삭제 오류:', error);
+    return c.json({ error: '서버 오류가 발생했습니다', detail: error?.message || String(error) }, 500);
+  }
+});
+
 // 프로젝트 삭제
 projectsRouter.delete('/:id', async (c) => {
   const user = c.get('user') as any;

@@ -46,6 +46,11 @@ export default function ProjectsPage() {
   const [editTitle, setEditTitle] = useState('');
   const editInputRef = useRef<HTMLInputElement>(null);
 
+  // Bulk selection state
+  const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -130,6 +135,49 @@ export default function ProjectsPage() {
     }
   };
 
+  const handleToggleSelect = (projectId: string, e: React.MouseEvent) => {
+    if (!e.ctrlKey && !e.metaKey) return; // Ctrl (Windows/Linux) or Cmd (Mac)
+    
+    e.stopPropagation();
+    setSelectedProjects(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(projectId)) {
+        newSet.delete(projectId);
+      } else {
+        newSet.add(projectId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedProjects.size === 0) return;
+    setBulkDeleting(true);
+    try {
+      const response = await api.post('/api/projects/bulk-delete', {
+        projectIds: Array.from(selectedProjects)
+      });
+      setProjects(prev => prev.filter(p => !selectedProjects.has(p.id)));
+      showToast(response.data.message || `${selectedProjects.size}개의 프로젝트가 삭제되었습니다`, 'success');
+      setSelectedProjects(new Set());
+    } catch (error: any) {
+      console.error('일괄 삭제 실패:', error);
+      const message = error.response?.data?.error || '일괄 삭제에 실패했습니다';
+      showToast(message, 'error');
+    } finally {
+      setBulkDeleting(false);
+      setShowBulkDeleteConfirm(false);
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectedProjects.size === filteredAndSorted.length) {
+      setSelectedProjects(new Set());
+    } else {
+      setSelectedProjects(new Set(filteredAndSorted.map(p => p.id)));
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const styles = {
       draft: 'bg-gray-100 text-gray-800',
@@ -177,15 +225,51 @@ export default function ProjectsPage() {
         <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">내 프로젝트</h2>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">사업계획서를 생성하고 관리하세요</p>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              사업계획서를 생성하고 관리하세요
+              {selectedProjects.size > 0 && (
+                <span className="ml-2 text-blue-600 dark:text-blue-400 font-medium">
+                  ({selectedProjects.size}개 선택됨)
+                </span>
+              )}
+            </p>
           </div>
-          <button
-            onClick={() => router.push('/create')}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-          >
-            + 새 프로젝트
-          </button>
+          <div className="flex gap-2">
+            {selectedProjects.size > 0 && (
+              <>
+                <button
+                  onClick={handleSelectAll}
+                  className="px-4 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                >
+                  {selectedProjects.size === filteredAndSorted.length ? '전체 해제' : '전체 선택'}
+                </button>
+                <button
+                  onClick={() => setShowBulkDeleteConfirm(true)}
+                  className="px-4 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition flex items-center gap-2"
+                >
+                  <span>🗑️</span>
+                  <span>선택 항목 삭제</span>
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => router.push('/create')}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+            >
+              + 새 프로젝트
+            </button>
+          </div>
         </div>
+
+        {/* Hint for bulk selection */}
+        {projects.length > 0 && selectedProjects.size === 0 && (
+          <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-start gap-2">
+            <span className="text-blue-600 dark:text-blue-400 text-lg">💡</span>
+            <p className="text-sm text-blue-800 dark:text-blue-300">
+              <strong>Ctrl (또는 ⌘) + 클릭</strong>으로 여러 프로젝트를 선택하고 한번에 삭제할 수 있습니다.
+            </p>
+          </div>
+        )}
 
         {/* Filters & Sort */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -265,16 +349,32 @@ export default function ProjectsPage() {
           )
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" ref={menuRef}>
-            {filteredAndSorted.map((project) => (
+            {filteredAndSorted.map((project) => {
+              const isSelected = selectedProjects.has(project.id);
+              return (
               <div
                 key={project.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transition p-6 relative group"
+                onClick={(e) => handleToggleSelect(project.id, e)}
+                className={`rounded-lg shadow hover:shadow-lg transition p-6 relative group cursor-pointer ${
+                  isSelected
+                    ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-500 dark:border-blue-500'
+                    : 'bg-white dark:bg-gray-800 border-2 border-transparent'
+                }`}
               >
+                {/* Selection indicator */}
+                {isSelected && (
+                  <div className="absolute top-4 left-4 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center z-10">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                )}
+
                 {/* Project card content */}
                 <div
                   className="cursor-pointer"
-                  onClick={() => {
-                    if (editingId !== project.id) {
+                  onClick={(e) => {
+                    if (editingId !== project.id && !e.ctrlKey && !e.metaKey) {
                       router.push(`/project/${project.id}`);
                     }
                   }}
@@ -364,7 +464,8 @@ export default function ProjectsPage() {
                   )}
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </main>
@@ -397,6 +498,52 @@ export default function ProjectsPage() {
                 className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition disabled:opacity-50"
               >
                 {deleting ? '삭제 중...' : '삭제'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk delete confirmation modal */}
+      {showBulkDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-3">🗑️</div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                {selectedProjects.size}개의 프로젝트를 삭제하시겠습니까?
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                선택한 프로젝트가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+              </p>
+              {selectedProjects.size <= 5 && (
+                <div className="mt-4 text-left bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">삭제될 프로젝트:</p>
+                  <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                    {Array.from(selectedProjects).map(id => {
+                      const project = projects.find(p => p.id === id);
+                      return project ? (
+                        <li key={id} className="truncate">• {project.title}</li>
+                      ) : null;
+                    })}
+                  </ul>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowBulkDeleteConfirm(false)}
+                className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition"
+                disabled={bulkDeleting}
+              >
+                취소
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                disabled={bulkDeleting}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition disabled:opacity-50"
+              >
+                {bulkDeleting ? '삭제 중...' : `${selectedProjects.size}개 삭제`}
               </button>
             </div>
           </div>
