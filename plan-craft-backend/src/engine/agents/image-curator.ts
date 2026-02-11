@@ -118,7 +118,7 @@ If no images needed:
     try {
       const message = await this.anthropic.messages.create({
         model: this.model,
-        max_tokens: 1000,
+        max_tokens: 4096,
         temperature: 0.3,
         system: this.getSystemPrompt(),
         messages: [{ role: 'user', content: userPrompt }]
@@ -149,18 +149,33 @@ If no images needed:
       try {
         analysis = JSON.parse(jsonStr);
       } catch (parseError: any) {
-        console.error(`   ❌ JSON 파싱 실패: ${parseError.message}`);
-        console.error(`   📄 원본 응답 (처음 500자):\n${responseText.slice(0, 500)}`);
-        console.error(`   🔍 추출된 JSON:\n${jsonStr.slice(0, 500)}`);
+        console.error(`   ❌ 분석 오류: ${parseError.message}`);
         
-        // Retry once with more explicit prompt
-        if (retryCount === 0) {
-          console.log(`   🔄 재시도 중...`);
-          await new Promise(resolve => setTimeout(resolve, 500));
-          return this.analyzeImageNeeds(section, content, 1);
+        // Try to salvage truncated JSON
+        try {
+          // Remove trailing incomplete entries and close brackets
+          let fixed = jsonStr
+            .replace(/,\s*"[^"]*$/, '')     // remove trailing incomplete key
+            .replace(/,\s*\{[^}]*$/, '')    // remove trailing incomplete object
+            .replace(/,\s*$/, '');           // remove trailing comma
+          // Close any open arrays/brackets
+          const openBrackets = (fixed.match(/\[/g) || []).length - (fixed.match(/\]/g) || []).length;
+          const openBraces = (fixed.match(/\{/g) || []).length - (fixed.match(/\}/g) || []).length;
+          for (let i = 0; i < openBrackets; i++) fixed += ']';
+          for (let i = 0; i < openBraces; i++) fixed += '}';
+          analysis = JSON.parse(fixed);
+          console.log(`   🔧 잘린 JSON 복구 성공`);
+        } catch {
+          // Retry once with more explicit prompt
+          if (retryCount === 0) {
+            console.log(`   🔄 재시도 중...`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return this.analyzeImageNeeds(section, content, 1);
+          }
+          // Final fallback: no images
+          console.error(`   ⚠️ JSON 복구 실패, 이미지 스킵`);
+          analysis = { needsImage: false, images: [] };
         }
-        
-        throw parseError;
       }
 
       // Validate structure
