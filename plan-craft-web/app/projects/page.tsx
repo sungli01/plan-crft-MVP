@@ -98,6 +98,8 @@ export default function ProjectsPage() {
       await api.delete(`/api/projects/${deleteTarget.id}`);
       setProjects(prev => prev.filter(p => p.id !== deleteTarget.id));
       showToast('프로젝트가 삭제되었습니다', 'success');
+      // Notify sidebar to refresh
+      window.dispatchEvent(new Event('projectsChanged'));
     } catch (error) {
       console.error('삭제 실패:', error);
       showToast('프로젝트 삭제에 실패했습니다', 'error');
@@ -160,6 +162,8 @@ export default function ProjectsPage() {
       setProjects(prev => prev.filter(p => !selectedProjects.has(p.id)));
       showToast(response.data.message || `${selectedProjects.size}개의 프로젝트가 삭제되었습니다`, 'success');
       setSelectedProjects(new Set());
+      // Notify sidebar to refresh
+      window.dispatchEvent(new Event('projectsChanged'));
     } catch (error: any) {
       console.error('일괄 삭제 실패:', error);
       const message = error.response?.data?.error || '일괄 삭제에 실패했습니다';

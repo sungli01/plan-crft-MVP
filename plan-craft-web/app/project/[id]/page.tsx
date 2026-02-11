@@ -336,6 +336,8 @@ export default function ProjectDetailPage() {
     setDeleting(true);
     try {
       await api.delete(`/api/projects/${projectId}`);
+      // Notify sidebar to refresh
+      window.dispatchEvent(new Event('projectsChanged'));
       showToast('프로젝트가 삭제되었습니다', 'success');
       router.push('/projects');
     } catch (error: any) {

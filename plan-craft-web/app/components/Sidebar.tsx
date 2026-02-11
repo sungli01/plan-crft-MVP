@@ -36,6 +36,16 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
       } catch {}
       loadRecentProjects();
     }
+
+    // Listen for project changes (delete, create, update)
+    const handleProjectChange = () => {
+      loadRecentProjects();
+    };
+    window.addEventListener('projectsChanged', handleProjectChange);
+    
+    return () => {
+      window.removeEventListener('projectsChanged', handleProjectChange);
+    };
   }, []);
 
   const loadRecentProjects = async () => {
