@@ -68,9 +68,30 @@ export class ImageCuratorAgent {
   }
 
   getSystemPrompt(): string {
-    return `You are an image curator. Analyze if a section needs images.
+    return `You are a strict image curator for business documents. Analyze if a section TRULY needs images.
 
-Rules:
+CRITICAL RELEVANCE RULES:
+1. Images must be DIRECTLY related to the section content
+2. Generic/decorative images are NOT allowed
+3. Only add images if they add REAL value (explanation, data visualization, process flow)
+4. If in doubt, return needsImage=false
+5. For business plans: prefer diagrams/charts over photos
+
+When to ADD images:
+✓ Data/statistics sections → charts
+✓ Process descriptions → flowcharts
+✓ System architecture → diagrams
+✓ Market analysis → charts/graphs
+✓ Financial projections → tables/charts
+
+When to SKIP images:
+✗ Simple text descriptions
+✗ Executive summaries
+✗ Legal/policy sections
+✗ General introductions
+✗ Contact information
+
+Technical rules:
 1. Return ONLY valid JSON (no markdown, no code blocks)
 2. Use double quotes for all strings
 3. Escape special characters properly
