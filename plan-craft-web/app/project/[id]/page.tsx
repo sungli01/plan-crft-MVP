@@ -170,18 +170,29 @@ export default function ProjectDetailPage() {
   const pollStatus = useCallback(async () => {
     try {
       const statusResponse = await api.get(`/api/generate/${projectId}/status`);
-      if (statusResponse.data.progress) setRealtimeProgress(statusResponse.data.progress);
-      if (statusResponse.data.document) setDocument(statusResponse.data.document);
+      
+      // Update progress (force re-render)
+      if (statusResponse.data.progress) {
+        console.log('[Polling] Progress update:', statusResponse.data.progress.overallProgress || 0, '%');
+        setRealtimeProgress({...statusResponse.data.progress}); // Create new object to force update
+      }
+      
+      if (statusResponse.data.document) {
+        console.log('[Polling] Document available');
+        setDocument(statusResponse.data.document);
+      }
 
       const projectResponse = await api.get(`/api/projects/${projectId}`);
       const newStatus = projectResponse.data.project.status;
+      
       if (newStatus !== statusRef.current) {
+        console.log('[Polling] Status changed:', statusRef.current, '→', newStatus);
         statusRef.current = newStatus;
         setProjectStatus(newStatus);
         setProject(projectResponse.data.project);
       }
     } catch (error) {
-      console.error('상태 확인 실패:', error);
+      console.error('[Polling] Error:', error);
     }
   }, [projectId]);
 
@@ -224,12 +235,21 @@ export default function ProjectDetailPage() {
     } catch { setWsConnected(false); }
   }, [projectStatus, projectId, loadProjectData]);
 
-  /* ── Polling fallback ── */
+  /* ── Polling (always active during generation) ── */
   useEffect(() => {
-    if (projectStatus !== 'generating' || wsConnected) return;
-    const interval = setInterval(pollStatus, 3000);
-    return () => clearInterval(interval);
-  }, [projectStatus, projectId, pollStatus, wsConnected]);
+    if (projectStatus !== 'generating') return;
+    
+    console.log('[Polling] Starting status polling (every 2s)');
+    const interval = setInterval(() => {
+      console.log('[Polling] Fetching status...');
+      pollStatus();
+    }, 2000); // Poll every 2 seconds
+    
+    return () => {
+      console.log('[Polling] Stopped');
+      clearInterval(interval);
+    };
+  }, [projectStatus, projectId, pollStatus]);
 
   /* ── Helpers ─────────────────────────── */
   const getElapsedTime = () => {
