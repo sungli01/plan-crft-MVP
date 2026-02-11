@@ -39,7 +39,7 @@ export const projects = pgTable('projects', {
 // Documents 테이블
 export const documents = pgTable('documents', {
   id: uuid('id').primaryKey().defaultRandom(),
-  projectId: uuid('project_id').notNull().references(() => projects.id),
+  projectId: uuid('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
   contentHtml: text('content_html'),
   contentPdfUrl: text('content_pdf_url'),
   qualityScore: real('quality_score'),
@@ -54,7 +54,7 @@ export const documents = pgTable('documents', {
 // Mockups 테이블
 export const mockups = pgTable('mockups', {
   id: uuid('id').primaryKey().defaultRandom(),
-  projectId: uuid('project_id').notNull().references(() => projects.id),
+  projectId: uuid('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
   userId: uuid('user_id').notNull().references(() => users.id),
   html: text('html').notNull(),
   style: text('style').default('modern'),
@@ -67,7 +67,7 @@ export const mockups = pgTable('mockups', {
 export const tokenUsage = pgTable('token_usage', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id),
-  projectId: uuid('project_id').references(() => projects.id),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
   model: text('model').notNull(),
   inputTokens: integer('input_tokens').notNull(),
   outputTokens: integer('output_tokens').notNull(),
