@@ -26,6 +26,8 @@ export interface ProjectProgress {
   logs: ProgressLog[];
   startedAt: number;
   updatedAt: number;
+  estimatedMinutes?: number; // 예상 완료 시간 (분)
+  estimatedEndTime?: number; // 예상 완료 시각 (timestamp)
 }
 
 class ProgressTracker {
@@ -104,6 +106,27 @@ class ProgressTracker {
     const agents = Object.values(progress.agents);
     const totalProgress = agents.reduce((sum, agent) => sum + agent.progress, 0);
     return Math.round(totalProgress / agents.length);
+  }
+
+  setEstimatedTime(projectId: string, sectionCount: number): void {
+    const progress = this.progressMap.get(projectId);
+    if (!progress) return;
+
+    // 예상 시간 계산: 섹션당 약 30초 + 고정 오버헤드 3분
+    const estimatedMinutes = Math.ceil((sectionCount * 0.5) + 3);
+    const estimatedEndTime = Date.now() + (estimatedMinutes * 60 * 1000);
+
+    progress.estimatedMinutes = estimatedMinutes;
+    progress.estimatedEndTime = estimatedEndTime;
+    progress.updatedAt = Date.now();
+  }
+
+  getRemainingTime(projectId: string): number | null {
+    const progress = this.progressMap.get(projectId);
+    if (!progress || !progress.estimatedEndTime) return null;
+
+    const remaining = Math.max(0, progress.estimatedEndTime - Date.now());
+    return Math.ceil(remaining / (60 * 1000)); // 분 단위로 반환
   }
 }
 

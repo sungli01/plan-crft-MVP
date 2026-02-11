@@ -245,6 +245,10 @@ export class AgentTeamOrchestrator {
           detail: `${totalSections}개 섹션 구조 완료`
         });
         progressTracker.addLog(projectInfo.projectId, {
+        // Set estimated completion time
+        if (progressTracker.setEstimatedTime) {
+          progressTracker.setEstimatedTime(projectInfo.projectId, totalSections);
+        }
           agent: 'architect',
           level: 'success',
           message: `문서 구조 설계 완료: ${totalSections}개 섹션`

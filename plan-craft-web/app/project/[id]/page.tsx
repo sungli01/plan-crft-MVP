@@ -259,6 +259,13 @@ export default function ProjectDetailPage() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
+  const getRemainingTime = () => {
+    if (!realtimeProgress?.remainingMinutes) return null;
+    const remaining = realtimeProgress.remainingMinutes;
+    if (remaining < 1) return "곧 완료";
+    return `약 ${remaining}분 남음`;
+  };
+
   const getOverallProgress = (): number => {
     if (!realtimeProgress) return 0;
     if (realtimeProgress.overallProgress) return realtimeProgress.overallProgress;
@@ -563,6 +570,9 @@ export default function ProjectDetailPage() {
                         <div>
                           <h2 className="text-sm font-bold text-gray-900 dark:text-white">AI 에이전트 작업 중</h2>
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">⏱️ {getElapsedTime()} 경과</p>
+                          {getRemainingTime() && (
+                            <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5 font-medium">📅 {getRemainingTime()}</p>
+                          )}
                         </div>
                       </div>
                       <span className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent tabular-nums">{overallProgress}%</span>

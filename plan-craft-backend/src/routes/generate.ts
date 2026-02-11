@@ -84,7 +84,10 @@ generate.get('/:projectId/status', authMiddleware, async (c) => {
         logs: realtimeProgress.logs.slice(-20), // 최근 20개만
         overallProgress: progressTracker.calculateOverallProgress(projectId),
         startedAt: realtimeProgress.startedAt,
-        updatedAt: realtimeProgress.updatedAt
+        updatedAt: realtimeProgress.updatedAt,
+        estimatedMinutes: realtimeProgress.estimatedMinutes,
+        estimatedEndTime: realtimeProgress.estimatedEndTime,
+        remainingMinutes: progressTracker.getRemainingTime(projectId)
       } : null,
       document: document ? {
         id: document.id,

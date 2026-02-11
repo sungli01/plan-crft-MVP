@@ -49,6 +49,9 @@ export interface RealtimeProgress {
   overallProgress: number;
   startedAt: number;
   updatedAt: number;
+  estimatedMinutes?: number;
+  estimatedEndTime?: number;
+  remainingMinutes?: number | null;
 }
 
 export interface Message {
