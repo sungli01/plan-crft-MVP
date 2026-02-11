@@ -81,11 +81,16 @@ export default function ProjectsPage() {
   }, [editingId]);
 
   const loadProjects = async () => {
+    const startTime = performance.now();
     try {
+      console.log('[Performance] Loading projects...');
       const response = await api.get('/api/projects');
+      const loadTime = performance.now() - startTime;
+      console.log(`[Performance] Projects loaded: ${response.data.projects?.length || 0} items in ${loadTime.toFixed(0)}ms`);
       setProjects(response.data.projects || []);
     } catch (error) {
-      console.error('프로젝트 로딩 실패:', error);
+      const errorTime = performance.now() - startTime;
+      console.error(`[Performance] 프로젝트 로딩 실패 (${errorTime.toFixed(0)}ms):`, error);
     } finally {
       setLoading(false);
     }

@@ -49,11 +49,17 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
   }, []);
 
   const loadRecentProjects = async () => {
+    const startTime = performance.now();
     try {
       const response = await api.get('/api/projects');
+      const loadTime = performance.now() - startTime;
+      console.log(`[Sidebar Performance] Projects loaded in ${loadTime.toFixed(0)}ms`);
       const projects = (response.data.projects || []).slice(0, 5);
       setRecentProjects(projects);
-    } catch {}
+    } catch (error) {
+      const errorTime = performance.now() - startTime;
+      console.error(`[Sidebar Performance] Failed (${errorTime.toFixed(0)}ms):`, error);
+    }
   };
 
   const handleLogout = () => {
