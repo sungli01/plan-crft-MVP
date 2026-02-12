@@ -100,8 +100,8 @@ export default function Dashboard() {
             className="flex flex-col md:flex-row md:items-center justify-between gap-6"
           >
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <h1 className="text-3xl font-bold tracking-tight">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
                   안녕하세요, {user?.name || "사용자"}님
                 </h1>
                 {isProMember && (
@@ -116,15 +116,15 @@ export default function Dashboard() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Button 
-                size="lg" 
-                className="rounded-full px-6 shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
+                size="default" 
+                className="rounded-full px-4 sm:px-6 shadow-lg shadow-primary/20 hover:scale-105 transition-transform text-sm sm:text-base"
                 onClick={() => navigate(ROUTE_PATHS.CATEGORIES)}
               >
-                <Plus className="mr-2 h-5 w-5" /> 새 문서 만들기
+                <Plus className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" /> 새 문서 만들기
               </Button>
-              <Button variant="outline" size="icon" className="rounded-full" onClick={() => navigate(ROUTE_PATHS.PROFILE)}>
+              <Button variant="outline" size="icon" className="rounded-full shrink-0" onClick={() => navigate(ROUTE_PATHS.PROFILE)}>
                 <Settings className="h-5 w-5" />
               </Button>
             </div>
@@ -205,11 +205,11 @@ export default function Dashboard() {
             )}
 
             {/* Featured Section / Promotion */}
-            <div className="relative h-48 rounded-3xl overflow-hidden shadow-xl">
+            <div className="relative h-40 sm:h-48 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl">
               <img src={IMAGES.PRESENTATION_1} alt="Promotion" className="absolute inset-0 w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent p-8 flex flex-col justify-center">
-                <h3 className="text-white text-xl font-bold mb-2">PRO로 업그레이드 하세요</h3>
-                <p className="text-white/80 text-sm max-w-md mb-4">
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent p-4 sm:p-8 flex flex-col justify-center">
+                <h3 className="text-white text-lg sm:text-xl font-bold mb-2">PRO로 업그레이드 하세요</h3>
+                <p className="text-white/80 text-xs sm:text-sm max-w-md mb-4 line-clamp-2">
                   연구보고서 및 투자유치 제안서 등 더욱 전문적인 문서 생성을 위한 모든 기능을 잠금 해제하세요.
                 </p>
                 <Button className="w-fit bg-accent hover:bg-accent/90 text-white border-none" onClick={() => navigate(ROUTE_PATHS.PROFILE)}>

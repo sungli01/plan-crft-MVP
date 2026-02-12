@@ -48,7 +48,7 @@ export function CategoryCard({ category, onClick }: { category: DocumentCategory
       transition={{ type: "spring", stiffness: 400, damping: 30 }}
       onClick={onClick}
       className={cn(
-        "relative group cursor-pointer overflow-hidden rounded-3xl border bg-card p-8 h-full transition-all duration-300",
+        "relative group cursor-pointer overflow-hidden rounded-2xl sm:rounded-3xl border bg-card p-5 sm:p-8 h-full transition-all duration-300",
         category.isPro 
           ? "border-accent/20 hover:border-accent shadow-[0_8px_30px_-6px_rgba(157,78,221,0.1)] hover:shadow-[0_20px_40px_-12px_rgba(157,78,221,0.2)]"
           : "border-border hover:border-primary shadow-[0_8px_30px_-6px_rgba(82,108,255,0.05)] hover:shadow-[0_20px_40px_-12px_rgba(82,108,255,0.1)]"
@@ -77,7 +77,7 @@ export function CategoryCard({ category, onClick }: { category: DocumentCategory
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-2xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
+        <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
           {category.label}
         </h3>
         <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2">

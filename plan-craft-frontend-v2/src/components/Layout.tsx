@@ -78,7 +78,7 @@ export function Layout({ children }: LayoutProps) {
         ref={headerRef}
         className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md transition-all duration-200"
       >
-        <div className="w-full max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link to={ROUTE_PATHS.HOME} className="flex items-center gap-2 group">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground">
@@ -144,9 +144,9 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
-      <div className="flex flex-1 pt-16">
+      <div className="flex flex-1 pt-14 sm:pt-16">
         {/* Sidebar - Desktop Only (Fixed on the left) */}
-        <aside className="hidden lg:block w-72 border-r border-border h-[calc(100vh-64px)] sticky top-16 overflow-y-auto bg-sidebar p-6">
+        <aside className="hidden lg:block w-72 border-r border-border h-[calc(100vh-64px)] sticky top-14 sm:top-16 overflow-y-auto bg-sidebar p-6">
           <div className="space-y-8">
             <div>
               <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">
@@ -207,12 +207,12 @@ export function Layout({ children }: LayoutProps) {
 
         {/* Main Content Area */}
         <main className="flex-1 flex flex-col min-w-0">
-          <div className="flex-1 w-full max-w-5xl mx-auto p-4 md:p-8">
+          <div className="flex-1 w-full max-w-5xl mx-auto px-3 py-4 sm:p-4 md:p-8">
             {children}
           </div>
 
           {/* Footer */}
-          <footer className="border-t border-border bg-muted/30 py-12 px-4">
+          <footer className="border-t border-border bg-muted/30 py-8 sm:py-12 px-3 sm:px-4">
             <div className="max-w-7xl mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
                 <div className="col-span-1 md:col-span-1">
@@ -280,7 +280,7 @@ export function Layout({ children }: LayoutProps) {
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed inset-0 z-[60] bg-background md:hidden flex flex-col"
           >
-            <div className="h-16 border-b border-border flex items-center justify-between px-4">
+            <div className="h-14 sm:h-16 border-b border-border flex items-center justify-between px-4">
               <span className="font-bold">메뉴</span>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}

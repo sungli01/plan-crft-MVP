@@ -223,13 +223,13 @@ export function DocumentGenerationForm({
               </div>
             )}
           </CardContent>
-          <CardFooter className="flex justify-between border-t p-6">
-            <p className="text-xs text-muted-foreground max-w-[60%]">
+          <CardFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-4 border-t p-4 sm:p-6">
+            <p className="text-xs text-muted-foreground sm:max-w-[60%]">
               AI가 입력한 내용을 바탕으로 초안을 작성합니다. 생성된 문서는 반드시 전문가의 검토를 거쳐야 합니다.
             </p>
             <Button 
               type="submit" 
-              className={cn("font-bold min-w-[140px]", category.isPro ? "bg-accent hover:bg-accent/90" : "")}
+              className={cn("font-bold w-full sm:w-auto sm:min-w-[140px]", category.isPro ? "bg-accent hover:bg-accent/90" : "")}
               disabled={isLoading || isLocked}
             >
               {isLoading ? (

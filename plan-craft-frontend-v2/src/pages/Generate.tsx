@@ -164,7 +164,7 @@ export default function Generate() {
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* 상단 히어로 섹션 */}
-      <section className="relative h-64 flex items-center overflow-hidden">
+      <section className="relative h-48 sm:h-64 flex items-center overflow-hidden">
         <img 
           src={IMAGES.AUTOMATION_8} 
           alt="Background" 
@@ -186,8 +186,8 @@ export default function Generate() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               뒤로가기
             </Button>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl md:text-4xl font-bold">{category?.label || '문서'} 생성</h1>
+            <div className="flex flex-wrap items-center gap-3 mb-2">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">{category?.label || '문서'} 생성</h1>
               {category?.isPro && (
                 <Badge className="bg-accent text-accent-foreground border-none">
                   PRO
@@ -372,12 +372,12 @@ export default function Generate() {
             >
               <div className="lg:col-span-2 space-y-6">
                 <Card className="border-border/50 shadow-xl">
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle className="text-2xl">{generatedDoc.title}</CardTitle>
+                  <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <CardTitle className="text-xl sm:text-2xl truncate">{generatedDoc.title}</CardTitle>
                       <CardDescription>AI 초안 생성이 완료되었습니다.</CardDescription>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 shrink-0">
                       <Button variant="outline" size="sm" onClick={() => {
                         navigator.clipboard.writeText(generatedDoc.content);
                         toast.success("클립보드에 복사되었습니다.");

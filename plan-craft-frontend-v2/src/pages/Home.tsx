@@ -148,16 +148,14 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
             <div>
-              <div className="flex items-center gap-4 mb-4">
-                <h2 className="text-3xl md:text-4xl font-bold">문서 카테고리</h2>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={ROUTE_PATHS.DASHBOARD}>최근작업 문서</Link>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={ROUTE_PATHS.CATEGORIES}>프로젝트 카테고리</Link>
-                  </Button>
-                </div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">문서 카테고리</h2>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Button variant="outline" size="sm" asChild>
+                  <Link to={ROUTE_PATHS.DASHBOARD}>최근작업 문서</Link>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to={ROUTE_PATHS.CATEGORIES}>프로젝트 카테고리</Link>
+                </Button>
               </div>
               <p className="text-muted-foreground">
                 당신의 목적에 맞는 최적의 문서 유형을 선택하세요.
@@ -202,8 +200,8 @@ export default function Home() {
         </div>
 
         <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-4xl mx-auto bg-card border border-border p-12 md:p-20 rounded-[2rem] text-center shadow-2xl">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+          <div className="max-w-4xl mx-auto bg-card border border-border p-6 sm:p-12 md:p-20 rounded-2xl sm:rounded-[2rem] text-center shadow-2xl">
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-6">
               지금 바로 첫 문서를 <br />
               생성해보세요
             </h2>

@@ -60,8 +60,8 @@ export default function Profile() {
         {/* Header Section */}
         <motion.div variants={fadeInUp} className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <h1 className="text-4xl font-bold tracking-tight">내 프로필</h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl sm:text-4xl font-bold tracking-tight">내 프로필</h1>
               {isProMember ? (
                 <Badge className="bg-accent text-accent-foreground hover:bg-accent/90 px-3 py-1 flex gap-1 items-center">
                   <Crown className="w-3.5 h-3.5" />
