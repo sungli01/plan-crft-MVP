@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { User, ROUTE_PATHS, checkAccess, DocumentCategory } from "@/lib";
-import { loginApi, registerApi, getMeApi } from "@/api/auth";
+import { loginApi, registerApi, getMeApi, updateProfileApi } from "@/api/auth";
 import { toast } from "sonner";
 
 /**
@@ -138,13 +138,34 @@ export const useAuth = () => {
   /**
    * 사용자 정보 업데이트
    */
-  const updateProfile = useCallback((data: Partial<User>) => {
-    setUser((prev) => {
-      if (!prev) return null;
-      const updated = { ...prev, ...data };
-      localStorage.setItem("plan_craft_user", JSON.stringify(updated));
-      return updated;
-    });
+  const updateProfile = useCallback(async (data: Partial<User>) => {
+    try {
+      const apiData: { name?: string } = {};
+      if (data.name) apiData.name = data.name;
+      
+      const updatedUser = await updateProfileApi(apiData);
+      
+      setUser((prev) => {
+        if (!prev) return null;
+        const merged = { 
+          ...prev, 
+          ...data,
+          name: updatedUser.name || data.name || prev.name,
+        };
+        localStorage.setItem("plan_craft_user", JSON.stringify(merged));
+        return merged;
+      });
+      toast.success("프로필이 업데이트되었습니다.");
+    } catch (error: any) {
+      toast.error("프로필 업데이트에 실패했습니다.");
+      // Still update locally as fallback
+      setUser((prev) => {
+        if (!prev) return null;
+        const updated = { ...prev, ...data };
+        localStorage.setItem("plan_craft_user", JSON.stringify(updated));
+        return updated;
+      });
+    }
   }, []);
 
   /**

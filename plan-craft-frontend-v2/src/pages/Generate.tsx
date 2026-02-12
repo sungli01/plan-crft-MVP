@@ -47,6 +47,7 @@ export default function Generate() {
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(existingProjectId);
+  const [savedCategoryId, setSavedCategoryId] = useState<string | null>(categoryId);
 
   const [generationSteps] = useState([
     { id: 1, title: "요구사항 분석", description: "입력된 정보를 분석하고 문서 구조를 설계합니다" },
@@ -94,6 +95,7 @@ export default function Generate() {
         const project = await getProjectApi(existingProjectId);
         if (cancelled) return;
         setCurrentProjectId(existingProjectId);
+        if (project.categoryId) setSavedCategoryId(project.categoryId);
 
         try {
           const { getGenerateStatusApi } = await import("@/api/generate");
@@ -461,7 +463,14 @@ export default function Generate() {
                     <Button 
                       variant="ghost" 
                       className="w-full"
-                      onClick={() => setPageStatus("input")}
+                      onClick={() => {
+                        const catId = categoryId || savedCategoryId;
+                        if (catId) {
+                          navigate(`${ROUTE_PATHS.GENERATE}?category=${catId}`);
+                        } else {
+                          navigate(ROUTE_PATHS.CATEGORIES);
+                        }
+                      }}
                     >
                       다시 생성하기
                     </Button>

@@ -36,7 +36,7 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { user, logout, isAuthenticated, isProMember } = useAuth();
+  const { user, logout, isAuthenticated, isProMember, isAdmin } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
   const headerRef = useRef<HTMLElement>(null);
@@ -116,6 +116,16 @@ export function Layout({ children }: LayoutProps) {
                     {isProMember ? "PRO 멤버" : "무료 계정"}
                   </span>
                 </div>
+                {!isProMember && (
+                  <Link to={ROUTE_PATHS.PROFILE} className="px-2 py-1 bg-accent text-accent-foreground text-xs font-bold rounded-full hover:opacity-90">
+                    PRO
+                  </Link>
+                )}
+                {isAdmin && (
+                  <Link to="/admin" className="px-2 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-full hover:opacity-90">
+                    관리자
+                  </Link>
+                )}
                 <Link to={ROUTE_PATHS.PROFILE} className="p-2 hover:bg-muted rounded-full transition-colors">
                   <User className="w-5 h-5 text-muted-foreground" />
                 </Link>

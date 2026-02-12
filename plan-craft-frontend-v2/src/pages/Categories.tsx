@@ -6,6 +6,7 @@ import { ROUTE_PATHS, DOCUMENT_CATEGORIES, DocumentCategory } from "@/lib/index"
 import { useAuth } from "@/hooks/useAuth";
 import { CategoryCard } from "@/components/Cards";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 /**
  * 문서 카테고리 페이지
@@ -22,10 +23,7 @@ export default function Categories() {
     if (canAccessCategory(category)) {
       navigate(`${ROUTE_PATHS.GENERATE}?category=${category.id}`);
     } else {
-      // PRO 기능 접근 불가 시 프로필/업그레이드 페이지로 유도
-      if (confirm("이 기능은 PRO 전용입니다. 멤버십 업그레이드 페이지로 이동하시겠습니까?")) {
-        navigate(ROUTE_PATHS.PROFILE);
-      }
+      toast.error("이 기능은 PRO 전용입니다. 관리자에게 PRO 승인을 요청하세요.");
     }
   };
 

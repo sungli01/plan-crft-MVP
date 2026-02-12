@@ -12,6 +12,7 @@ import Generate from "@/pages/Generate";
 import Profile from "@/pages/Profile";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import Admin from "@/pages/Admin";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,6 +50,7 @@ export default function App() {
             <Route path={ROUTE_PATHS.GENERATE} element={<WithLayout><Generate /></WithLayout>} />
             <Route path={`${ROUTE_PATHS.GENERATE}/:categoryId`} element={<WithLayout><Generate /></WithLayout>} />
             <Route path={ROUTE_PATHS.PROFILE} element={<WithLayout><Profile /></WithLayout>} />
+            <Route path="/admin" element={<WithLayout><Admin /></WithLayout>} />
             <Route path="*" element={<Navigate to={ROUTE_PATHS.HOME} replace />} />
           </Routes>
         </BrowserRouter>

@@ -31,3 +31,8 @@ export async function getMeApi(): Promise<User> {
   const res = await apiClient.get("/api/auth/me");
   return res.data.user || res.data;
 }
+
+export async function updateProfileApi(data: { name?: string }): Promise<User> {
+  const res = await apiClient.patch("/api/auth/profile", data);
+  return res.data.user || res.data;
+}

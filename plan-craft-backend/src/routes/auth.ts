@@ -302,6 +302,42 @@ auth.post('/change-password', authMiddleware, async (c) => {
   }
 });
 
+// 프로필 업데이트 (인증 필요)
+auth.patch('/profile', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user') as any;
+    const body = await c.req.json();
+    const { name } = body;
+
+    const updateData: Record<string, any> = { updatedAt: new Date() };
+    if (name && typeof name === 'string' && name.trim().length >= 1) {
+      updateData.name = name.trim();
+    }
+
+    const [updated] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, user.id))
+      .returning();
+
+    return c.json({
+      message: '프로필이 업데이트되었습니다',
+      user: {
+        id: updated.id,
+        email: updated.email,
+        name: updated.name,
+        plan: updated.plan,
+        role: updated.role,
+        approved: updated.approved,
+        createdAt: updated.createdAt,
+      },
+    });
+  } catch (error: any) {
+    console.error('프로필 업데이트 오류:', error);
+    return c.json({ error: '프로필 업데이트에 실패했습니다' }, 500);
+  }
+});
+
 // 현재 사용자 정보 조회 (인증 필요)
 auth.get('/me', authMiddleware, async (c) => {
   const user = c.get('user') as any;

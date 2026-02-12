@@ -157,16 +157,16 @@ export default function Dashboard() {
       </section>
 
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="space-y-8">
           
-          {/* Left Column: Recent Documents */}
-          <div className="lg:col-span-8 space-y-8">
+          {/* Recent Documents */}
+          <div className="space-y-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-primary" />
                 <h2 className="text-xl font-bold">최근 문서</h2>
               </div>
-              <Link to="#" className="text-sm text-primary font-medium hover:underline flex items-center">
+              <Link to="/dashboard?view=all" className="text-sm text-primary font-medium hover:underline flex items-center">
                 전체 보기 <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
@@ -219,31 +219,18 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Right Column: Quick Access Categories */}
-          <div className="lg:col-span-4 space-y-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <LayoutDashboard className="w-5 h-5 text-primary" />
-                <h2 className="text-xl font-bold">카테고리 바로가기</h2>
-              </div>
+          {/* 문서 카테고리 */}
+          <section>
+            <div className="flex items-center gap-2 mb-6">
+              <LayoutDashboard className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-bold">문서 카테고리</h2>
             </div>
-
-            <motion.div 
-              variants={staggerContainer}
-              initial="hidden"
-              animate="visible"
-              className="grid grid-cols-1 gap-4"
-            >
-              {DOCUMENT_CATEGORIES.map((category) => (
-                <motion.div key={category.id} variants={staggerItem}>
-                  <CategoryCard 
-                    category={category} 
-                    onClick={() => handleCategoryClick(category.id)} 
-                  />
-                </motion.div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {DOCUMENT_CATEGORIES.map(cat => (
+                <CategoryCard key={cat.id} category={cat} onClick={() => handleCategoryClick(cat.id)} />
               ))}
-            </motion.div>
-          </div>
+            </div>
+          </section>
 
         </div>
       </div>
