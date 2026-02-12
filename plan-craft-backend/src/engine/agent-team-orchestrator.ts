@@ -13,6 +13,7 @@ import { WriterAgent } from './agents/writer';
 import { ImageCuratorAgent } from './agents/image-curator';
 import { ReviewerAgent } from './agents/reviewer';
 import { ResearchAgent } from './agents/researcher';
+import { PptGeneratorAgent } from './agents/ppt-generator';
 import { ModelRouter } from './model-router';
 import { TokenTracker } from './token-tracker';
 
@@ -337,6 +338,74 @@ export class AgentTeamOrchestrator {
         });
       }
 
+      // Phase 2.5: PPT 생성 (PPT Generator) — graceful, 실패해도 문서 생성 계속
+      let pptxBuffer: Buffer | null = null;
+      let pptSlideCount = 0;
+      try {
+        console.log('\n📊 Phase 2.5: PPT 생성 (PPT Generator)');
+        this.updateProgress('pptGenerator', { status: 'running', progress: 50 });
+
+        if (progressTracker && projectInfo.projectId) {
+          progressTracker.updateAgent(projectInfo.projectId, 'pptGenerator', {
+            status: 'running',
+            progress: 50,
+            detail: 'PPT 슬라이드 생성 중...'
+          });
+          progressTracker.addLog(projectInfo.projectId, {
+            agent: 'pptGenerator',
+            level: 'info',
+            message: 'PPT 생성 시작'
+          });
+        }
+
+        const pptGenerator = new PptGeneratorAgent({
+          apiKey: this.config.apiKey,
+          model: 'claude-sonnet-4-5-20250929',
+        });
+
+        const pptSections = writtenSections.map((ws: any, idx: number) => ({
+          id: sections[idx]?.id || sections[idx]?.title || `section-${idx}`,
+          title: sections[idx]?.title || `섹션 ${idx + 1}`,
+          content: ws.content || '',
+          wordCount: ws.wordCount || 0,
+        }));
+
+        const pptResult = await pptGenerator.generatePptx(pptSections, {
+          title: projectInfo.title,
+          idea: projectInfo.idea,
+        });
+
+        pptxBuffer = pptResult.buffer;
+        pptSlideCount = pptResult.slideCount;
+
+        console.log(`✅ PPT 생성 완료: ${pptSlideCount}장, ${(pptxBuffer.length / 1024).toFixed(0)}KB`);
+        this.updateProgress('pptGenerator', { status: 'completed', progress: 100 });
+
+        if (progressTracker && projectInfo.projectId) {
+          progressTracker.updateAgent(projectInfo.projectId, 'pptGenerator', {
+            status: 'completed',
+            progress: 100,
+            detail: `${pptSlideCount}장 슬라이드 생성 완료`
+          });
+          progressTracker.addLog(projectInfo.projectId, {
+            agent: 'pptGenerator',
+            level: 'success',
+            message: `PPT 생성 완료: ${pptSlideCount}장`
+          });
+        }
+      } catch (pptError: any) {
+        console.warn('[PptGenerator] PPT generation failed (non-fatal):', pptError.message);
+        this.updateProgress('pptGenerator', { status: 'skipped', progress: 0 });
+
+        if (progressTracker && projectInfo.projectId) {
+          progressTracker.addLog(projectInfo.projectId, {
+            agent: 'pptGenerator',
+            level: 'warn',
+            message: `PPT 생성 건너뜀: ${pptError.message}`
+          });
+        }
+      }
+
       // Phase 3: 이미지 큐레이션 (Image Curator)
       console.log('\n🖼️  Phase 3: 이미지 큐레이션');
       
@@ -502,6 +571,8 @@ export class AgentTeamOrchestrator {
         images: imageResults,
         reviews: reviewResult,
         research: researchResult || null,
+        pptxBuffer: pptxBuffer || null,
+        pptSlideCount,
         metadata: {
           totalTime: elapsed,
           tokenUsage: totalTokens,

@@ -8,6 +8,16 @@ import { AgentTeamOrchestrator } from '../engine/agent-team-orchestrator';
 import { generateHTML, extractSummary } from '../utils/html-generator';
 import { progressTracker } from '../utils/progress-tracker';
 
+// In-memory PPTX buffer cache (projectId → Buffer)
+// Cleared after 30 minutes or on download
+const pptxCache = new Map<string, { buffer: Buffer; createdAt: number }>();
+
+function cachePptx(projectId: string, buffer: Buffer) {
+  pptxCache.set(projectId, { buffer, createdAt: Date.now() });
+  // Auto-cleanup after 30 min
+  setTimeout(() => pptxCache.delete(projectId), 30 * 60 * 1000);
+}
+
 const generate = new Hono();
 
 // POST /api/generate/:projectId - 문서 생성 (tier check applied)
@@ -235,6 +245,57 @@ generate.get('/:projectId/download', authMiddleware, async (c) => {
   }
 });
 
+// GET /api/generate/:projectId/download-pptx — PPTX 파일 다운로드
+generate.get('/:projectId/download-pptx', async (c) => {
+  try {
+    // Support both Authorization header and ?token= query param
+    let userId: string | undefined;
+    const authHeader = c.req.header('Authorization');
+    const tokenParam = c.req.query('token');
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const payload = verifyToken(authHeader.substring(7));
+      if (payload) userId = payload.userId;
+    }
+    if (!userId && tokenParam) {
+      const payload = verifyToken(tokenParam);
+      if (payload) userId = payload.userId;
+    }
+    if (!userId) {
+      return c.json({ error: '인증 토큰이 필요합니다' }, 401);
+    }
+
+    const projectId = c.req.param('projectId');
+
+    const [project] = await db.select().from(projects).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).limit(1);
+    if (!project) return c.json({ error: 'Project not found' }, 404);
+
+    // Check cache first
+    const cached = pptxCache.get(projectId);
+    if (!cached) {
+      return c.json({ error: 'PPTX not available. The PPT may not have been generated or has expired.' }, 404);
+    }
+
+    const filename = `${project.title.replace(/[^a-zA-Z0-9가-힣]/g, '_')}_사업계획서.pptx`;
+
+    c.header('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+    c.header('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+    c.header('Content-Length', String(cached.buffer.length));
+
+    return c.body(cached.buffer);
+  } catch (error) {
+    console.error('PPTX download error:', error);
+    return c.json({ error: 'Failed to download PPTX' }, 500);
+  }
+});
+
+// GET /api/generate/:projectId/pptx-status — Check if PPTX is available
+generate.get('/:projectId/pptx-status', authMiddleware, async (c) => {
+  const projectId = c.req.param('projectId');
+  const cached = pptxCache.get(projectId);
+  return c.json({ available: !!cached });
+});
+
 // 백그라운드 문서 생성 함수
 async function generateDocumentBackground(projectId: string, projectData: any, userId: string) {
   try {
@@ -349,6 +410,12 @@ async function generateDocumentBackground(projectId: string, projectData: any, u
 
     console.log(`[Background] Generation complete for project ${projectId}`);
     console.log(`Quality: ${result.reviews.summary.averageScore}/100, Sections: ${result.sections.length}`);
+
+    // Cache PPTX buffer if available
+    if (result.pptxBuffer) {
+      cachePptx(projectId, result.pptxBuffer);
+      console.log(`[Background] PPTX cached for project ${projectId} (${(result.pptxBuffer.length / 1024).toFixed(0)}KB)`);
+    }
 
     // HTML 생성
     const html = generateHTML(result, projectInfo);

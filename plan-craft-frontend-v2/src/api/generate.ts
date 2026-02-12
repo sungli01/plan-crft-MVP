@@ -50,3 +50,15 @@ export async function downloadGeneratedApi(projectId: string): Promise<Blob> {
   });
   return res.data;
 }
+
+export async function downloadPptxApi(projectId: string): Promise<Blob> {
+  const res = await apiClient.get(`/api/generate/${projectId}/download-pptx`, {
+    responseType: "blob",
+  });
+  return res.data;
+}
+
+export async function getPptxStatusApi(projectId: string): Promise<{ available: boolean }> {
+  const res = await apiClient.get(`/api/generate/${projectId}/pptx-status`);
+  return res.data;
+}

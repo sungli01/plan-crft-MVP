@@ -3,6 +3,7 @@ import {
   startGenerateApi,
   getGenerateStatusApi,
   downloadGeneratedApi,
+  downloadPptxApi,
   type GenerateStatus,
 } from "@/api/generate";
 import { toast } from "sonner";
@@ -119,6 +120,23 @@ export function useGenerate(options: UseGenerateOptions = {}) {
     }
   }, []);
 
+  const downloadPptx = useCallback(async (projectId: string) => {
+    try {
+      const blob = await downloadPptxApi(projectId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `presentation-${projectId}.pptx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("PPT 다운로드가 시작되었습니다.");
+    } catch (error: any) {
+      toast.error("PPT 파일이 없거나 만료되었습니다.");
+    }
+  }, []);
+
   useEffect(() => {
     return () => stopPolling();
   }, [stopPolling]);
@@ -131,6 +149,7 @@ export function useGenerate(options: UseGenerateOptions = {}) {
     document: status?.document || null,
     startGenerate,
     download,
+    downloadPptx,
     stopPolling,
   };
 }
