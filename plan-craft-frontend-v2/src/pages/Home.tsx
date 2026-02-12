@@ -139,7 +139,17 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">문서 카테고리</h2>
+              <div className="flex items-center gap-4 mb-4">
+                <h2 className="text-3xl md:text-4xl font-bold">문서 카테고리</h2>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={ROUTE_PATHS.DASHBOARD}>최근작업 문서</Link>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={ROUTE_PATHS.CATEGORIES}>프로젝트 카테고리</Link>
+                  </Button>
+                </div>
+              </div>
               <p className="text-muted-foreground">
                 당신의 목적에 맞는 최적의 문서 유형을 선택하세요.
               </p>
