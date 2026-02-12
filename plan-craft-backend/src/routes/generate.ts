@@ -281,7 +281,8 @@ async function generateDocumentBackground(projectId: string, projectData: any, u
       reviewerModel: 'claude-sonnet-4-5-20250929',
       writerTeamSize: 3, // 병렬 Writer 에이전트 수
       unsplashKey: process.env.UNSPLASH_ACCESS_KEY,
-      openaiKey: process.env.OPENAI_API_KEY
+      openaiKey: process.env.OPENAI_API_KEY,
+      braveSearchKey: process.env.BRAVE_SEARCH_API_KEY
     };
     
     console.log(`[Background] Config prepared:`, {

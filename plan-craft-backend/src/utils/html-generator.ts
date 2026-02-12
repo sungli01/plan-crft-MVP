@@ -30,13 +30,14 @@ function renderImageFigure(image) {
   const url = image.url || '';
   const caption = escapeHtml(image.caption || image.description || image.alt || '');
   const alt = escapeHtml(image.alt || image.caption || image.description || '');
+  const isWebImage = image.source === 'brave-search' || image.source === 'web-image';
   const credit = image.credit ? `<span style="display:block;margin-top:4px;font-size:11px;color:#9ca3af;">${escapeHtml(image.credit)}</span>` : '';
 
   return `
-    <figure style="margin: 28px auto; text-align: center; max-width: 720px;">
+    <figure class="document-image" style="margin: 28px auto; text-align: center; max-width: 720px;">
       <img src="${url}" alt="${alt}" 
-           style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.10); display: block; margin: 0 auto;" 
-           loading="lazy" />
+           style="max-width: 100%; height: auto; border-radius: ${isWebImage ? '8px' : '12px'}; box-shadow: 0 4px 16px rgba(0,0,0,0.10); display: block; margin: 0 auto;" 
+           loading="lazy"${isWebImage ? ' crossorigin="anonymous" referrerpolicy="no-referrer"' : ''} />
       <figcaption style="margin-top: 10px; font-size: 13px; color: #6b7280; font-style: italic; line-height: 1.5;">
         ${caption}${credit}
       </figcaption>

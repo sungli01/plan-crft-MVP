@@ -24,6 +24,7 @@ export interface AgentTeamConfig {
   reviewerModel?: string;
   unsplashKey?: string;
   openaiKey?: string;
+  braveSearchKey?: string;
   proMode?: boolean;
   writerTeamSize?: number;
 }
@@ -62,7 +63,8 @@ export class AgentTeamOrchestrator {
     this.imageCurator = new ImageCuratorAgent(config.apiKey, { 
       model: config.curatorModel || this.modelRouter.getImageCuratorModel(),
       unsplashKey: config.unsplashKey,
-      openaiKey: config.openaiKey
+      openaiKey: config.openaiKey,
+      braveSearchKey: config.braveSearchKey || process.env.BRAVE_SEARCH_API_KEY
     });
     this.reviewer = new ReviewerAgent(config.apiKey, {
       model: config.reviewerModel || this.modelRouter.getReviewerModel()
