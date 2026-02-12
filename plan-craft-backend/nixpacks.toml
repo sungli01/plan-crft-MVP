@@ -2,7 +2,7 @@
 nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = ["npm install"]
+cmds = ["npm install", "npm rebuild esbuild"]
 
 [phases.build]
 cmds = ["echo 'skip'"]
