@@ -1,22 +1,34 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useContext, createContext, type ReactNode } from "react";
+import React from "react";
 import { User, ROUTE_PATHS, checkAccess, DocumentCategory } from "@/lib";
 import { loginApi, registerApi, getMeApi, updateProfileApi } from "@/api/auth";
 import { toast } from "sonner";
 
-/**
- * Plan_Craft 사용자 인증 및 권한 관리를 위한 커스텀 훅
- */
-export const useAuth = () => {
+interface AuthContextType {
+  user: User | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  isProMember: boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  register: (email: string, password: string, name: string) => Promise<{ success: boolean; message?: string; pendingApproval?: boolean }>;
+  logout: () => void;
+  updateProfile: (data: Partial<User>) => Promise<void>;
+  canAccessCategory: (category: DocumentCategory) => boolean;
+}
+
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // 초기 로드 시 토큰이 있으면 me API로 사용자 정보 복구
+  // 초기 로드 — 한 번만 실행
   useEffect(() => {
     const token = localStorage.getItem("plan_craft_token");
     if (token) {
       getMeApi()
         .then((userData) => {
-          // Map backend user to our User type
           const mappedUser: User = {
             id: (userData as any)._id || (userData as any).id || "",
             email: userData.email,
@@ -35,30 +47,20 @@ export const useAuth = () => {
         })
         .finally(() => setIsLoading(false));
     } else {
-      // Try loading from localStorage cache (for display before token refresh)
       const savedUser = localStorage.getItem("plan_craft_user");
       if (savedUser) {
-        try {
-          setUser(JSON.parse(savedUser));
-        } catch {
-          localStorage.removeItem("plan_craft_user");
-        }
+        try { setUser(JSON.parse(savedUser)); } catch { localStorage.removeItem("plan_craft_user"); }
       }
       setIsLoading(false);
     }
   }, []);
 
-  /**
-   * 로그인 처리
-   */
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
     try {
       const data = await loginApi({ email, password });
       const token = data.token || (data as any).accessToken;
-      if (token) {
-        localStorage.setItem("plan_craft_token", token);
-      }
+      if (token) localStorage.setItem("plan_craft_token", token);
 
       const rawUser = data.user || data;
       const mappedUser: User = {
@@ -70,7 +72,6 @@ export const useAuth = () => {
         isPro: !!(rawUser as any).isPro || (rawUser as any).role === "admin",
         createdAt: (rawUser as any).createdAt || new Date().toISOString(),
       };
-
       setUser(mappedUser);
       localStorage.setItem("plan_craft_user", JSON.stringify(mappedUser));
       return { success: true };
@@ -83,24 +84,16 @@ export const useAuth = () => {
     }
   }, []);
 
-  /**
-   * 회원가입 처리
-   */
   const register = useCallback(async (email: string, password: string, name: string) => {
     setIsLoading(true);
     try {
       const data = await registerApi({ email, password, name });
-      
-      // Check if pending approval
       if ((data as any).pendingApproval) {
         toast.success("회원가입이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다.");
         return { success: true, pendingApproval: true };
       }
-      
       const token = (data as any).token || (data as any).accessToken;
-      if (token) {
-        localStorage.setItem("plan_craft_token", token);
-      }
+      if (token) localStorage.setItem("plan_craft_token", token);
 
       const rawUser = (data as any).user || data;
       const mappedUser: User = {
@@ -112,7 +105,6 @@ export const useAuth = () => {
         isPro: false,
         createdAt: (rawUser as any).createdAt || new Date().toISOString(),
       };
-
       setUser(mappedUser);
       localStorage.setItem("plan_craft_user", JSON.stringify(mappedUser));
       return { success: true };
@@ -125,9 +117,6 @@ export const useAuth = () => {
     }
   }, []);
 
-  /**
-   * 로그아웃 처리
-   */
   const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem("plan_craft_token");
@@ -135,30 +124,20 @@ export const useAuth = () => {
     window.location.href = ROUTE_PATHS.LOGIN;
   }, []);
 
-  /**
-   * 사용자 정보 업데이트
-   */
   const updateProfile = useCallback(async (data: Partial<User>) => {
     try {
       const apiData: { name?: string } = {};
       if (data.name) apiData.name = data.name;
-      
       const updatedUser = await updateProfileApi(apiData);
-      
       setUser((prev) => {
         if (!prev) return null;
-        const merged = { 
-          ...prev, 
-          ...data,
-          name: updatedUser.name || data.name || prev.name,
-        };
+        const merged = { ...prev, ...data, name: updatedUser.name || data.name || prev.name };
         localStorage.setItem("plan_craft_user", JSON.stringify(merged));
         return merged;
       });
       toast.success("프로필이 업데이트되었습니다.");
-    } catch (error: any) {
+    } catch {
       toast.error("프로필 업데이트에 실패했습니다.");
-      // Still update locally as fallback
       setUser((prev) => {
         if (!prev) return null;
         const updated = { ...prev, ...data };
@@ -168,9 +147,6 @@ export const useAuth = () => {
     }
   }, []);
 
-  /**
-   * 특정 카테고리에 대한 접근 권한 확인
-   */
   const canAccessCategory = useCallback((category: DocumentCategory): boolean => {
     return checkAccess(user, category);
   }, [user]);
@@ -178,16 +154,19 @@ export const useAuth = () => {
   const isAdmin = user?.role === "admin";
   const isProMember = !!user?.isPro || isAdmin;
 
-  return {
-    user,
-    isLoading,
-    isAuthenticated: !!user,
-    isAdmin,
-    isProMember,
-    login,
-    register,
-    logout,
-    updateProfile,
-    canAccessCategory,
+  const value: AuthContextType = {
+    user, isLoading, isAuthenticated: !!user, isAdmin, isProMember,
+    login, register, logout, updateProfile, canAccessCategory,
   };
+
+  return React.createElement(AuthContext.Provider, { value }, children);
+}
+
+/**
+ * useAuth hook — must be used inside AuthProvider
+ */
+export const useAuth = (): AuthContextType => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
 };

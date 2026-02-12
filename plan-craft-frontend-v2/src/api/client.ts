@@ -18,18 +18,20 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor: handle 401
+// Response interceptor: handle 401 (with debounce to prevent redirect storm)
+let isRedirecting = false;
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isRedirecting) {
       localStorage.removeItem("plan_craft_token");
       localStorage.removeItem("plan_craft_user");
-      // Only redirect if not already on login page
       if (!window.location.pathname.includes("/login")) {
+        isRedirecting = true;
         window.location.href = "/login";
       }
     }
+    // Rate limit (429) — don't redirect, just reject
     return Promise.reject(error);
   }
 );

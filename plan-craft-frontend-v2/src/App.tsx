@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ROUTE_PATHS } from "@/lib/index";
+import { AuthProvider } from "@/hooks/useAuth";
 import { Layout } from "@/components/Layout";
 import Home from "@/pages/Home";
 import Categories from "@/pages/Categories";
@@ -41,6 +42,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <BrowserRouter>
+          <AuthProvider>
           <Routes>
             <Route path={ROUTE_PATHS.HOME} element={<HomeRoute />} />
             <Route path={ROUTE_PATHS.LOGIN} element={<Login />} />
@@ -53,6 +55,7 @@ export default function App() {
             <Route path="/admin" element={<WithLayout><Admin /></WithLayout>} />
             <Route path="*" element={<Navigate to={ROUTE_PATHS.HOME} replace />} />
           </Routes>
+          </AuthProvider>
         </BrowserRouter>
         <Toaster />
         <Sonner position="top-right" expand={false} richColors />
