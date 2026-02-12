@@ -40,7 +40,9 @@ export default function Generate() {
   const existingProjectId = searchParams.get("id");
   const category = categoryId ? getCategoryById(categoryId) : null;
 
-  const [pageStatus, setPageStatus] = useState<"input" | "generating" | "completed">("input");
+  const [pageStatus, setPageStatus] = useState<"loading" | "input" | "generating" | "completed">(
+    existingProjectId ? "loading" : "input"
+  );
   const [generatedDoc, setGeneratedDoc] = useState<{ title: string; content: string } | null>(null);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
@@ -83,41 +85,55 @@ export default function Generate() {
 
   // Load existing project if id parameter exists
   useEffect(() => {
-    if (existingProjectId) {
-      import("@/api/projects").then(({ getProjectApi }) => {
-        getProjectApi(existingProjectId).then((project) => {
-          setCurrentProjectId(existingProjectId);
-          // Check if project already has a generated document
-          import("@/api/generate").then(({ getGenerateStatusApi }) => {
-            getGenerateStatusApi(existingProjectId).then((s) => {
-              if (s.status === "completed" && s.document) {
-                setGeneratedDoc({
-                  title: project.title || "문서",
-                  content: `문서 생성 완료\n\n품질 점수: ${s.document.qualityScore?.toFixed(1) || "N/A"}/100\n섹션 수: ${s.document.sectionCount || 0}개\n단어 수: ${s.document.wordCount?.toLocaleString() || 0}개\n이미지: ${s.document.imageCount || 0}개`,
-                });
-                setPageStatus("completed");
-                setProgress(100);
-                setCurrentStep(generationSteps.length);
-              } else if (s.status === "generating") {
-                setGeneratedDoc({ title: project.title || "문서", content: "" });
-                setPageStatus("generating");
-                // Resume polling
-                startGenerate(existingProjectId);
-              }
-            }).catch(() => {
-              // No generation status, show as completed project view
-              setGeneratedDoc({
-                title: project.title || "문서",
-                content: "이 프로젝트의 문서를 확인하려면 다운로드하세요.",
-              });
-              setPageStatus("completed");
+    if (!existingProjectId) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { getProjectApi } = await import("@/api/projects");
+        const project = await getProjectApi(existingProjectId);
+        if (cancelled) return;
+        setCurrentProjectId(existingProjectId);
+
+        try {
+          const { getGenerateStatusApi } = await import("@/api/generate");
+          const s = await getGenerateStatusApi(existingProjectId);
+          if (cancelled) return;
+
+          if (s.status === "completed" && s.document) {
+            setGeneratedDoc({
+              title: project.title || "문서",
+              content: `문서 생성 완료\n\n품질 점수: ${s.document.qualityScore?.toFixed(1) || "N/A"}/100\n섹션 수: ${s.document.sectionCount || 0}개\n단어 수: ${s.document.wordCount?.toLocaleString() || 0}개\n이미지: ${s.document.imageCount || 0}개`,
             });
+            setPageStatus("completed");
+            setProgress(100);
+            setCurrentStep(generationSteps.length);
+          } else if (s.status === "generating") {
+            setGeneratedDoc({ title: project.title || "문서", content: "" });
+            setPageStatus("generating");
+            startGenerate(existingProjectId);
+          } else {
+            // draft or other — show download view
+            setGeneratedDoc({
+              title: project.title || "문서",
+              content: "이 프로젝트의 문서를 확인하려면 다운로드하세요.",
+            });
+            setPageStatus("completed");
+          }
+        } catch {
+          if (cancelled) return;
+          setGeneratedDoc({
+            title: project.title || "문서",
+            content: "이 프로젝트의 문서를 확인하려면 다운로드하세요.",
           });
-        }).catch(() => {
-          navigate(ROUTE_PATHS.DASHBOARD);
-        });
-      });
-    }
+          setPageStatus("completed");
+        }
+      } catch {
+        if (!cancelled) navigate(ROUTE_PATHS.DASHBOARD);
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, [existingProjectId]);
 
   useEffect(() => {
@@ -203,8 +219,22 @@ export default function Generate() {
 
       <div className="container mx-auto px-4 -mt-8 relative z-20">
         <AnimatePresence mode="wait">
+          {/* 로딩 상태 */}
+          {pageStatus === "loading" && (
+            <motion.div
+              key="loading-step"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center justify-center py-20"
+            >
+              <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
+              <p className="text-muted-foreground">프로젝트를 불러오는 중...</p>
+            </motion.div>
+          )}
+
           {/* 1단계: 입력 폼 */}
-          {pageStatus === "input" && (
+          {pageStatus === "input" && category && (
             <motion.div
               key="input-step"
               initial={{ opacity: 0, y: 20 }}
