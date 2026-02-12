@@ -219,7 +219,10 @@ console.log('║       Plan-Craft Backend API Server Starting...         ║');
 console.log('╚═══════════════════════════════════════════════════════════╝\n');
 
 console.log('📦 Initializing PostgreSQL database...');
-initializeDatabase();
+initializeDatabase().then(ok => {
+  if (ok) console.log('✅ DB 초기화 성공');
+  else console.error('❌ DB 초기화 실패 — 서버는 계속 실행');
+}).catch(err => console.error('❌ DB 초기화 에러:', err.message));
 
 console.log(`\n🚀 Starting server on port ${port}...`);
 

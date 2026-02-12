@@ -147,6 +147,9 @@ export async function initializeDatabase(): Promise<boolean> {
 // 헬스 체크
 export async function checkDatabaseConnection(): Promise<boolean> {
   try {
+    const dbUrl = process.env.DATABASE_URL || '';
+    const host = dbUrl.match(/@([^:\/]+)/)?.[1] || 'unknown';
+    console.log(`🔍 DB 연결 시도: host=${host}`);
     await client`SELECT 1`;
     console.log('✅ PostgreSQL 연결 성공');
     return true;
