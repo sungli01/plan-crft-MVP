@@ -28,7 +28,7 @@ export interface TokenPayload extends JwtPayload {
 export function generateAccessToken(userId: string, email?: string): string {
   const payload: Record<string, string> = { userId };
   if (email) payload.email = email;
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
 }
 
 // Refresh Token 생성 (7일)

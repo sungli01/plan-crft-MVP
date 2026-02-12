@@ -61,6 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await loginApi({ email, password });
       const token = data.token || (data as any).accessToken;
       if (token) localStorage.setItem("plan_craft_token", token);
+      const refreshToken = (data as any).refreshToken;
+      if (refreshToken) localStorage.setItem("plan_craft_refresh_token", refreshToken);
 
       const rawUser = data.user || data;
       const mappedUser: User = {
@@ -120,6 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem("plan_craft_token");
+    localStorage.removeItem("plan_craft_refresh_token");
     localStorage.removeItem("plan_craft_user");
     window.location.href = ROUTE_PATHS.LOGIN;
   }, []);

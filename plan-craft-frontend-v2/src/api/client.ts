@@ -18,20 +18,78 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor: handle 401 (with debounce to prevent redirect storm)
-let isRedirecting = false;
+// Response interceptor: auto-refresh on 401
+let isRefreshing = false;
+let failedQueue: Array<{ resolve: (token: string) => void; reject: (err: any) => void }> = [];
+
+function processQueue(error: any, token: string | null) {
+  failedQueue.forEach((p) => {
+    if (token) p.resolve(token);
+    else p.reject(error);
+  });
+  failedQueue = [];
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401 && !isRedirecting) {
-      localStorage.removeItem("plan_craft_token");
-      localStorage.removeItem("plan_craft_user");
-      if (!window.location.pathname.includes("/login")) {
-        isRedirecting = true;
-        window.location.href = "/login";
+  async (error) => {
+    const originalRequest = error.config;
+
+    // 401이고 refresh 시도 전이면 자동 갱신
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      const refreshToken = localStorage.getItem("plan_craft_refresh_token");
+
+      // refresh token 없으면 로그아웃
+      if (!refreshToken) {
+        localStorage.removeItem("plan_craft_token");
+        localStorage.removeItem("plan_craft_user");
+        if (!window.location.pathname.includes("/login")) {
+          window.location.href = "/login";
+        }
+        return Promise.reject(error);
+      }
+
+      // 이미 refresh 진행 중이면 큐에 대기
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({
+            resolve: (token: string) => {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              resolve(apiClient(originalRequest));
+            },
+            reject,
+          });
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const { data } = await axios.post(`${API_URL}/api/auth/refresh`, { refreshToken });
+        const newToken = data.accessToken || data.token;
+        const newRefresh = data.refreshToken;
+
+        if (newToken) localStorage.setItem("plan_craft_token", newToken);
+        if (newRefresh) localStorage.setItem("plan_craft_refresh_token", newRefresh);
+
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        processQueue(null, newToken);
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        localStorage.removeItem("plan_craft_token");
+        localStorage.removeItem("plan_craft_refresh_token");
+        localStorage.removeItem("plan_craft_user");
+        if (!window.location.pathname.includes("/login")) {
+          window.location.href = "/login";
+        }
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
-    // Rate limit (429) — don't redirect, just reject
+
     return Promise.reject(error);
   }
 );
