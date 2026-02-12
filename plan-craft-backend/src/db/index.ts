@@ -14,8 +14,12 @@ if (!DATABASE_URL) {
 
 // PostgreSQL (Production)
 const isPublicUrl = DATABASE_URL.includes('proxy.rlwy.net') || DATABASE_URL.includes('railway.app');
+console.log(`📡 DB URL host: ${DATABASE_URL.match(/@([^:\/]+)/)?.[1] || 'unknown'}, public: ${isPublicUrl}`);
 const client = postgres(DATABASE_URL, {
   ssl: isPublicUrl ? { rejectUnauthorized: false } : false,
+  connect_timeout: 10,
+  idle_timeout: 20,
+  max_lifetime: 60 * 30,
 });
 const db = drizzle(client, { schema });
 const sqlite = null;
@@ -139,7 +143,8 @@ export async function initializeDatabase(): Promise<boolean> {
     console.log('✅ PostgreSQL 데이터베이스 초기화 완료');
     return true;
   } catch (error: any) {
-    console.error('❌ 데이터베이스 초기화 실패:', error.message);
+    console.error('❌ 데이터베이스 초기화 실패:', error.message || error.code || JSON.stringify(error));
+    console.error('❌ 초기화 에러 상세:', error.code, error.errno, error.syscall, error.hostname);
     return false;
   }
 }
@@ -154,7 +159,8 @@ export async function checkDatabaseConnection(): Promise<boolean> {
     console.log('✅ PostgreSQL 연결 성공');
     return true;
   } catch (error: any) {
-    console.error('❌ 데이터베이스 연결 실패:', error.message);
+    console.error('❌ 데이터베이스 연결 실패:', error.message || error.code || JSON.stringify(error));
+    console.error('❌ 에러 상세:', error.code, error.errno, error.syscall, error.hostname);
     return false;
   }
 }
