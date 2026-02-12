@@ -337,10 +337,59 @@ generate.get('/:projectId/download-pptx', async (c) => {
     const [project] = await db.select().from(projects).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).limit(1);
     if (!project) return c.json({ error: 'Project not found' }, 404);
 
-    // Check cache first
-    const cached = pptxCache.get(projectId);
+    // Check cache first, if not cached try to regenerate from latest doc
+    let cached = pptxCache.get(projectId);
     if (!cached) {
-      return c.json({ error: 'PPTX not available. The PPT may not have been generated or has expired.' }, 404);
+      // Try to regenerate PPT from existing document
+      try {
+        const [latestDocForPpt] = await db.select().from(documents)
+          .where(eq(documents.projectId, projectId))
+          .orderBy(desc(documents.generatedAt))
+          .limit(1);
+        
+        if (latestDocForPpt?.content) {
+          const { PptGeneratorAgent } = await import('../engine/agents/ppt-generator');
+          const pptGenerator = new PptGeneratorAgent({
+            apiKey: process.env.ANTHROPIC_API_KEY || '',
+            model: 'claude-sonnet-4-5-20250929',
+          });
+          
+          // content를 섹션으로 분리
+          const contentStr = typeof latestDocForPpt.content === 'string' 
+            ? latestDocForPpt.content 
+            : JSON.stringify(latestDocForPpt.content);
+          
+          let sections: any[];
+          try {
+            const parsed = JSON.parse(contentStr);
+            sections = Array.isArray(parsed) ? parsed : (parsed.sections || [parsed]);
+          } catch {
+            sections = [{ id: 'full', title: project.title, content: contentStr, wordCount: contentStr.length }];
+          }
+          
+          const pptSections = sections.map((s: any, idx: number) => ({
+            id: s.id || `section-${idx}`,
+            title: s.title || `섹션 ${idx + 1}`,
+            content: s.content || s.text || '',
+            wordCount: (s.content || s.text || '').length,
+          }));
+          
+          const pptResult = await pptGenerator.generatePptx(pptSections, {
+            title: project.title,
+            idea: project.idea || '',
+          });
+          
+          cachePptx(projectId, pptResult.buffer);
+          cached = pptxCache.get(projectId);
+          console.log(`[PPTX] Regenerated for ${projectId}: ${pptResult.slideCount} slides`);
+        }
+      } catch (regenError: any) {
+        console.error('[PPTX] Regeneration failed:', regenError.message);
+      }
+    }
+    
+    if (!cached) {
+      return c.json({ error: 'PPTX를 생성할 수 없습니다. 문서를 먼저 생성해주세요.' }, 404);
     }
 
     // Get latest doc version for filename
@@ -364,7 +413,14 @@ generate.get('/:projectId/download-pptx', async (c) => {
 generate.get('/:projectId/pptx-status', authMiddleware, async (c) => {
   const projectId = c.req.param('projectId');
   const cached = pptxCache.get(projectId);
-  return c.json({ available: !!cached });
+  if (cached) return c.json({ available: true });
+  
+  // 캐시 없어도 문서가 있으면 available (다운로드 시 재생성)
+  const [doc] = await db.select({ id: documents.id }).from(documents)
+    .where(eq(documents.projectId, projectId))
+    .orderBy(desc(documents.generatedAt))
+    .limit(1);
+  return c.json({ available: !!doc });
 });
 
 // 백그라운드 문서 생성 함수
