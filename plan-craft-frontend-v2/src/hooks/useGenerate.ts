@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   startGenerateApi,
+  regenerateApi,
   getGenerateStatusApi,
   downloadGeneratedApi,
   downloadPptxApi,
@@ -120,6 +121,28 @@ export function useGenerate(options: UseGenerateOptions = {}) {
     }
   }, []);
 
+  const regenerate = useCallback(async (projectId: string) => {
+    try {
+      setIsGenerating(true);
+      setStatus(null);
+
+      await regenerateApi(projectId);
+
+      // Start polling
+      pollRef.current = setInterval(() => {
+        pollStatus(projectId);
+      }, pollIntervalMs);
+
+      // Poll immediately
+      setTimeout(() => pollStatus(projectId), 1000);
+    } catch (error: any) {
+      setIsGenerating(false);
+      const message = error.response?.data?.message || error.response?.data?.error || "재생성 요청에 실패했습니다.";
+      toast.error(message);
+      onError?.(message);
+    }
+  }, [pollStatus, pollIntervalMs, onError]);
+
   const downloadPptx = useCallback(async (projectId: string) => {
     try {
       const blob = await downloadPptxApi(projectId);
@@ -148,6 +171,7 @@ export function useGenerate(options: UseGenerateOptions = {}) {
     currentStep: status ? getCurrentStep(status) : "",
     document: status?.document || null,
     startGenerate,
+    regenerate,
     download,
     downloadPptx,
     stopPolling,

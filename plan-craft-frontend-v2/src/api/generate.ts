@@ -44,6 +44,11 @@ export async function getGenerateStatusApi(projectId: string): Promise<GenerateS
   return res.data;
 }
 
+export async function regenerateApi(projectId: string): Promise<{ status: string; version: number }> {
+  const res = await apiClient.post(`/api/generate/${projectId}/regenerate`);
+  return res.data;
+}
+
 export async function downloadGeneratedApi(projectId: string): Promise<Blob> {
   const res = await apiClient.get(`/api/generate/${projectId}/download`, {
     responseType: "blob",

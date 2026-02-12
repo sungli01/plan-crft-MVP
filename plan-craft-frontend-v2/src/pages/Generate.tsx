@@ -10,7 +10,8 @@ import {
   Sparkles, 
   Download, 
   Copy,
-  Loader2
+  Loader2,
+  RefreshCw
 } from "lucide-react";
 import { 
   ROUTE_PATHS, 
@@ -38,6 +39,7 @@ export default function Generate() {
   
   const categoryId = searchParams.get("category");
   const existingProjectId = searchParams.get("id");
+  const shouldRegenerate = searchParams.get("regenerate") === "true";
   const category = categoryId ? getCategoryById(categoryId) : null;
 
   const [pageStatus, setPageStatus] = useState<"loading" | "input" | "generating" | "completed">(
@@ -57,7 +59,7 @@ export default function Generate() {
     { id: 5, title: "서식 적용", description: "전문적인 문서 서식과 레이아웃을 적용합니다" }
   ]);
 
-  const { startGenerate, download, downloadPptx, status: genStatus, progress: genProgress, currentStep: genStepText } = useGenerate({
+  const { startGenerate, regenerate, download, downloadPptx, status: genStatus, progress: genProgress, currentStep: genStepText } = useGenerate({
     onComplete: (s) => {
       setGeneratedDoc({
         title: generatedDoc?.title || `${category?.label} 결과물`,
@@ -174,6 +176,27 @@ export default function Generate() {
       if (pageStatus === "generating") {
         setPageStatus("input");
       }
+    }
+  };
+
+  // Auto-trigger regeneration when coming from dashboard with regenerate=true
+  const [autoRegenTriggered, setAutoRegenTriggered] = useState(false);
+  useEffect(() => {
+    if (shouldRegenerate && currentProjectId && pageStatus === "completed" && !autoRegenTriggered) {
+      setAutoRegenTriggered(true);
+      handleRegenerate();
+    }
+  }, [shouldRegenerate, currentProjectId, pageStatus, autoRegenTriggered]);
+
+  const handleRegenerate = async () => {
+    if (!currentProjectId) return;
+    setPageStatus("generating");
+    setProgress(0);
+    setCurrentStep(0);
+    try {
+      await regenerate(currentProjectId);
+    } catch {
+      setPageStatus("completed");
     }
   };
 
@@ -430,6 +453,12 @@ export default function Generate() {
                       >
                         <Download className="mr-2 h-4 w-4" />
                         PPT 다운로드
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={handleRegenerate}
+                        className="border-orange-300 text-orange-600 hover:bg-orange-50"
+                      >
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        다시 생성
                       </Button>
                     </div>
                   </CardHeader>

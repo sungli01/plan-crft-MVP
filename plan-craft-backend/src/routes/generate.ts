@@ -48,9 +48,13 @@ generate.post('/:projectId', authMiddleware, tierCheck(), async (c) => {
       message: '프로젝트 생성 시작'
     });
 
+    // 기존 문서 수로 버전 결정
+    const existingDocs = await db.select().from(documents).where(eq(documents.projectId, projectId));
+    const version = existingDocs.length + 1;
+
     // 응답 먼저 보내기 (비동기 처리)
     setTimeout(() => {
-      generateDocumentBackground(projectId, project, userId).catch(err => {
+      generateDocumentBackground(projectId, project, userId, version).catch(err => {
         console.error('Background generation error:', err);
       });
     }, 100);
@@ -58,11 +62,63 @@ generate.post('/:projectId', authMiddleware, tierCheck(), async (c) => {
     return c.json({ 
       message: 'Document generation started',
       projectId,
+      version,
       status: 'generating'
     }, 202);
   } catch (error) {
     console.error('Generate error:', error);
     return c.json({ error: 'Failed to start generation' }, 500);
+  }
+});
+
+// POST /api/generate/:projectId/regenerate - 같은 프로젝트로 새 버전 문서 재생성
+generate.post('/:projectId/regenerate', authMiddleware, tierCheck(), async (c) => {
+  try {
+    const userId = c.get('userId') as string;
+    const projectId = c.req.param('projectId');
+
+    console.log('[Regenerate] userId:', userId, 'projectId:', projectId);
+
+    // 프로젝트 존재 및 권한 확인
+    const [project] = await db.select().from(projects).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).limit(1);
+
+    if (!project) {
+      return c.json({ error: 'Project not found' }, 404);
+    }
+
+    // 기존 문서 수를 세서 버전 번호 결정
+    const existingDocs = await db.select().from(documents).where(eq(documents.projectId, projectId));
+    const nextVersion = existingDocs.length + 1;
+
+    console.log(`[Regenerate] Project "${project.title}" — generating version ${nextVersion}`);
+
+    // 프로젝트 상태 업데이트: generating
+    await db.update(projects).set({ status: 'generating', updatedAt: new Date() }).where(eq(projects.id, projectId));
+
+    // 진행 상황 초기화
+    progressTracker.init(projectId);
+    progressTracker.addLog(projectId, {
+      agent: 'system',
+      level: 'info',
+      message: `버전 ${nextVersion} 재생성 시작`
+    });
+
+    // 응답 먼저 보내기 (비동기 처리)
+    setTimeout(() => {
+      generateDocumentBackground(projectId, project, userId, nextVersion).catch(err => {
+        console.error('Background regeneration error:', err);
+      });
+    }, 100);
+
+    return c.json({ 
+      message: 'Document regeneration started',
+      projectId,
+      version: nextVersion,
+      status: 'generating'
+    }, 202);
+  } catch (error) {
+    console.error('Regenerate error:', error);
+    return c.json({ error: 'Failed to start regeneration' }, 500);
   }
 });
 
@@ -82,12 +138,19 @@ generate.get('/:projectId/status', authMiddleware, async (c) => {
     // 실시간 진행 상황 조회
     const realtimeProgress = progressTracker.get(projectId);
 
-    // 문서 조회
+    // 문서 조회 (최신)
     const [document] = await db.select().from(documents).where(eq(documents.projectId, projectId)).orderBy(desc(documents.generatedAt)).limit(1);
+
+    // 전체 문서 수 (버전 수)
+    const allDocs = await db.select().from(documents).where(eq(documents.projectId, projectId));
+    const totalVersions = allDocs.length;
+    const currentVersion = document ? (() => { try { const m = JSON.parse(document.metadata || '{}'); return m.version || 1; } catch { return 1; } })() : 0;
 
     return c.json({
       projectId,
       status: project.status,
+      totalVersions,
+      currentVersion,
       progress: realtimeProgress ? {
         phase: realtimeProgress.phase,
         agents: realtimeProgress.agents,
@@ -200,7 +263,9 @@ generate.get('/:projectId/download/pdf', async (c) => {
 </body>
 </html>`;
 
-    const filename = `${project.title.replace(/[^a-zA-Z0-9가-힣]/g, '_')}_사업계획서.html`;
+    const docVersion = (() => { try { const m = JSON.parse(document.metadata || '{}'); return m.version || 1; } catch { return 1; } })();
+    const versionSuffix = docVersion > 1 ? `_v${docVersion}` : '';
+    const filename = `${project.title.replace(/[^a-zA-Z0-9가-힣]/g, '_')}${versionSuffix}_사업계획서.html`;
 
     c.header('Content-Type', 'text/html; charset=utf-8');
     c.header('Content-Disposition', `inline; filename="${encodeURIComponent(filename)}"`);
@@ -233,7 +298,9 @@ generate.get('/:projectId/download', authMiddleware, async (c) => {
     }
 
     // HTML 파일로 다운로드
-    const filename = `${project.title.replace(/[^a-zA-Z0-9가-힣]/g, '_')}.html`;
+    const docVersion = (() => { try { const m = JSON.parse(document.metadata || '{}'); return m.version || 1; } catch { return 1; } })();
+    const versionSuffix = docVersion > 1 ? `_v${docVersion}` : '';
+    const filename = `${project.title.replace(/[^a-zA-Z0-9가-힣]/g, '_')}${versionSuffix}.html`;
     
     c.header('Content-Type', 'text/html; charset=utf-8');
     c.header('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
@@ -276,7 +343,11 @@ generate.get('/:projectId/download-pptx', async (c) => {
       return c.json({ error: 'PPTX not available. The PPT may not have been generated or has expired.' }, 404);
     }
 
-    const filename = `${project.title.replace(/[^a-zA-Z0-9가-힣]/g, '_')}_사업계획서.pptx`;
+    // Get latest doc version for filename
+    const [latestDoc] = await db.select().from(documents).where(eq(documents.projectId, projectId)).orderBy(desc(documents.generatedAt)).limit(1);
+    const pptxVersion = (() => { try { const m = JSON.parse(latestDoc?.metadata || '{}'); return m.version || 1; } catch { return 1; } })();
+    const pptxVersionSuffix = pptxVersion > 1 ? `_v${pptxVersion}` : '';
+    const filename = `${project.title.replace(/[^a-zA-Z0-9가-힣]/g, '_')}${pptxVersionSuffix}_사업계획서.pptx`;
 
     c.header('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
     c.header('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
@@ -297,7 +368,7 @@ generate.get('/:projectId/pptx-status', authMiddleware, async (c) => {
 });
 
 // 백그라운드 문서 생성 함수
-async function generateDocumentBackground(projectId: string, projectData: any, userId: string) {
+async function generateDocumentBackground(projectId: string, projectData: any, userId: string, version?: number) {
   try {
     console.log(`[Background] Starting generation for project ${projectId}`);
 
@@ -435,6 +506,7 @@ async function generateDocumentBackground(projectId: string, projectData: any, u
         imageCount: summary.imageCount,
         metadata: JSON.stringify({
           title: projectData.title,
+          version: version || 1,
           generatedAt: new Date().toISOString(),
           tokenUsage: summary.tokenUsage || {}
         }),

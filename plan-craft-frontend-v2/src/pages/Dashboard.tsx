@@ -70,6 +70,10 @@ export default function Dashboard() {
     navigate(`${ROUTE_PATHS.GENERATE}?id=${doc.id}`);
   };
 
+  const handleRegenerateDocument = (doc: Document) => {
+    navigate(`${ROUTE_PATHS.GENERATE}?id=${doc.id}&regenerate=true`);
+  };
+
   const handleDeleteDocument = async (doc: Document) => {
     if (confirm("정말로 이 문서를 삭제하시겠습니까?")) {
       try {
@@ -190,7 +194,8 @@ export default function Dashboard() {
                       <DocumentCard 
                         document={doc} 
                         onEdit={() => handleEditDocument(doc)} 
-                        onDelete={() => handleDeleteDocument(doc)} 
+                        onDelete={() => handleDeleteDocument(doc)}
+                        onRegenerate={() => handleRegenerateDocument(doc)}
                       />
                     </motion.div>
                   ))

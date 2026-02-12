@@ -13,7 +13,8 @@ import {
   Clock,
   ArrowRight,
   FileText,
-  Lock
+  Lock,
+  RefreshCw
 } from "lucide-react";
 import { 
   DocumentCategory, 
@@ -118,7 +119,7 @@ export function FeatureCard({ title, description, icon }: { title: string; descr
 /**
  * DocumentCard: 생성된 문서 목록을 대시보드에 표시하는 카드
  */
-export function DocumentCard({ document, onEdit, onDelete }: { document: Document; onEdit: () => void; onDelete: () => void }) {
+export function DocumentCard({ document, onEdit, onDelete, onRegenerate }: { document: Document; onEdit: () => void; onDelete: () => void; onRegenerate?: () => void }) {
   const category = getCategoryById(document.categoryId);
   
   return (
@@ -146,6 +147,15 @@ export function DocumentCard({ document, onEdit, onDelete }: { document: Documen
           >
             <Edit2 size={16} />
           </button>
+          {onRegenerate && document.status === "completed" && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onRegenerate(); }}
+              className="p-2 hover:bg-orange-100 rounded-lg text-orange-500 hover:text-orange-600 transition-colors"
+              title="다시 생성"
+            >
+              <RefreshCw size={16} />
+            </button>
+          )}
           <button 
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
             className="p-2 hover:bg-destructive/10 rounded-lg text-destructive transition-colors"
