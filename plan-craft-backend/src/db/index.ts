@@ -16,7 +16,7 @@ if (!DATABASE_URL) {
 const isPublicUrl = DATABASE_URL.includes('proxy.rlwy.net') || DATABASE_URL.includes('railway.app');
 console.log(`📡 DB URL host: ${DATABASE_URL.match(/@([^:\/]+)/)?.[1] || 'unknown'}, public: ${isPublicUrl}`);
 const client = postgres(DATABASE_URL, {
-  ssl: isPublicUrl ? { rejectUnauthorized: false } : false,
+  ssl: { rejectUnauthorized: false },
   connect_timeout: 10,
   idle_timeout: 20,
   max_lifetime: 60 * 30,
