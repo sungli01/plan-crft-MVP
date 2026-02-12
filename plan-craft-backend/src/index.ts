@@ -152,6 +152,20 @@ app.get('/debug/env', (c) => {
   });
 });
 
+// DB 디버그 엔드포인트
+app.get('/debug/db', async (c) => {
+  const dbUrl = process.env.DATABASE_URL || '';
+  const host = dbUrl.match(/@([^:\/]+)/)?.[1] || 'unknown';
+  const port = dbUrl.match(/:(\d+)\//)?.[1] || 'unknown';
+  try {
+    const { client } = await import('./db/index');
+    const result = await client`SELECT current_database() as db, current_user as usr, version() as ver`;
+    return c.json({ status: 'connected', host, port, result: Array.isArray(result) ? result : [] });
+  } catch (err: any) {
+    return c.json({ status: 'error', host, port, error: err.message, code: err.code, errno: err.errno, syscall: err.syscall, stack: err.stack?.split('\n').slice(0,3) });
+  }
+});
+
 app.get('/health', async (c) => {
   const dbConnected = await checkDatabaseConnection();
   let cacheType = 'initializing';
