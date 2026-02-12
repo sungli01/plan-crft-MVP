@@ -26,13 +26,22 @@ function WithLayout({ children }: { children: React.ReactNode }) {
   return <Layout>{children}</Layout>;
 }
 
+/** 홈 라우트: 로그인 상태면 대시보드로, 아니면 랜딩 페이지 */
+function HomeRoute() {
+  const hasToken = !!localStorage.getItem("plan_craft_token");
+  if (hasToken) {
+    return <WithLayout><Dashboard /></WithLayout>;
+  }
+  return <Home />;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <BrowserRouter>
           <Routes>
-            <Route path={ROUTE_PATHS.HOME} element={<WithLayout><Home /></WithLayout>} />
+            <Route path={ROUTE_PATHS.HOME} element={<HomeRoute />} />
             <Route path={ROUTE_PATHS.LOGIN} element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path={ROUTE_PATHS.DASHBOARD} element={<WithLayout><Dashboard /></WithLayout>} />
