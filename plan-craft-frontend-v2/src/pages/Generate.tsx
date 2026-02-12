@@ -37,13 +37,14 @@ export default function Generate() {
   const { createProject } = useProjects();
   
   const categoryId = searchParams.get("category");
+  const existingProjectId = searchParams.get("id");
   const category = categoryId ? getCategoryById(categoryId) : null;
 
   const [pageStatus, setPageStatus] = useState<"input" | "generating" | "completed">("input");
   const [generatedDoc, setGeneratedDoc] = useState<{ title: string; content: string } | null>(null);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
-  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(existingProjectId);
 
   const [generationSteps] = useState([
     { id: 1, title: "요구사항 분석", description: "입력된 정보를 분석하고 문서 구조를 설계합니다" },
@@ -80,16 +81,56 @@ export default function Generate() {
     }
   }, [genProgress, generationSteps.length]);
 
+  // Load existing project if id parameter exists
   useEffect(() => {
-    if (!category) {
+    if (existingProjectId) {
+      import("@/api/projects").then(({ getProjectApi }) => {
+        getProjectApi(existingProjectId).then((project) => {
+          setCurrentProjectId(existingProjectId);
+          // Check if project already has a generated document
+          import("@/api/generate").then(({ getGenerateStatusApi }) => {
+            getGenerateStatusApi(existingProjectId).then((s) => {
+              if (s.status === "completed" && s.document) {
+                setGeneratedDoc({
+                  title: project.title || "문서",
+                  content: `문서 생성 완료\n\n품질 점수: ${s.document.qualityScore?.toFixed(1) || "N/A"}/100\n섹션 수: ${s.document.sectionCount || 0}개\n단어 수: ${s.document.wordCount?.toLocaleString() || 0}개\n이미지: ${s.document.imageCount || 0}개`,
+                });
+                setPageStatus("completed");
+                setProgress(100);
+                setCurrentStep(generationSteps.length);
+              } else if (s.status === "generating") {
+                setGeneratedDoc({ title: project.title || "문서", content: "" });
+                setPageStatus("generating");
+                // Resume polling
+                startGenerate(existingProjectId);
+              }
+            }).catch(() => {
+              // No generation status, show as completed project view
+              setGeneratedDoc({
+                title: project.title || "문서",
+                content: "이 프로젝트의 문서를 확인하려면 다운로드하세요.",
+              });
+              setPageStatus("completed");
+            });
+          });
+        }).catch(() => {
+          navigate(ROUTE_PATHS.DASHBOARD);
+        });
+      });
+    }
+  }, [existingProjectId]);
+
+  useEffect(() => {
+    // Only redirect to categories if no category AND no existing project
+    if (!category && !existingProjectId) {
       navigate(ROUTE_PATHS.CATEGORIES);
       return;
     }
 
-    if (!canAccessCategory(category)) {
+    if (category && !canAccessCategory(category)) {
       navigate(ROUTE_PATHS.CATEGORIES);
     }
-  }, [category, canAccessCategory, navigate]);
+  }, [category, existingProjectId, canAccessCategory, navigate]);
 
   const handleGenerate = async (formData: any) => {
     setPageStatus("generating");
@@ -118,7 +159,7 @@ export default function Generate() {
     }
   };
 
-  if (!category) return null;
+  if (!category && !existingProjectId) return null;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -146,15 +187,15 @@ export default function Generate() {
               뒤로가기
             </Button>
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl md:text-4xl font-bold">{category.label} 생성</h1>
-              {category.isPro && (
+              <h1 className="text-3xl md:text-4xl font-bold">{category?.label || '문서'} 생성</h1>
+              {category?.isPro && (
                 <Badge className="bg-accent text-accent-foreground border-none">
                   PRO
                 </Badge>
               )}
             </div>
             <p className="text-muted-foreground max-w-2xl">
-              AI를 활용하여 전문적인 {category.label}를 단 몇 분 만에 작성하세요.
+              AI를 활용하여 전문적인 {category?.label || '문서'}를 단 몇 분 만에 작성하세요.
             </p>
           </motion.div>
         </div>
