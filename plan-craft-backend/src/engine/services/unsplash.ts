@@ -123,21 +123,10 @@ export class UnsplashService {
   }
 
   getPicsumPhotos(query: string, count: number): UnsplashPhoto[] {
-    const englishQuery = this._translateQuery(query);
-    const images: UnsplashPhoto[] = [];
-    for (let i = 0; i < count; i++) {
-      const seed = encodeURIComponent(`${englishQuery}-${i}`);
-      images.push({
-        id: `picsum-${seed}-${i}`,
-        url: `https://picsum.photos/seed/${seed}/800/450`,
-        thumb: `https://picsum.photos/seed/${seed}/400/225`,
-        alt: query,
-        credit: 'Photo from Lorem Picsum',
-        authorUrl: 'https://picsum.photos',
-        source: 'picsum'
-      });
-    }
-    return images;
+    // Skywork 정책: 장식용 스톡 이미지 완전 차단
+    // 다이어그램/차트만 허용 (DalleService의 SVG 생성으로 대체)
+    console.log('ℹ️  스톡 이미지 비활성화 (Skywork 정책) — 다이어그램만 허용');
+    return [];
   }
 
   generateSvgPlaceholder(query: string, width: number = 800, height: number = 450): UnsplashPhoto {
