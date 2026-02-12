@@ -61,13 +61,15 @@ export default function Generate() {
 
   const { startGenerate, regenerate, download, downloadPptx, status: genStatus, progress: genProgress, currentStep: genStepText } = useGenerate({
     onComplete: (s) => {
+      const resolvedCategory = category || (savedCategoryId ? getCategoryById(savedCategoryId) : null);
       setGeneratedDoc({
-        title: generatedDoc?.title || `${category?.label} 결과물`,
+        title: generatedDoc?.title || `${resolvedCategory?.label || "문서"} 결과물`,
         content: `문서 생성이 완료되었습니다.\n\n품질 점수: ${s.document?.qualityScore?.toFixed(1) || "N/A"}/100\n섹션 수: ${s.document?.sectionCount || 0}개\n단어 수: ${s.document?.wordCount?.toLocaleString() || 0}개\n이미지: ${s.document?.imageCount || 0}개`,
       });
       setProgress(100);
       setCurrentStep(generationSteps.length);
       setPageStatus("completed");
+      toast.success("문서 생성이 완료되었습니다!");
     },
     onError: () => {
       setPageStatus("input");
@@ -189,13 +191,19 @@ export default function Generate() {
   }, [shouldRegenerate, currentProjectId, pageStatus, autoRegenTriggered]);
 
   const handleRegenerate = async () => {
-    if (!currentProjectId) return;
+    if (!currentProjectId) {
+      toast.error("프로젝트 ID가 없습니다.");
+      return;
+    }
+    toast.info("새 버전 문서를 생성합니다...");
+    setGeneratedDoc(null);
     setPageStatus("generating");
     setProgress(0);
     setCurrentStep(0);
     try {
       await regenerate(currentProjectId);
-    } catch {
+    } catch (err: any) {
+      toast.error(err?.message || "재생성에 실패했습니다.");
       setPageStatus("completed");
     }
   };
