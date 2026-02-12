@@ -442,10 +442,16 @@ export default function Generate() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Button variant="outline" size="sm" onClick={() => {
+                        if (currentProjectId) download(currentProjectId, true);
+                      }}>
+                        <Download className="mr-2 h-4 w-4" />
+                        미리보기
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => {
                         if (currentProjectId) download(currentProjectId);
                       }}>
                         <Download className="mr-2 h-4 w-4" />
-                        문서 다운로드
+                        HTML 저장
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => {
                         if (currentProjectId) downloadPptx(currentProjectId);

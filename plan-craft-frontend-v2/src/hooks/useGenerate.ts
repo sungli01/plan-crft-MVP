@@ -104,10 +104,18 @@ export function useGenerate(options: UseGenerateOptions = {}) {
     }
   }, [pollStatus, pollIntervalMs, onError]);
 
-  const download = useCallback(async (projectId: string) => {
+  const download = useCallback(async (projectId: string, preview = false) => {
     try {
       const blob = await downloadGeneratedApi(projectId);
       const url = URL.createObjectURL(blob);
+
+      if (preview) {
+        // 새 탭에서 미리보기
+        window.open(url, '_blank');
+        toast.success("문서가 새 탭에서 열렸습니다.");
+        return;
+      }
+
       const a = document.createElement("a");
       a.href = url;
       a.download = `document-${projectId}.html`;
@@ -115,7 +123,17 @@ export function useGenerate(options: UseGenerateOptions = {}) {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success("다운로드가 시작되었습니다.");
+
+      // 모바일 감지 후 상세 안내
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        toast.success("다운로드 완료! 📂", {
+          description: "브라우저 상단 또는 알림바에서 다운로드된 파일을 확인하세요.",
+          duration: 5000,
+        });
+      } else {
+        toast.success("다운로드가 시작되었습니다.");
+      }
     } catch (error: any) {
       toast.error("다운로드에 실패했습니다.");
     }
@@ -155,7 +173,16 @@ export function useGenerate(options: UseGenerateOptions = {}) {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success("PPT 다운로드가 시작되었습니다.");
+
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        toast.success("PPT 다운로드 완료! 📂", {
+          description: "브라우저 상단 또는 알림바에서 파일을 확인하세요.",
+          duration: 5000,
+        });
+      } else {
+        toast.success("PPT 다운로드가 시작되었습니다.");
+      }
     } catch (error: any) {
       toast.error("PPT 파일이 없거나 만료되었습니다.");
     }
