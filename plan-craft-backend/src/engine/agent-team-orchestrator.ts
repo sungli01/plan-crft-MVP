@@ -393,9 +393,51 @@ export class AgentTeamOrchestrator {
         });
       }
 
+      // 핵심 섹션만 샘플링 리뷰 (최대 12개)
+      const MAX_REVIEW_SECTIONS = 12;
+      let reviewSections = sections;
+      let reviewContents = writtenSections.map((s: any) => s.content);
+      
+      if (sections.length > MAX_REVIEW_SECTIONS) {
+        // 우선순위: importance가 high/critical인 섹션 + 첫/마지막 섹션 + 균등 샘플링
+        const importantIndices = new Set<number>();
+        
+        // 첫/마지막 섹션은 항상 포함
+        importantIndices.add(0);
+        importantIndices.add(sections.length - 1);
+        
+        // importance가 high/critical인 섹션
+        sections.forEach((s: any, i: number) => {
+          if (s.importance === 'high' || s.importance === 'critical') {
+            importantIndices.add(i);
+          }
+        });
+        
+        // level 1 (최상위) 섹션
+        sections.forEach((s: any, i: number) => {
+          if (s.level === 1 || s.level === 2) {
+            importantIndices.add(i);
+          }
+        });
+        
+        // 부족하면 균등 간격으로 추가
+        if (importantIndices.size < MAX_REVIEW_SECTIONS) {
+          const step = Math.floor(sections.length / (MAX_REVIEW_SECTIONS - importantIndices.size));
+          for (let i = 0; i < sections.length && importantIndices.size < MAX_REVIEW_SECTIONS; i += step) {
+            importantIndices.add(i);
+          }
+        }
+        
+        const sortedIndices = Array.from(importantIndices).sort((a, b) => a - b).slice(0, MAX_REVIEW_SECTIONS);
+        reviewSections = sortedIndices.map(i => sections[i]);
+        reviewContents = sortedIndices.map(i => writtenSections[i]?.content || '');
+        
+        console.log(`📋 리뷰 샘플링: ${sections.length}개 중 ${reviewSections.length}개 핵심 섹션 선별`);
+      }
+      
       const reviewResult = await this.reviewer.reviewMultipleSections(
-        sections,
-        writtenSections.map((s: any) => s.content)
+        reviewSections,
+        reviewContents
       );
       
       reviewResult.reviews.forEach(review => {
