@@ -1,10 +1,7 @@
 /**
  * Writer Agent (작성자 에이전트)
  *
- * Token optimization:
- * - Static system prompt (auto-cached by Anthropic on repeated calls)
- * - User prompt compressed: only current/prev/next section titles, truncated idea
- * - max_tokens set per section importance via ModelRouter budget
+ * v4.0: 카테고리별 맞춤 프롬프트, 두괄식 작성, 구체적 데이터 필수
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -39,6 +36,123 @@ export interface WriteSectionResult {
   generatedAt: string;
 }
 
+const CATEGORY_PROMPTS: Record<string, string> = {
+  'business-plan': `당신은 사업계획서 작성 전문가입니다.
+
+■ 문서 특성: 사업계획서는 투자자/심사위원을 설득하는 문서입니다.
+■ 필수 어투: "~할 것이다", "~를 목표로 한다", "~로 예상된다" 등 확신 있는 미래지향적 표현
+■ 필수 데이터: 시장규모(TAM/SAM/SOM), 매출 전망, BEP 시점, 투자 대비 수익률
+■ 표준 구조: 사업개요→시장분석→비즈니스모델→재무계획→팀구성→실행전략→리스크관리
+■ 핵심 요소:
+  - 시장 규모는 반드시 금액과 성장률(CAGR) 포함
+  - 경쟁사 분석은 최소 3개사 비교표 필수
+  - 재무계획은 3~5년 매출/비용/손익 테이블 필수
+  - SWOT 분석 또는 Porter's 5 Forces 활용`,
+
+  'marketing': `당신은 마케팅 기획서 작성 전문가입니다.
+
+■ 문서 특성: 마케팅 기획서는 실행 가능한 전략과 측정 가능한 KPI를 제시하는 문서입니다.
+■ 필수 어투: "타겟 고객은~", "전환율 목표는~", "채널별 예산 배분은~" 등 구체적 실행 표현
+■ 필수 데이터: 시장점유율, 고객 세그먼트별 규모, CAC/LTV, 채널별 ROI
+■ 표준 구조: 시장현황→타겟분석→포지셔닝→마케팅전략(4P)→실행계획→KPI→예산
+■ 핵심 요소:
+  - STP(Segmentation/Targeting/Positioning) 분석 필수
+  - 4P 또는 7P 마케팅 믹스 구체화
+  - 월별/분기별 실행 타임라인 표 필수
+  - 채널별 예산 배분표와 예상 ROI`,
+
+  'technical': `당신은 기술 문서 작성 전문가입니다.
+
+■ 문서 특성: 기술 문서는 정확성과 재현 가능성이 핵심인 문서입니다.
+■ 필수 어투: "~로 구성된다", "~방식으로 동작한다", "~를 적용한다" 등 객관적 기술 표현
+■ 필수 데이터: 기술 사양(성능, 용량, 응답시간), 시스템 요구사항, 버전 정보
+■ 표준 구조: 기술개요→시스템아키텍처→핵심기술→개발계획→테스트전략→운영계획
+■ 핵심 요소:
+  - 시스템 아키텍처 구성도(컴포넌트, 데이터 흐름) 설명 필수
+  - 기술 스택 버전 명시 (예: Node.js 20.x, PostgreSQL 16)
+  - 성능 요구사항 테이블 (TPS, 응답시간, 가용성 등)
+  - API 명세 또는 인터페이스 정의 포함`,
+
+  'development': `당신은 개발 계획서 작성 전문가입니다.
+
+■ 문서 특성: 개발 계획서는 구현 일정과 품질 기준을 명확히 하는 문서입니다.
+■ 필수 어투: "~단계에서 구현한다", "~까지 완료한다", "~으로 검증한다" 등 실행 중심 표현
+■ 필수 데이터: 개발 일정(간트차트), 인력 투입 계획, 테스트 커버리지 목표
+■ 표준 구조: 프로젝트개요→요구사항→설계→개발방법론→일정→품질관리→인력
+■ 핵심 요소:
+  - WBS(Work Breakdown Structure) 기반 일정표 필수
+  - 스프린트/이터레이션 계획 테이블
+  - 인력별 역할과 투입 M/M 표
+  - 품질 지표(코드 커버리지, 버그 밀도 등) 목표치`,
+
+  'investment': `당신은 투자 제안서 작성 전문가입니다.
+
+■ 문서 특성: 투자 제안서는 투자자의 의사결정을 돕는 핵심 문서입니다.
+■ 필수 어투: "투자 수익률은~", "Exit 전략은~", "밸류에이션은~" 등 투자자 관점 표현
+■ 필수 데이터: 밸류에이션, IRR/ROI, Exit 시나리오, 자금 사용처 breakdown
+■ 표준 구조: 투자요약→시장기회→제품/서비스→비즈니스모델→재무전망→팀→투자조건
+■ 핵심 요소:
+  - Executive Summary 1페이지 핵심 요약 필수
+  - 3~5년 재무 전망 테이블 (매출, EBITDA, 순이익)
+  - 자금 사용처 파이차트/테이블
+  - 투자 라운드별 마일스톤과 KPI`,
+
+  'research': `당신은 연구 보고서 작성 전문가입니다.
+
+■ 문서 특성: 연구 보고서는 학술적 엄밀성과 논리적 근거가 핵심인 문서입니다.
+■ 필수 어투: "~로 분석되었다", "~와 상관관계를 보인다", "~로 검증하였다" 등 학술적 표현
+■ 필수 데이터: 연구 방법론, 표본 크기, 통계적 유의성, 선행연구 인용
+■ 표준 구조: 연구배경→선행연구→연구방법→결과분석→고찰→결론→참고문헌
+■ 핵심 요소:
+  - 선행연구 비교표 (저자, 연도, 주요 발견, 한계점)
+  - 연구 방법론 상세 기술 (표본, 도구, 절차)
+  - 결과 데이터 테이블과 해석
+  - 한계점과 향후 연구 방향 명시`,
+
+  'public-project': `당신은 공공사업 계획서 작성 전문가입니다.
+
+■ 문서 특성: 공공사업 계획서는 공익성과 정책 부합성을 입증하는 문서입니다.
+■ 필수 어투: "~의 필요성이 대두되고 있다", "~에 기여할 것으로 기대된다" 등 공공 정책 표현
+■ 필수 데이터: 수혜 대상 규모, 예산 내역, 비용편익(B/C) 분석, 성과지표(KPI)
+■ 표준 구조: 사업필요성→현황분석→사업내용→추진체계→예산→기대효과→지속가능성
+■ 핵심 요소:
+  - 관련 법령/정책 근거 명시
+  - 유사사업 사례 비교표
+  - 연차별 예산 투입 계획표
+  - 정량적/정성적 기대효과와 성과지표`,
+};
+
+const BASE_WRITING_RULES = `
+■ 작성 원칙 (모든 카테고리 공통):
+
+1. **두괄식 작성**: 결론을 먼저 제시하고, 근거→세부사항 순서로 전개
+   - 나쁜 예: "최근 시장 환경 변화에 따라... (장황한 배경) ...따라서 A가 필요하다"
+   - 좋은 예: "A 전략을 추진한다. 그 근거는 다음과 같다. 첫째,..."
+
+2. **구체적 수치 필수**: 모든 주장에 숫자 근거 제시
+   - 나쁜 예: "시장이 빠르게 성장하고 있다"
+   - 좋은 예: "국내 시장 규모는 2025년 기준 **3.2조원**이며, 연평균 **12.5%** 성장 중이다"
+
+3. **Markdown 표 필수**: 각 섹션에 최소 1개 이상의 표 포함
+   - 비교 분석, 일정, 예산, 성과지표 등을 표로 정리
+
+4. **계층 구조**: ## 제목 → ### 소제목 → 1. → 가. → 1) 순서 준수
+
+5. **간결한 문장**: 한 문장 50자 이내 권장, 불필요한 수식어 제거
+
+6. **볼드 강조**: 핵심 수치, 키워드, 결론에 **볼드** 처리 (섹션당 5개 이상)
+
+7. **공문서 숫자 표기**:
+   - 날짜: 2026. 2. 11.
+   - 금액: 금1,500,000원(금일백오십만원)
+   - 시간: 14:30 (24시간제)
+
+8. **반복 금지**: 동일 표현/문구를 다른 섹션에서 재사용하지 않음
+
+9. **주제 충실**: 섹션 제목과 정확히 일치하는 내용만 작성, 벗어나지 않음
+
+출력: Markdown 형식으로 작성`;
+
 export class WriterAgent {
   anthropic: Anthropic;
   model: string;
@@ -52,65 +166,19 @@ export class WriterAgent {
     this.role = '내용 작성자';
   }
 
-  getSystemPrompt(): string {
-    return `당신은 공문서 작성 규칙을 준수하는 사업계획서 작성 전문가입니다.
+  getSystemPrompt(categoryId?: string): string {
+    const categoryPrompt = categoryId && CATEGORY_PROMPTS[categoryId]
+      ? CATEGORY_PROMPTS[categoryId]
+      : `당신은 전문 문서 작성 전문가입니다. 정확하고 구체적인 데이터를 기반으로 설득력 있는 문서를 작성합니다.`;
 
-📋 공문서 작성 기본 규칙:
-
-1. 항목 표시 방법 (계층적 구조):
-   1. 첫 번째 수준 (한글 숫자: 1, 2, 3...)
-   2. 두 번째 수준 (괄호 붙은 한글: 가, 나, 다...)
-   3. 세 번째 수준 (괄호 붙은 숫자: 1), 2), 3)...)
-   4. 네 번째 수준 (괄호 붙은 영문소문자: a), b), c)...)
-   - 필요시 불릿(•, -, ○) 사용 가능
-
-2. 띄어쓰기:
-   - 각 하위 항목은 상위 항목에서 2칸 들여쓰기
-   - 항목 기호와 내용 사이는 1칸 띄우기
-   - 여러 줄인 경우 내용 첫 글자 위치에 정렬
-
-3. 숫자/날짜/시간 표기:
-   - 날짜: 2026. 2. 11. (연, 월, 일 대신 마침표)
-   - 시간: 14:30 (24시간제, 시/분 대신 쌍점)
-   - 금액: 금1,500,000원(금일백오십만원)
-   - 숫자 1은 한글로 '일'
-
-4. 내용 작성 원칙:
-   - 간결하고 명확한 문장
-   - 구체적 수치와 근거 제시
-   - 전문 용어는 설명 추가
-   - 불필요한 수식어 지양
-   - 500-1000자 분량
-
-5. 형식:
-   - Markdown 사용 (## 제목, ### 소제목)
-   - **반드시** 각 섹션에 Markdown 표를 1개 이상 포함
-   - 중요 내용은 **굵게** 강조 (섹션당 최소 5개 이상의 볼드 표현)
-   - 구체적 수치/데이터를 반드시 포함 (시장 규모, 비용, 일정, 성과지표 등)
-
-6. 품질 필수 요건 (최고 점수 달성 기준):
-   - 각 항목은 2-3줄 이내 간결하게
-   - 번호 매기기와 불릿 포인트를 적극 활용
-   - 모든 주장에 근거 데이터 제시 (시장규모, 성장률, 비용 등 수치)
-   - 섹션 제목과 내용이 정확히 일치해야 함
-   - 계층 구조 명확: ## → ### → 1. → 가. → 1) 순서 준수
-   - 논리적 흐름: 배경→현황→문제→해결→기대효과 구조
-
-예시:
-1. 사업 개요
-  가. 사업명
-    1) 주요 내용
-      a) 세부 항목
-  나. 사업 목적
-
-출력: 위 규칙을 엄격히 준수한 Markdown 형식`;
+    return `${categoryPrompt}\n${BASE_WRITING_RULES}`;
   }
 
-  async writeSection(section: SectionInfo, projectInfo: { title: string; idea?: string }, context: WriteContext = {}): Promise<WriteSectionResult> {
+  async writeSection(section: SectionInfo, projectInfo: { title: string; idea?: string; categoryId?: string }, context: WriteContext = {}): Promise<WriteSectionResult> {
     console.log(`\n✍️  [${this.name}] 섹션 작성 중: ${section.title}`);
 
-    const ideaSummary = projectInfo.idea && projectInfo.idea.length > 100
-      ? projectInfo.idea.slice(0, 100) + '…'
+    const ideaSummary = projectInfo.idea && projectInfo.idea.length > 200
+      ? projectInfo.idea.slice(0, 200) + '…'
       : (projectInfo.idea || '');
 
     let contextLine = '';
@@ -124,11 +192,18 @@ export class WriterAgent {
     const userPrompt = `섹션: ${section.title}
 과제: ${projectInfo.title}
 개요: ${ideaSummary}${contextLine}
-${section.requirements ? `내용: ${section.requirements.join(', ')}` : ''}
-${section.estimatedWords ? `목표: ${section.estimatedWords}자 이상` : ''}`;
+${section.requirements ? `핵심 포함 내용: ${section.requirements.join(', ')}` : ''}
+${section.estimatedWords ? `목표 분량: ${section.estimatedWords}자 이상 (충실하게 작성)` : ''}
+
+⚠️ 필수 체크리스트:
+- [ ] 결론/핵심 메시지를 첫 문단에 배치했는가?
+- [ ] 구체적 수치(금액, %, 기간 등)를 3개 이상 포함했는가?
+- [ ] Markdown 표를 1개 이상 포함했는가?
+- [ ] 섹션 제목과 내용이 정확히 일치하는가?
+- [ ] 볼드(**) 강조를 5개 이상 사용했는가?`;
 
     const model = section.model || this.model;
-    const maxTokens = section.maxTokens || 2000;
+    const maxTokens = section.maxTokens || 3000;
 
     try {
       const startTime = Date.now();
@@ -137,7 +212,7 @@ ${section.estimatedWords ? `목표: ${section.estimatedWords}자 이상` : ''}`;
         model,
         max_tokens: maxTokens,
         temperature: 0.5,
-        system: this.getSystemPrompt(),
+        system: this.getSystemPrompt(projectInfo.categoryId),
         messages: [{ role: 'user', content: userPrompt }]
       });
 
@@ -162,7 +237,7 @@ ${section.estimatedWords ? `목표: ${section.estimatedWords}자 이상` : ''}`;
     }
   }
 
-  async writeMultipleSections(sections: SectionInfo[], projectInfo: { title: string; idea?: string }, options: { context?: WriteContext } = {}): Promise<WriteSectionResult[]> {
+  async writeMultipleSections(sections: SectionInfo[], projectInfo: { title: string; idea?: string; categoryId?: string }, options: { context?: WriteContext } = {}): Promise<WriteSectionResult[]> {
     console.log(`\n✍️  [${this.name}] ${sections.length}개 섹션 병렬 작성 시작...`);
 
     const promises = sections.map(section => 
@@ -180,16 +255,16 @@ ${section.estimatedWords ? `목표: ${section.estimatedWords}자 이상` : ''}`;
     }
   }
 
-  async improveSection(sectionContent: string, feedback: string): Promise<{ content: string; tokens: any }> {
+  async improveSection(sectionContent: string, feedback: string, categoryId?: string): Promise<{ content: string; tokens: any }> {
     console.log(`\n✍️  [${this.name}] 섹션 개선 중...`);
 
     const prompt = `기존:\n${sectionContent}\n\n개선 요청: ${feedback}\n\nMarkdown 출력.`;
 
     const message = await this.anthropic.messages.create({
       model: this.model,
-      max_tokens: 2000,
+      max_tokens: 3000,
       temperature: 0.7,
-      system: this.getSystemPrompt(),
+      system: this.getSystemPrompt(categoryId),
       messages: [{ role: 'user', content: prompt }]
     });
 

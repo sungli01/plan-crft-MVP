@@ -1,5 +1,6 @@
 /**
  * Reviewer Agent (검수자 에이전트)
+ * v4.0: 현실적 평가 기준, 가산 방식 채점
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -78,8 +79,9 @@ export class ReviewerAgent {
   async reviewSection(section: { id?: string; title: string }, content: string, criteria: any = {}): Promise<ReviewResult> {
     console.log(`\n✅ [${this.name}] 섹션 검수: ${section.title}`);
 
-    const prompt = `당신은 국가 R&D 사업계획서 품질 검수 전문가입니다.
-기본적으로 AI가 생성한 사업계획서의 품질은 높은 편이므로, 기본 점수를 85점 이상으로 시작하고 심각한 결함이 있을 때만 감점하세요.
+    const prompt = `당신은 엄격한 문서 품질 검수 전문가입니다.
+기본 점수는 **50점**에서 시작합니다. 각 항목별로 품질에 따라 가산합니다.
+관대한 채점은 금물입니다. 실제로 부족한 내용에는 낮은 점수를 부여하세요.
 
 # 검수 대상
 제목: ${section.title}
@@ -87,64 +89,57 @@ export class ReviewerAgent {
 내용:
 ${content}
 
-# 검수 기준 (총 100점)
+# 채점 기준 (가산 방식, 기본 50점 → 최대 100점)
 
-## 1. 구조 (30점) - 기본 25점
-- 계층 구조가 명확한가? (##, ###)
-- 제목과 내용이 일치하는가?
-- 논리적 흐름이 자연스러운가?
+## 1. 구조 (최대 30점) — 기본 0점에서 가산
+- 계층 구조(##, ###, 1., 가.)가 명확한가? (+5~10)
+- 제목과 내용이 정확히 일치하는가? (+5~10)
+  → 주제와 무관한 내용이 있으면 **10점 이하**
+- 논리적 흐름(두괄식: 결론→근거→세부)인가? (+5~10)
 
-## 2. 개조식 표현 (25점) - 기본 20점
-- 번호 매기기/불릿 포인트 사용 여부
-- 각 항목이 간결하고 명확한가?
+## 2. 개조식 표현 (최대 25점) — 기본 0점에서 가산
+- 번호 매기기/불릿 포인트 적극 활용? (+5~10)
+- 각 항목이 간결(50자 이내)하고 명확한가? (+5~10)
+- 같은 문구가 반복되지 않는가? (+3~5)
+  → 동일/유사 문구 3회 이상 반복 시 **5점 감점**
 
-## 3. 내용 품질 (30점) - 기본 25점
-- 구체적 수치와 데이터가 포함되었는가?
-- 전문 용어가 정확히 사용되었는가?
-- 내용이 섹션 주제에 적합한가?
+## 3. 내용 품질 (최대 30점) — 기본 0점에서 가산
+- 구체적 수치/데이터가 3개 이상 포함? (+10~15)
+  → 구체적 숫자(금액, %, 기간 등)가 전혀 없으면 **15점 이하**
+- 전문 용어가 정확히 사용되었는가? (+5~10)
+- 해당 주제에 특화된 깊이 있는 내용인가? (+3~5)
 
-## 4. 강조 표현 (15점) - 기본 12점
-- 중요 내용에 볼드체(**) 사용?
-- 표나 목록이 적절히 사용되었는가?
+## 4. 강조 표현 (최대 15점) — 기본 0점에서 가산
+- 볼드체(**) 5개 이상 사용? (+3~5)
+- Markdown 표가 1개 이상 포함? (+5~7)
+  → 표가 전혀 없으면 **5점 이하**
+- 시각적 구분(리스트, 표, 볼드)이 효과적인가? (+2~3)
 
-# 채점 가이드
-- 90-100: 우수 (구조/내용/형식 모두 높은 수준)
-- 80-89: 양호 (대부분 기준 충족, 사소한 개선점)
-- 70-79: 보통 (일부 기준 미달, 개선 필요)
-- 70 미만: 미흡 (심각한 결함 있음)
+# 채점 가이드 (최종 점수 = 50 + 각 항목 가산점)
+- 85-100: 우수 (모든 기준 충족, 높은 완성도)
+- 70-84: 양호 (대부분 기준 충족)
+- 55-69: 보통 (주요 기준 일부 미달)
+- 55 미만: 미흡 (심각한 결함)
 
-# 임무
-위 기준에 따라 검수하고 다음을 출력하세요:
-
+# 출력 (JSON만)
 {
-  "overallScore": 90,
+  "overallScore": (50 + 가산점 합계),
   "scores": {
-    "structure": 27,
-    "style": 22,
-    "content": 28,
-    "emphasis": 13
+    "structure": (0~30),
+    "style": (0~25),
+    "content": (0~30),
+    "emphasis": (0~15)
   },
-  "strengths": [
-    "계층 구조가 명확함",
-    "구체적 데이터 포함"
-  ],
-  "weaknesses": [
-    "일부 항목이 너무 길어 가독성 저하",
-    "표 사용 부족"
-  ],
+  "strengths": ["...", "..."],
+  "weaknesses": ["...", "..."],
   "improvements": [
-    {
-      "issue": "2번 항목이 너무 김",
-      "suggestion": "2-1, 2-2로 분할 권장",
-      "priority": "high"
-    }
+    { "issue": "...", "suggestion": "...", "priority": "high|medium|low" }
   ],
-  "needsRewrite": false,
-  "verdict": "pass"
+  "needsRewrite": (true if overallScore < 55),
+  "verdict": "pass|revise|fail"
 }
 
-verdict: pass (통과) / revise (수정 필요) / fail (재작성 필요)
-
+verdict 기준: pass(70+), revise(55-69), fail(55미만)
 JSON 형식으로만 출력하세요.`;
 
     try {
@@ -190,8 +185,8 @@ JSON 형식으로만 출력하세요.`;
       return {
         sectionId: section.id || section.title,
         review: {
-          overallScore: 82,
-          verdict: 'pass',
+          overallScore: 60,
+          verdict: 'revise',
           error: error.message
         },
         error: error.message
@@ -234,7 +229,7 @@ JSON 형식으로만 출력하세요.`;
   async reviewDocument(documentStructure: any, sectionContents: string[]): Promise<{ documentReview: DocumentReview; tokens?: any; error?: string }> {
     console.log(`\n✅ [${this.name}] 전체 문서 검수 중...`);
 
-    const prompt = `당신은 국가 R&D 사업계획서 최종 검수자입니다.
+    const prompt = `당신은 엄격한 문서 최종 검수자입니다.
 
 # 문서 구조
 ${JSON.stringify(documentStructure, null, 2)}
@@ -255,16 +250,17 @@ ${JSON.stringify(documentStructure, null, 2)}
 
 # 출력 형식
 {
-  "documentScore": 88,
-  "completeness": 90,
-  "logicalFlow": 85,
-  "overallQuality": 90,
+  "documentScore": 70,
+  "completeness": 75,
+  "logicalFlow": 70,
+  "overallQuality": 65,
   "missingElements": [],
   "redundancies": [],
   "globalImprovements": [],
-  "readyForDelivery": true
+  "readyForDelivery": false
 }
 
+기본 점수 50에서 가산. 관대한 점수 금물.
 JSON 형식으로 출력하세요.`;
 
     try {

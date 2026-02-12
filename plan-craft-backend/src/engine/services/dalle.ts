@@ -1,6 +1,6 @@
 /**
  * DALL-E 3 이미지 생성 서비스
- * Fallback chain: DALL-E 3 API → Professional SVG diagrams
+ * v4.0: SVG 다이어그램 동적 생성 - prompt에서 키워드 추출하여 라벨 반영
  */
 
 export interface GenerateImageOptions {
@@ -115,6 +115,41 @@ export class DalleService {
     return this.generateSvgDiagram(description, type);
   }
 
+  /**
+   * prompt에서 핵심 명사 4-6개를 추출
+   */
+  _extractLabels(prompt: string): string[] {
+    // Remove common filler words (Korean + English)
+    const stopWords = new Set([
+      '및', '의', '을', '를', '이', '가', '에', '는', '은', '으로', '로', '에서',
+      '위한', '통한', '대한', '관한', '따른', '기반', '중심', '활용',
+      '시스템', '구조', '다이어그램', '프로세스', '플로우', '흐름도', '아키텍처',
+      'the', 'a', 'an', 'of', 'for', 'and', 'in', 'on', 'with', 'to',
+      'diagram', 'architecture', 'system', 'flow', 'chart', 'process',
+    ]);
+
+    // Split by various delimiters and filter
+    const words = prompt
+      .replace(/[,.\-_/\\()[\]{}:;'"!?]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length >= 2 && !stopWords.has(w.toLowerCase()))
+      .filter(w => !/^\d+$/.test(w)); // exclude pure numbers
+
+    // Deduplicate while preserving order
+    const seen = new Set<string>();
+    const unique: string[] = [];
+    for (const w of words) {
+      const key = w.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(w);
+      }
+    }
+
+    // Return 4-6 labels
+    return unique.slice(0, 6);
+  }
+
   generateSvgDiagram(prompt: string, type: string): ImageResult {
     const colors: Record<string, ColorScheme> = {
       architecture: { primary: '#3B82F6', secondary: '#DBEAFE', text: '#1E40AF', accent: '#93C5FD' },
@@ -125,6 +160,7 @@ export class DalleService {
     };
     const c = colors[type] || colors.default;
     const title = this._escapeXml(prompt.slice(0, 60));
+    const labels = this._extractLabels(prompt);
 
     const typeLabel: Record<string, string> = {
       architecture: '시스템 아키텍처',
@@ -153,7 +189,7 @@ export class DalleService {
       <rect x="16" y="56" width="768" height="12" fill="${c.primary}"/>
       <text x="400" y="50" text-anchor="middle" font-size="18" font-weight="bold" fill="white">${typeLabel[type] || typeLabel.default}</text>
       <text x="400" y="88" text-anchor="middle" font-size="13" fill="#6B7280">${title}</text>
-      ${this._getDiagramContent(type, c)}
+      ${this._getDiagramContent(type, c, labels)}
     </svg>`;
 
     const dataUri = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
@@ -165,60 +201,62 @@ export class DalleService {
     };
   }
 
-  private _getDiagramContent(type: string, c: ColorScheme): string {
+  private _getDiagramContent(type: string, c: ColorScheme, labels: string[]): string {
     switch (type) {
-      case 'architecture': return this._archDiagramContent(c);
-      case 'flowchart': return this._flowchartContent(c);
-      case 'chart': return this._chartContent(c);
-      case 'workflow': return this._workflowContent(c);
-      default: return this._archDiagramContent(c);
+      case 'architecture': return this._archDiagramContent(c, labels);
+      case 'flowchart': return this._flowchartContent(c, labels);
+      case 'chart': return this._chartContent(c, labels);
+      case 'workflow': return this._workflowContent(c, labels);
+      default: return this._archDiagramContent(c, labels);
     }
   }
 
-  private _archDiagramContent(c: ColorScheme): string {
+  private _archDiagramContent(c: ColorScheme, labels: string[]): string {
+    const L = (i: number, fallback: string) => this._escapeXml(labels[i] || fallback);
     return `
       <rect x="300" y="105" width="200" height="46" fill="${c.primary}" rx="8" filter="url(#shadow)"/>
-      <text x="400" y="133" text-anchor="middle" fill="white" font-size="14" font-weight="bold">사용자 인터페이스</text>
+      <text x="400" y="133" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${L(0, '클라이언트')}</text>
       <line x1="400" y1="151" x2="400" y2="178" stroke="${c.primary}" stroke-width="2" marker-end="url(#arrow-architecture)"/>
 
       <rect x="130" y="180" width="160" height="42" fill="${c.primary}" rx="8" opacity="0.85" filter="url(#shadow)"/>
-      <text x="210" y="206" text-anchor="middle" fill="white" font-size="13">API 서버</text>
+      <text x="210" y="206" text-anchor="middle" fill="white" font-size="13">${L(1, 'API 서버')}</text>
       <rect x="510" y="180" width="160" height="42" fill="${c.primary}" rx="8" opacity="0.85" filter="url(#shadow)"/>
-      <text x="590" y="206" text-anchor="middle" fill="white" font-size="13">AI 엔진</text>
+      <text x="590" y="206" text-anchor="middle" fill="white" font-size="13">${L(2, '처리 엔진')}</text>
       <line x1="290" y1="201" x2="510" y2="201" stroke="${c.primary}" stroke-width="2" stroke-dasharray="6 3"/>
-      <text x="400" y="195" text-anchor="middle" font-size="10" fill="${c.text}">REST / gRPC</text>
+      <text x="400" y="195" text-anchor="middle" font-size="10" fill="${c.text}">연동</text>
 
       <line x1="210" y1="222" x2="210" y2="260" stroke="${c.primary}" stroke-width="2" marker-end="url(#arrow-architecture)"/>
       <line x1="590" y1="222" x2="590" y2="260" stroke="${c.primary}" stroke-width="2" marker-end="url(#arrow-architecture)"/>
 
       <rect x="130" y="262" width="160" height="42" fill="${c.secondary}" rx="8" stroke="${c.primary}" stroke-width="1.5" filter="url(#shadow)"/>
-      <text x="210" y="288" text-anchor="middle" fill="${c.text}" font-size="13">데이터베이스</text>
+      <text x="210" y="288" text-anchor="middle" fill="${c.text}" font-size="13">${L(3, '데이터 저장소')}</text>
       <rect x="510" y="262" width="160" height="42" fill="${c.secondary}" rx="8" stroke="${c.primary}" stroke-width="1.5" filter="url(#shadow)"/>
-      <text x="590" y="288" text-anchor="middle" fill="${c.text}" font-size="13">외부 서비스</text>
+      <text x="590" y="288" text-anchor="middle" fill="${c.text}" font-size="13">${L(4, '외부 연동')}</text>
 
       <rect x="320" y="320" width="160" height="42" fill="${c.accent}" rx="8" opacity="0.6" filter="url(#shadow)"/>
-      <text x="400" y="346" text-anchor="middle" fill="${c.text}" font-size="13">모니터링</text>
+      <text x="400" y="346" text-anchor="middle" fill="${c.text}" font-size="13">${L(5, '모니터링')}</text>
       <line x1="290" y1="283" x2="320" y2="341" stroke="${c.accent}" stroke-width="1.5" stroke-dasharray="4"/>
       <line x1="510" y1="283" x2="480" y2="341" stroke="${c.accent}" stroke-width="1.5" stroke-dasharray="4"/>`;
   }
 
-  private _flowchartContent(c: ColorScheme): string {
+  private _flowchartContent(c: ColorScheme, labels: string[]): string {
+    const L = (i: number, fallback: string) => this._escapeXml(labels[i] || fallback);
     return `
       <rect x="320" y="105" width="160" height="38" fill="${c.primary}" rx="19" filter="url(#shadow)"/>
-      <text x="400" y="129" text-anchor="middle" fill="white" font-size="13" font-weight="bold">시작</text>
+      <text x="400" y="129" text-anchor="middle" fill="white" font-size="13" font-weight="bold">${L(0, '시작')}</text>
       <line x1="400" y1="143" x2="400" y2="165" stroke="${c.primary}" stroke-width="2" marker-end="url(#arrow-flowchart)"/>
 
       <rect x="280" y="167" width="240" height="38" fill="${c.secondary}" rx="6" stroke="${c.primary}" stroke-width="1.5" filter="url(#shadow)"/>
-      <text x="400" y="191" text-anchor="middle" fill="${c.text}" font-size="13">데이터 입력 및 분석</text>
+      <text x="400" y="191" text-anchor="middle" fill="${c.text}" font-size="13">${L(1, '데이터 수집')}</text>
       <line x1="400" y1="205" x2="400" y2="227" stroke="${c.primary}" stroke-width="2" marker-end="url(#arrow-flowchart)"/>
 
       <polygon points="400,229 455,260 400,291 345,260" fill="${c.secondary}" stroke="${c.primary}" stroke-width="1.5" filter="url(#shadow)"/>
-      <text x="400" y="265" text-anchor="middle" fill="${c.text}" font-size="12" font-weight="600">검증</text>
+      <text x="400" y="265" text-anchor="middle" fill="${c.text}" font-size="12" font-weight="600">${L(2, '검증')}</text>
 
       <line x1="455" y1="260" x2="520" y2="260" stroke="${c.primary}" stroke-width="2"/>
       <text x="485" y="253" text-anchor="middle" font-size="10" fill="#EF4444">실패</text>
       <rect x="520" y="241" width="120" height="38" fill="#FEE2E2" rx="6" stroke="#EF4444" stroke-width="1.5"/>
-      <text x="580" y="265" text-anchor="middle" fill="#991B1B" font-size="12">오류 처리</text>
+      <text x="580" y="265" text-anchor="middle" fill="#991B1B" font-size="12">${L(3, '오류 처리')}</text>
       <line x1="580" y1="241" x2="580" y2="191" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="4"/>
       <line x1="580" y1="191" x2="520" y2="191" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="4" marker-end="url(#arrow-flowchart)"/>
 
@@ -226,16 +264,23 @@ export class DalleService {
       <text x="415" y="305" font-size="10" fill="#10B981">성공</text>
 
       <rect x="280" y="317" width="240" height="38" fill="${c.secondary}" rx="6" stroke="${c.primary}" stroke-width="1.5" filter="url(#shadow)"/>
-      <text x="400" y="341" text-anchor="middle" fill="${c.text}" font-size="13">결과 출력</text>`;
+      <text x="400" y="341" text-anchor="middle" fill="${c.text}" font-size="13">${L(4, '결과 출력')}</text>`;
   }
 
-  private _chartContent(c: ColorScheme): string {
+  private _chartContent(c: ColorScheme, labels: string[]): string {
+    const barLabels = [
+      labels[0] || '1분기',
+      labels[1] || '2분기',
+      labels[2] || '3분기',
+      labels[3] || '4분기',
+      labels[4] || '목표',
+    ];
     const bars = [
-      { x: 120, h: 80, label: '1분기', pct: '40%' },
-      { x: 230, h: 150, label: '2분기', pct: '75%' },
-      { x: 340, h: 110, label: '3분기', pct: '55%' },
-      { x: 450, h: 190, label: '4분기', pct: '95%' },
-      { x: 560, h: 160, label: '목표', pct: '80%' },
+      { x: 120, h: 80, label: barLabels[0], pct: '40%' },
+      { x: 230, h: 150, label: barLabels[1], pct: '75%' },
+      { x: 340, h: 110, label: barLabels[2], pct: '55%' },
+      { x: 450, h: 190, label: barLabels[3], pct: '95%' },
+      { x: 560, h: 160, label: barLabels[4], pct: '80%' },
     ];
     const baseY = 350;
     let content = `<line x1="100" y1="${baseY}" x2="680" y2="${baseY}" stroke="#CBD5E1" stroke-width="1.5"/>`;
@@ -247,26 +292,33 @@ export class DalleService {
     bars.forEach(b => {
       content += `
         <rect x="${b.x}" y="${baseY - b.h}" width="70" height="${b.h}" fill="${c.primary}" rx="4" opacity="0.85" filter="url(#shadow)"/>
-        <text x="${b.x + 35}" y="${baseY + 18}" text-anchor="middle" fill="${c.text}" font-size="12" font-weight="600">${b.label}</text>
+        <text x="${b.x + 35}" y="${baseY + 18}" text-anchor="middle" fill="${c.text}" font-size="12" font-weight="600">${this._escapeXml(b.label)}</text>
         <text x="${b.x + 35}" y="${baseY - b.h - 8}" text-anchor="middle" fill="${c.text}" font-size="11">${b.pct}</text>`;
     });
     return content;
   }
 
-  private _workflowContent(c: ColorScheme): string {
+  private _workflowContent(c: ColorScheme, labels: string[]): string {
+    const stepLabels = [
+      labels[0] || '기획',
+      labels[1] || '설계',
+      labels[2] || '개발',
+      labels[3] || '테스트',
+      labels[4] || '배포',
+    ];
     const steps = [
-      { x: 80, label: '기획' },
-      { x: 230, label: '설계' },
-      { x: 380, label: '개발' },
-      { x: 530, label: '테스트' },
-      { x: 680, label: '배포' },
+      { x: 80, label: stepLabels[0] },
+      { x: 230, label: stepLabels[1] },
+      { x: 380, label: stepLabels[2] },
+      { x: 530, label: stepLabels[3] },
+      { x: 680, label: stepLabels[4] },
     ];
     const y = 210;
     let content = '';
     steps.forEach((s, i) => {
       content += `
         <circle cx="${s.x}" cy="${y}" r="30" fill="${i < 3 ? c.primary : c.secondary}" stroke="${c.primary}" stroke-width="2" filter="url(#shadow)"/>
-        <text x="${s.x}" y="${y + 5}" text-anchor="middle" fill="${i < 3 ? 'white' : c.text}" font-size="12" font-weight="600">${s.label}</text>
+        <text x="${s.x}" y="${y + 5}" text-anchor="middle" fill="${i < 3 ? 'white' : c.text}" font-size="12" font-weight="600">${this._escapeXml(s.label)}</text>
         <text x="${s.x}" y="${y + 55}" text-anchor="middle" fill="#6B7280" font-size="11">Step ${i + 1}</text>`;
       if (i < steps.length - 1) {
         content += `<line x1="${s.x + 32}" y1="${y}" x2="${steps[i + 1].x - 32}" y2="${y}" stroke="${c.primary}" stroke-width="2" marker-end="url(#arrow-workflow)"/>`;
@@ -279,7 +331,7 @@ export class DalleService {
     return content;
   }
 
-  private _escapeXml(str: string): string {
+  _escapeXml(str: string): string {
     return str
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')

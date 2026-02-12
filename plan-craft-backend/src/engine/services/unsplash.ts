@@ -1,6 +1,6 @@
 /**
  * Unsplash 이미지 검색 서비스
- * Fallback chain: Unsplash API → Picsum Photos → SVG placeholder
+ * v4.0: 한글→영어 키워드 매핑으로 Picsum 이미지 품질 개선
  */
 
 export interface UnsplashPhoto {
@@ -18,6 +18,32 @@ export interface SearchOptions {
   orientation?: string;
 }
 
+// 한글 키워드 → 영어 매핑 (Picsum seed용)
+const KEYWORD_MAP: Record<string, string> = {
+  // 비즈니스
+  '사업': 'business', '시장': 'market', '분석': 'analysis', '전략': 'strategy',
+  '마케팅': 'marketing', '투자': 'investment', '재무': 'finance', '예산': 'budget',
+  '매출': 'revenue', '수익': 'profit', '성장': 'growth', '경쟁': 'competition',
+  '고객': 'customer', '타겟': 'target', '브랜드': 'brand', '광고': 'advertising',
+  // 기술
+  '기술': 'technology', '시스템': 'system', '개발': 'development', '설계': 'design',
+  '아키텍처': 'architecture', '데이터': 'data', '서버': 'server', '클라우드': 'cloud',
+  '보안': 'security', '네트워크': 'network', '인공지능': 'ai', 'AI': 'ai',
+  '소프트웨어': 'software', '플랫폼': 'platform', '앱': 'app', '웹': 'web',
+  // 조직/관리
+  '팀': 'team', '조직': 'organization', '인력': 'workforce', '관리': 'management',
+  '프로젝트': 'project', '일정': 'schedule', '품질': 'quality', '운영': 'operations',
+  // 연구
+  '연구': 'research', '논문': 'paper', '실험': 'experiment', '결과': 'results',
+  '방법론': 'methodology', '학술': 'academic',
+  // 공공
+  '정부': 'government', '정책': 'policy', '공공': 'public', '복지': 'welfare',
+  '환경': 'environment', '교육': 'education', '의료': 'healthcare', '인프라': 'infrastructure',
+  // 산업
+  '제조': 'manufacturing', '물류': 'logistics', '유통': 'distribution', '농업': 'agriculture',
+  '에너지': 'energy', '건설': 'construction', '부동산': 'realestate', '금융': 'banking',
+};
+
 export class UnsplashService {
   accessKey: string | undefined;
   baseUrl: string;
@@ -25,6 +51,32 @@ export class UnsplashService {
   constructor(accessKey?: string) {
     this.accessKey = accessKey;
     this.baseUrl = 'https://api.unsplash.com';
+  }
+
+  /**
+   * 한글 query를 영어 키워드로 변환
+   */
+  _translateQuery(query: string): string {
+    // Check if already English
+    if (/^[a-zA-Z0-9\s]+$/.test(query.trim())) {
+      return query.trim().toLowerCase();
+    }
+
+    const matched: string[] = [];
+    for (const [kr, en] of Object.entries(KEYWORD_MAP)) {
+      if (query.includes(kr)) {
+        matched.push(en);
+      }
+    }
+
+    if (matched.length > 0) {
+      return matched.slice(0, 3).join('-');
+    }
+
+    // Fallback: use hash-based generic keywords
+    const genericSeeds = ['business', 'technology', 'strategy', 'innovation', 'analytics', 'teamwork'];
+    const idx = Math.abs(this.hashCode(query)) % genericSeeds.length;
+    return genericSeeds[idx];
   }
 
   async searchPhotos(query: string, options: SearchOptions = {}): Promise<UnsplashPhoto[]> {
@@ -71,9 +123,10 @@ export class UnsplashService {
   }
 
   getPicsumPhotos(query: string, count: number): UnsplashPhoto[] {
+    const englishQuery = this._translateQuery(query);
     const images: UnsplashPhoto[] = [];
     for (let i = 0; i < count; i++) {
-      const seed = encodeURIComponent(`${query}-${i}`);
+      const seed = encodeURIComponent(`${englishQuery}-${i}`);
       images.push({
         id: `picsum-${seed}-${i}`,
         url: `https://picsum.photos/seed/${seed}/800/450`,

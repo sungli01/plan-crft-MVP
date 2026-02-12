@@ -68,7 +68,7 @@ export class AgentTeamOrchestrator {
       model: config.reviewerModel || this.modelRouter.getReviewerModel()
     });
     
-    this.writerTeamSize = config.writerTeamSize || 5;
+    this.writerTeamSize = config.writerTeamSize || 3;
     this.writerTeam = [];
     for (let i = 0; i < this.writerTeamSize; i++) {
       this.writerTeam.push(
@@ -137,7 +137,7 @@ export class AgentTeamOrchestrator {
     };
   }
 
-  async generateDocument(projectInfo: ProjectInfo & { projectId?: string }, progressTracker: ProgressTrackerLike | null = null): Promise<any> {
+  async generateDocument(projectInfo: ProjectInfo & { projectId?: string; categoryId?: string }, progressTracker: ProgressTrackerLike | null = null): Promise<any> {
     console.log('╔═══════════════════════════════════════════════════════════╗');
     console.log('║   Plan-Craft v3.0 - Agent Teams (병렬 처리)             ║');
     console.log('╚═══════════════════════════════════════════════════════════╝\n');
