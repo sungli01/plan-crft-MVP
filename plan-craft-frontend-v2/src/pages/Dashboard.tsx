@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -23,6 +23,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const viewAll = searchParams.get("view") === "all";
   const { user, isProMember } = useAuth();
   const { projects, isLoading, deleteProject } = useProjects();
 
@@ -38,10 +40,10 @@ export default function Dashboard() {
     updatedAt: p.updatedAt,
   }));
 
-  // 최근 문서 필터링 (최신순 4개)
-  const recentDocuments = [...documents]
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 4);
+  // 최근 문서 필터링
+  const sortedDocuments = [...documents]
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  const recentDocuments = viewAll ? sortedDocuments : sortedDocuments.slice(0, 4);
 
   const stats = [
     {

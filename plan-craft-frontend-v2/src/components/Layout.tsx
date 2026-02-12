@@ -68,6 +68,7 @@ export function Layout({ children }: LayoutProps) {
     { path: ROUTE_PATHS.HOME, label: "홈", icon: Sparkles },
     { path: ROUTE_PATHS.DASHBOARD, label: "최근작업 문서", icon: LayoutDashboard },
     { path: ROUTE_PATHS.CATEGORIES, label: "문서 카테고리", icon: Briefcase },
+    { path: ROUTE_PATHS.DASHBOARD + "?view=all", label: "프로젝트 전체", icon: Settings },
   ];
 
   return (

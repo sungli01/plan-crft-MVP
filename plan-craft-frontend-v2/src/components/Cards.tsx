@@ -125,7 +125,8 @@ export function DocumentCard({ document, onEdit, onDelete }: { document: Documen
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="group relative bg-card border border-border rounded-2xl p-6 hover:shadow-xl transition-all duration-300"
+      onClick={onEdit}
+      className="group relative bg-card border border-border rounded-2xl p-6 hover:shadow-xl transition-all duration-300 cursor-pointer"
     >
       <div className="flex justify-between items-start mb-4">
         <div className="space-y-1">
