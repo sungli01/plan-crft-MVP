@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Zap, Clock, Shield, ChevronRight, Sparkles } from "lucide-react";
@@ -6,6 +6,7 @@ import { ROUTE_PATHS, DOCUMENT_CATEGORIES } from "@/lib/index";
 import { CategoryCard, FeatureCard } from "@/components/Cards";
 import { IMAGES } from "@/assets/images";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 const springPresets = {
   gentle: {
@@ -36,6 +37,14 @@ const staggerContainer = {
 
 export default function Home() {
   const navigate = useNavigate();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // 로그인 상태면 대시보드로 이동
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate(ROUTE_PATHS.DASHBOARD, { replace: true });
+    }
+  }, [isAuthenticated, isLoading, navigate]);
 
   const handleCategoryClick = (categoryId: string) => {
     navigate(`${ROUTE_PATHS.GENERATE}?category=${categoryId}`);
