@@ -13,7 +13,10 @@ if (!DATABASE_URL) {
 }
 
 // PostgreSQL (Production)
-const client = postgres(DATABASE_URL);
+const isPublicUrl = DATABASE_URL.includes('proxy.rlwy.net') || DATABASE_URL.includes('railway.app');
+const client = postgres(DATABASE_URL, {
+  ssl: isPublicUrl ? { rejectUnauthorized: false } : false,
+});
 const db = drizzle(client, { schema });
 const sqlite = null;
 
