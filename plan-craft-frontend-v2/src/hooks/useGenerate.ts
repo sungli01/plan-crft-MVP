@@ -123,6 +123,7 @@ export function useGenerate(options: UseGenerateOptions = {}) {
 
   const regenerate = useCallback(async (projectId: string) => {
     try {
+      stopPolling();
       setIsGenerating(true);
       setStatus(null);
 

@@ -435,19 +435,12 @@ export default function Generate() {
             >
               <div className="lg:col-span-2 space-y-6">
                 <Card className="border-border/50 shadow-xl">
-                  <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <CardTitle className="text-xl sm:text-2xl truncate">{generatedDoc.title}</CardTitle>
+                  <CardHeader>
+                    <div className="mb-4">
+                      <CardTitle className="text-xl sm:text-2xl">{generatedDoc.title}</CardTitle>
                       <CardDescription>AI 초안 생성이 완료되었습니다.</CardDescription>
                     </div>
-                    <div className="flex gap-2 shrink-0">
-                      <Button variant="outline" size="sm" onClick={() => {
-                        navigator.clipboard.writeText(generatedDoc.content);
-                        toast.success("클립보드에 복사되었습니다.");
-                      }}>
-                        <Copy className="mr-2 h-4 w-4" />
-                        복사
-                      </Button>
+                    <div className="flex flex-wrap gap-2">
                       <Button variant="outline" size="sm" onClick={() => {
                         if (currentProjectId) download(currentProjectId);
                       }}>
@@ -467,6 +460,13 @@ export default function Generate() {
                       >
                         <RefreshCw className="mr-2 h-4 w-4" />
                         다시 생성
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => {
+                        navigator.clipboard.writeText(generatedDoc.content);
+                        toast.success("클립보드에 복사되었습니다.");
+                      }}>
+                        <Copy className="mr-2 h-4 w-4" />
+                        복사
                       </Button>
                     </div>
                   </CardHeader>
@@ -507,16 +507,10 @@ export default function Generate() {
                     </Button>
                     <Button 
                       variant="ghost" 
-                      className="w-full"
-                      onClick={() => {
-                        const catId = categoryId || savedCategoryId;
-                        if (catId) {
-                          navigate(`${ROUTE_PATHS.GENERATE}?category=${catId}`);
-                        } else {
-                          navigate(ROUTE_PATHS.CATEGORIES);
-                        }
-                      }}
+                      className="w-full text-orange-600"
+                      onClick={handleRegenerate}
                     >
+                      <RefreshCw className="mr-2 h-4 w-4" />
                       다시 생성하기
                     </Button>
                   </CardContent>
