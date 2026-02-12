@@ -203,11 +203,17 @@ export class WriterAgent {
       contextLine = `\n흐름: ${parts.join(' → ')}`;
     }
 
+    const hasResearchContext = projectInfo.idea && projectInfo.idea.includes('[참고자료]');
+    const researchWarning = hasResearchContext
+      ? `\n⚠️ 중요: 모든 수치와 데이터는 위 참고자료에 기반하여 작성하세요. 근거 없는 수치를 임의로 생성하지 마세요.\n출처가 있는 데이터만 사용하고, 출처를 명시하세요.`
+      : '';
+
     const userPrompt = `섹션: ${section.title}
 과제: ${projectInfo.title}
 개요: ${ideaSummary}${contextLine}
 ${section.requirements ? `핵심 포함 내용: ${section.requirements.join(', ')}` : ''}
 ${section.estimatedWords ? `목표 분량: ${section.estimatedWords}자 이상 (충실하게 작성)` : ''}
+${researchWarning}
 
 ⚠️ 필수 체크리스트:
 - [ ] 결론/핵심 메시지를 첫 문단에 배치했는가?

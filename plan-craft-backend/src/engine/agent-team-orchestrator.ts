@@ -145,10 +145,10 @@ export class AgentTeamOrchestrator {
     const startTime = Date.now();
 
     try {
-      // Phase 0 (Pro Mode): Deep Research
+      // Phase 0: Deep Research (always enabled)
       let researchResult: any = null;
-      if (this.config.proMode) {
-        console.log('\n🔬 Phase 0: 딥 리서치 (Research Agent - Pro Mode)');
+      {
+        console.log('\n🔬 Phase 0: 딥 리서치 (Research Agent)');
         this.updateProgress('researcher', { status: 'running', progress: 10 });
 
         if (progressTracker && projectInfo.projectId) {
@@ -304,9 +304,16 @@ export class AgentTeamOrchestrator {
         });
       }
 
+      // Enrich projectInfo with research context for writers
+      const writerProjectInfo = { ...projectInfo };
+      if (researchResult && researchResult.summary) {
+        const researchContext = `\n\n[참고자료]\n${researchResult.summary}\n\n[참고 키워드: ${researchResult.keywords.join(', ')}]`;
+        writerProjectInfo.idea = (writerProjectInfo.idea || '') + researchContext;
+      }
+
       const writtenSections = await this.parallelWriteSections(
         sections, 
-        projectInfo,
+        writerProjectInfo,
         progressTracker
       );
       

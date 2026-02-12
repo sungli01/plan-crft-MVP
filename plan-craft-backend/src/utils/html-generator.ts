@@ -3,6 +3,11 @@
  * 이미지 통합 및 전문적인 문서 스타일링
  */
 
+import { marked } from 'marked';
+
+// Configure marked for GFM + line breaks
+marked.setOptions({ gfm: true, breaks: true });
+
 /**
  * Build a lookup from image results: sectionId → images[]
  */
@@ -176,6 +181,13 @@ export function generateHTML(result, projectInfo) {
       border-left: 4px solid #60a5fa;
     }
     
+    h4 {
+      color: #64748b;
+      font-size: 14pt;
+      font-weight: 600;
+      margin: 20px 0 10px 0;
+    }
+    
     p { margin: 10px 0; text-align: justify; line-height: 1.8; }
     ul, ol { margin: 12px 0; padding-left: 30px; }
     li { margin: 8px 0; line-height: 1.7; }
@@ -314,11 +326,12 @@ export function generateHTML(result, projectInfo) {
     // Look up images for this section
     const sectionImages = imageMap[section.sectionId] || [];
     
-    // Embed images into content
-    const contentWithImages = embedImagesInContent(section.content, sectionImages);
+    // Convert Markdown → HTML, then embed images
+    const htmlContent = marked.parse(section.content || '') as string;
+    const contentWithImages = embedImagesInContent(htmlContent, sectionImages);
     
     html += `  <div class="section page-break">
-    <h1>${section.sectionId}</h1>
+    <h2>${section.sectionId}</h2>
 ${contentWithImages}
   </div>\n\n`;
   });
