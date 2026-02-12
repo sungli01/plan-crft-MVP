@@ -152,6 +152,17 @@ app.get('/debug/env', (c) => {
   });
 });
 
+// DB 초기화 트리거 (임시)
+app.get('/debug/init-db', async (c) => {
+  try {
+    const { initializeDatabase } = await import('./db/index');
+    const ok = await initializeDatabase();
+    return c.json({ status: ok ? 'success' : 'failed' });
+  } catch (err: any) {
+    return c.json({ status: 'error', message: err.message });
+  }
+});
+
 // DB 디버그 엔드포인트
 app.get('/debug/db', async (c) => {
   const dbUrl = process.env.DATABASE_URL || '';
