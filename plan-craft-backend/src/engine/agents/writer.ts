@@ -84,8 +84,15 @@ export class WriterAgent {
 
 5. 형식:
    - Markdown 사용 (## 제목, ### 소제목)
-   - 표는 필요시 Markdown 표 문법 사용
-   - 중요 내용은 **굵게** 강조
+   - **반드시** 각 섹션에 Markdown 표를 1개 이상 포함
+   - 중요 내용은 **굵게** 강조 (섹션당 최소 5개 이상의 볼드 표현)
+   - 구체적 수치/데이터를 반드시 포함 (시장 규모, 비용, 일정, 성과지표 등)
+
+6. 품질 필수 요건:
+   - 각 항목은 2-3줄 이내 간결하게
+   - 번호 매기기와 불릿 포인트를 적극 활용
+   - 모든 주장에 근거 데이터 제시
+   - 섹션 제목과 내용이 정확히 일치해야 함
 
 예시:
 1. 사업 개요
@@ -127,7 +134,7 @@ ${section.estimatedWords ? `목표: ${section.estimatedWords}자 이상` : ''}`;
       const message = await this.anthropic.messages.create({
         model,
         max_tokens: maxTokens,
-        temperature: 0.7,
+        temperature: 0.5,
         system: this.getSystemPrompt(),
         messages: [{ role: 'user', content: userPrompt }]
       });
