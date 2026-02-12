@@ -90,12 +90,19 @@ export const useAuth = () => {
     setIsLoading(true);
     try {
       const data = await registerApi({ email, password, name });
-      const token = data.token || (data as any).accessToken;
+      
+      // Check if pending approval
+      if ((data as any).pendingApproval) {
+        toast.success("회원가입이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다.");
+        return { success: true, pendingApproval: true };
+      }
+      
+      const token = (data as any).token || (data as any).accessToken;
       if (token) {
         localStorage.setItem("plan_craft_token", token);
       }
 
-      const rawUser = data.user || data;
+      const rawUser = (data as any).user || data;
       const mappedUser: User = {
         id: (rawUser as any)._id || (rawUser as any).id || "",
         email: rawUser.email,

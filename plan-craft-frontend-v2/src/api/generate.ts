@@ -7,11 +7,30 @@ export interface GenerateRequest {
   requirements?: string;
 }
 
+export interface AgentProgress {
+  status: string;
+  progress: number;
+  detail?: string;
+  currentSection?: number;
+  totalSections?: number;
+}
+
 export interface GenerateStatus {
-  status: "pending" | "processing" | "completed" | "failed";
-  progress?: number;
-  step?: string;
-  result?: string;
+  projectId: string;
+  status: "draft" | "generating" | "completed" | "failed";
+  progress?: {
+    phase?: string;
+    agents?: Record<string, AgentProgress>;
+    logs?: Array<{ timestamp: number; agent: string; level: string; message: string }>;
+  };
+  document?: {
+    id: string;
+    qualityScore: number;
+    sectionCount: number;
+    wordCount: number;
+    imageCount: number;
+    createdAt: string;
+  };
   error?: string;
 }
 

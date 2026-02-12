@@ -8,23 +8,54 @@ import {
 import { toast } from "sonner";
 
 interface UseGenerateOptions {
-  onComplete?: (result: string) => void;
+  onComplete?: (status: GenerateStatus) => void;
   onError?: (error: string) => void;
   pollIntervalMs?: number;
 }
 
 export function useGenerate(options: UseGenerateOptions = {}) {
-  const { onComplete, onError, pollIntervalMs = 2000 } = options;
+  const { onComplete, onError, pollIntervalMs = 5000 } = options;
   const [status, setStatus] = useState<GenerateStatus | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const projectIdRef = useRef<string | null>(null);
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
       clearInterval(pollRef.current);
       pollRef.current = null;
     }
+  }, []);
+
+  // Calculate overall progress from agent statuses
+  const getOverallProgress = useCallback((s: GenerateStatus): number => {
+    if (s.status === "completed") return 100;
+    if (s.status === "draft") return 0;
+    const agents = s.progress?.agents;
+    if (!agents) return 10;
+    const agentList = Object.values(agents);
+    if (agentList.length === 0) return 10;
+    const total = agentList.reduce((sum, a) => sum + (a.progress || 0), 0);
+    return Math.round(total / agentList.length);
+  }, []);
+
+  const getCurrentStep = useCallback((s: GenerateStatus): string => {
+    if (s.status === "completed") return "완료";
+    if (s.status === "failed") return "실패";
+    const agents = s.progress?.agents;
+    if (!agents) return "시작 중...";
+    // Find currently running agent
+    const running = Object.entries(agents).find(([, a]) => a.status === "running");
+    if (running) {
+      const [name, agent] = running;
+      const nameMap: Record<string, string> = {
+        architect: "문서 구조 설계",
+        writer: "내용 작성",
+        imageCurator: "이미지 수집",
+        reviewer: "품질 검토",
+      };
+      return `${nameMap[name] || name}: ${agent.detail || `${agent.progress}%`}`;
+    }
+    return "처리 중...";
   }, []);
 
   const pollStatus = useCallback(async (projectId: string) => {
@@ -35,7 +66,8 @@ export function useGenerate(options: UseGenerateOptions = {}) {
       if (s.status === "completed") {
         stopPolling();
         setIsGenerating(false);
-        onComplete?.(s.result || "");
+        toast.success(`문서 생성 완료! 품질 점수: ${s.document?.qualityScore?.toFixed(1) || "N/A"}/100`);
+        onComplete?.(s);
       } else if (s.status === "failed") {
         stopPolling();
         setIsGenerating(false);
@@ -44,29 +76,27 @@ export function useGenerate(options: UseGenerateOptions = {}) {
         onError?.(errMsg);
       }
     } catch (error: any) {
-      // Don't stop polling on transient errors
       console.error("Polling error:", error);
     }
   }, [onComplete, onError, stopPolling]);
 
-  const startGenerate = useCallback(async (projectId: string, data?: any) => {
+  const startGenerate = useCallback(async (projectId: string) => {
     try {
       setIsGenerating(true);
-      setStatus({ status: "pending", progress: 0 });
-      projectIdRef.current = projectId;
+      setStatus(null);
 
-      await startGenerateApi(projectId, data);
+      await startGenerateApi(projectId);
 
       // Start polling
       pollRef.current = setInterval(() => {
         pollStatus(projectId);
       }, pollIntervalMs);
 
-      // Also poll immediately
-      await pollStatus(projectId);
+      // Poll immediately
+      setTimeout(() => pollStatus(projectId), 1000);
     } catch (error: any) {
       setIsGenerating(false);
-      const message = error.response?.data?.message || "문서 생성 요청에 실패했습니다.";
+      const message = error.response?.data?.message || error.response?.data?.error || "문서 생성 요청에 실패했습니다.";
       toast.error(message);
       onError?.(message);
     }
@@ -78,7 +108,7 @@ export function useGenerate(options: UseGenerateOptions = {}) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `document-${projectId}.pdf`;
+      a.download = `document-${projectId}.html`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -89,7 +119,6 @@ export function useGenerate(options: UseGenerateOptions = {}) {
     }
   }, []);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => stopPolling();
   }, [stopPolling]);
@@ -97,8 +126,9 @@ export function useGenerate(options: UseGenerateOptions = {}) {
   return {
     status,
     isGenerating,
-    progress: status?.progress || 0,
-    currentStep: status?.step || "",
+    progress: status ? getOverallProgress(status) : 0,
+    currentStep: status ? getCurrentStep(status) : "",
+    document: status?.document || null,
     startGenerate,
     download,
     stopPolling,

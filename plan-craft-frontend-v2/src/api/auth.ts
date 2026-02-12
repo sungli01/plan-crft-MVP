@@ -22,12 +22,12 @@ export async function loginApi(data: LoginRequest): Promise<AuthResponse> {
   return res.data;
 }
 
-export async function registerApi(data: RegisterRequest): Promise<AuthResponse> {
+export async function registerApi(data: RegisterRequest): Promise<AuthResponse & { pendingApproval?: boolean }> {
   const res = await apiClient.post("/api/auth/register", data);
   return res.data;
 }
 
 export async function getMeApi(): Promise<User> {
   const res = await apiClient.get("/api/auth/me");
-  return res.data;
+  return res.data.user || res.data;
 }

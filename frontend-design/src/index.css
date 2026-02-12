@@ -1,0 +1,203 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Noto+Sans+KR:wght@100..900&display=swap");
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+==========================================================================
+【AI HANDOVER NOTE】
+1. DESIGN PHILOSOPHY:
+   - Atmosphere-First & Structured Professionalism: Designed for 'Plan_Craft', a high-stakes AI document generation SaaS. The interface balances the efficiency of a tool with the gravitas of professional consulting.
+   - Visual Style: Neo-minimalism with 'Physicality'. We use subtle rim-lights and precise borders to define card-based layouts (Bento-style) which separate different document categories clearly.
+   - Purpose: Since users deal with complex business/tech documents, the UI minimizes cognitive load through high contrast and clear information hierarchy, mirroring the 'Skywork AI' efficiency.
+
+2. TYPOGRAPHY:
+   - Sans (Inter + Noto Sans KR): A global-standard combination. Inter provides high x-height for UI clarity, while Noto Sans KR ensures professional legibility for complex Korean business terminology.
+   - Mono (JetBrains Mono): Specifically used for 'Technical Documents' and 'Development Plans' metadata, as well as data-heavy metrics in 'Research Reports'.
+
+3. COLOR SYSTEM:
+   - Brand Identity: The primary hue (H=255) is a 'Deep Intelligence Blue'. It evokes trust and technological sophistication, essential for an AI-driven service.
+   - Semantic Logic: --primary is the main action color. --accent is used to highlight 'PRO' features (Investment/Research) to create a clear value distinction. --destructive uses a refined crimson (H=25) for high-stakes actions like document deletion.
+   - Contrast: OKLCH is utilized to ensure perceptual uniformity, particularly in dark mode where subtle shifts in chroma prevent eye strain during long-form document drafting.
+
+4. USAGE GUIDE:
+   - Layout: Recommended 'Centered Container' for landing and 'Dashboard Full-width' for the document editor and category showcase.
+   - PRO Distinction: Use --accent for 'PRO' tags and premium cards. Implement backdrop-blur on modals for the 'Admin Approval' flow to maintain context.
+   - Border Strategy: Use --sidebar-border for vertical navigation separating the 7 categories (Business, Marketing, Tech, etc.) to maintain a clean modular structure.
+==========================================================================
+*/
+
+:root {
+  /* Typography */
+  --font-sans: "Inter", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  
+  /* Radius */
+  --radius: 0.6rem;
+
+  /* Core UI Tokens */
+  --background: oklch(0.99 0.002 255);
+  --foreground: oklch(0.18 0.02 255);
+  --card: oklch(1.0 0 0);
+  --card-foreground: oklch(0.18 0.02 255);
+  --popover: oklch(1.0 0 0);
+  --popover-foreground: oklch(0.18 0.02 255);
+  --primary: oklch(0.52 0.16 255);
+  --primary-foreground: oklch(0.98 0.01 255);
+  --secondary: oklch(0.94 0.01 255);
+  --secondary-foreground: oklch(0.25 0.03 255);
+  --muted: oklch(0.96 0.005 255);
+  --muted-foreground: oklch(0.45 0.02 255);
+  --accent: oklch(0.62 0.18 280);
+  --accent-foreground: oklch(0.98 0.01 280);
+  --destructive: oklch(0.58 0.18 25);
+  --destructive-foreground: oklch(0.98 0.01 25);
+  --border: oklch(0.91 0.01 255);
+  --input: oklch(0.91 0.01 255);
+  --ring: oklch(0.52 0.16 255);
+  
+  /* Chart Tokens */
+  --chart-1: oklch(0.6 0.16 255);
+  --chart-2: oklch(0.55 0.15 190);
+  --chart-3: oklch(0.45 0.14 220);
+  --chart-4: oklch(0.7 0.15 160);
+  --chart-5: oklch(0.65 0.18 280);
+  
+  /* Sidebar Tokens */
+  --sidebar: oklch(0.98 0.005 255);
+  --sidebar-foreground: oklch(0.25 0.03 255);
+  --sidebar-primary: oklch(0.52 0.16 255);
+  --sidebar-primary-foreground: oklch(0.98 0.01 255);
+  --sidebar-accent: oklch(0.94 0.01 255);
+  --sidebar-accent-foreground: oklch(0.25 0.03 255);
+  --sidebar-border: oklch(0.91 0.01 255);
+  --sidebar-ring: oklch(0.52 0.16 255);
+}
+
+.dark {
+  --background: oklch(0.14 0.02 255);
+  --foreground: oklch(0.94 0.01 255);
+  --card: oklch(0.17 0.02 255);
+  --card-foreground: oklch(0.94 0.01 255);
+  --popover: oklch(0.17 0.02 255);
+  --popover-foreground: oklch(0.94 0.01 255);
+  --primary: oklch(0.62 0.16 255);
+  --primary-foreground: oklch(0.14 0.02 255);
+  --secondary: oklch(0.22 0.03 255);
+  --secondary-foreground: oklch(0.94 0.01 255);
+  --muted: oklch(0.22 0.02 255);
+  --muted-foreground: oklch(0.65 0.02 255);
+  --accent: oklch(0.68 0.18 280);
+  --accent-foreground: oklch(0.14 0.02 280);
+  --destructive: oklch(0.52 0.16 25);
+  --destructive-foreground: oklch(0.94 0.01 25);
+  --border: oklch(0.26 0.02 255);
+  --input: oklch(0.26 0.02 255);
+  --ring: oklch(0.62 0.16 255);
+  
+  /* Chart Tokens */
+  --chart-1: oklch(0.62 0.16 255);
+  --chart-2: oklch(0.58 0.15 190);
+  --chart-3: oklch(0.48 0.14 220);
+  --chart-4: oklch(0.72 0.15 160);
+  --chart-5: oklch(0.68 0.18 280);
+  
+  /* Sidebar Tokens */
+  --sidebar: oklch(0.12 0.02 255);
+  --sidebar-foreground: oklch(0.94 0.01 255);
+  --sidebar-primary: oklch(0.62 0.16 255);
+  --sidebar-primary-foreground: oklch(0.14 0.02 255);
+  --sidebar-accent: oklch(0.22 0.03 255);
+  --sidebar-accent-foreground: oklch(0.94 0.01 255);
+  --sidebar-border: oklch(0.26 0.02 255);
+  --sidebar-ring: oklch(0.62 0.16 255);
+}
+
+@theme inline {
+  /* Shadcn Core Mapping */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Charts Mapping */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Sidebar Mapping */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Typography */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  /* Radius */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply scroll-smooth antialiased;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans min-h-screen;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  code, pre {
+    @apply font-mono;
+  }
+
+  ::selection {
+    @apply bg-primary/20 text-primary;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40;
+  }
+}

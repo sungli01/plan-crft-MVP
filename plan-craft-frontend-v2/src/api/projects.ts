@@ -13,24 +13,27 @@ export interface Project {
 
 export interface CreateProjectRequest {
   title: string;
-  categoryId: string;
+  idea?: string;
+  categoryId?: string;
   context?: string;
   requirements?: string;
 }
 
 export async function getProjectsApi(): Promise<Project[]> {
   const res = await apiClient.get("/api/projects");
-  return res.data;
+  // Backend wraps in { projects: [...] }
+  return res.data.projects || res.data;
 }
 
 export async function getProjectApi(id: string): Promise<Project> {
   const res = await apiClient.get(`/api/projects/${id}`);
-  return res.data;
+  // Backend wraps in { project: {...} }
+  return res.data.project || res.data;
 }
 
 export async function createProjectApi(data: CreateProjectRequest): Promise<Project> {
   const res = await apiClient.post("/api/projects", data);
-  return res.data;
+  return res.data.project || res.data;
 }
 
 export async function updateProjectApi(id: string, data: Partial<Project>): Promise<Project> {

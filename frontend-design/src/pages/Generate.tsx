@@ -20,31 +20,25 @@ import {
   cn 
 } from "@/lib";
 import { useAuth } from "@/hooks/useAuth";
-import { useProjects } from "@/hooks/useProjects";
-import { useGenerate } from "@/hooks/useGenerate";
 import { DocumentGenerationForm } from "@/components/Forms";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { IMAGES } from "@/assets/images";
 import { springPresets, fadeInUp, staggerContainer, staggerItem } from "@/lib/motion";
-import { toast } from "sonner";
 
 export default function Generate() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, isProMember, canAccessCategory } = useAuth();
-  const { createProject } = useProjects();
   
   const categoryId = searchParams.get("category");
   const category = categoryId ? getCategoryById(categoryId) : null;
 
-  const [pageStatus, setPageStatus] = useState<"input" | "generating" | "completed">("input");
+  const [status, setStatus] = useState<"input" | "generating" | "completed">("input");
   const [generatedDoc, setGeneratedDoc] = useState<{ title: string; content: string } | null>(null);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
-  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
-
   const [generationSteps] = useState([
     { id: 1, title: "요구사항 분석", description: "입력된 정보를 분석하고 문서 구조를 설계합니다" },
     { id: 2, title: "콘텐츠 생성", description: "AI 모델을 활용하여 핵심 내용을 작성합니다" },
@@ -52,33 +46,6 @@ export default function Generate() {
     { id: 4, title: "품질 검증", description: "생성된 내용의 일관성과 품질을 검증합니다" },
     { id: 5, title: "서식 적용", description: "전문적인 문서 서식과 레이아웃을 적용합니다" }
   ]);
-
-  const { startGenerate, download, status: genStatus, progress: genProgress, currentStep: genStepText } = useGenerate({
-    onComplete: (s) => {
-      setGeneratedDoc({
-        title: generatedDoc?.title || `${category?.label} 결과물`,
-        content: `문서 생성이 완료되었습니다.\n\n품질 점수: ${s.document?.qualityScore?.toFixed(1) || "N/A"}/100\n섹션 수: ${s.document?.sectionCount || 0}개\n단어 수: ${s.document?.wordCount?.toLocaleString() || 0}개\n이미지: ${s.document?.imageCount || 0}개`,
-      });
-      setProgress(100);
-      setCurrentStep(generationSteps.length);
-      setPageStatus("completed");
-    },
-    onError: () => {
-      setPageStatus("input");
-    },
-  });
-
-  // Update progress from polling status
-  useEffect(() => {
-    if (genProgress > 0) {
-      setProgress(genProgress);
-      const stepIndex = Math.min(
-        Math.floor((genProgress / 100) * generationSteps.length),
-        generationSteps.length - 1
-      );
-      setCurrentStep(stepIndex);
-    }
-  }, [genProgress, generationSteps.length]);
 
   useEffect(() => {
     if (!category) {
@@ -92,30 +59,49 @@ export default function Generate() {
   }, [category, canAccessCategory, navigate]);
 
   const handleGenerate = async (formData: any) => {
-    setPageStatus("generating");
+    setStatus("generating");
     setProgress(0);
     setCurrentStep(0);
-    setGeneratedDoc({ title: formData.title || `${category?.label} 결과물`, content: "" });
 
-    try {
-      // Create project first
-      const project = await createProject({
-        title: formData.title || `${category?.label}`,
-        idea: formData.context || formData.requirements || formData.title,
-        categoryId: category?.id || "business-plan",
-      });
-
-      const projectId = project.id || (project as any)._id;
-      setCurrentProjectId(projectId);
-
-      // Start generation with polling
-      await startGenerate(projectId);
-    } catch (error: any) {
-      // If project creation fails but generate doesn't handle it
-      if (pageStatus === "generating") {
-        setPageStatus("input");
-      }
+    // 단계별 AI 생성 시뮬레이션
+    for (let step = 0; step < generationSteps.length; step++) {
+      setCurrentStep(step);
+      
+      // 각 단계별 진행 시간 (실제로는 AI 처리 시간)
+      const stepDuration = [800, 1200, 900, 700, 600][step];
+      const stepProgress = (step / generationSteps.length) * 100;
+      
+      // 단계 시작
+      setProgress(stepProgress);
+      
+      // 단계 내 세부 진행률
+      const stepInterval = setInterval(() => {
+        setProgress((prev) => {
+          const nextStepProgress = ((step + 1) / generationSteps.length) * 100;
+          const currentStepProgress = (step / generationSteps.length) * 100;
+          const maxProgress = currentStepProgress + ((nextStepProgress - currentStepProgress) * 0.9);
+          
+          if (prev >= maxProgress) {
+            return maxProgress;
+          }
+          return prev + Math.random() * 3;
+        });
+      }, 100);
+      
+      await new Promise((resolve) => setTimeout(resolve, stepDuration));
+      clearInterval(stepInterval);
+      
+      // 단계 완료
+      setProgress(((step + 1) / generationSteps.length) * 100);
     }
+
+    // 문서 생성 완료
+    setGeneratedDoc({
+      title: formData.title || `${category?.label} 결과물`,
+      content: `[AI 생성 결과물]\n\n본 문서는 Plan_Craft AI에 의해 생성된 ${category?.label} 초안입니다.\n\n입력된 정보:\n- 문서 제목: ${formData.title || "제목 없음"}\n- 목적: ${formData.purpose || "일반 정보 제공"}\n- 대상: ${formData.target || "일반"}\n- 생성 일시: ${new Date().toLocaleString("ko-KR")}\n\n== 문서 개요 ==\n\n${category?.label}는 조직의 전략적 목표 달성을 위한 핵심 문서입니다. 본 초안은 다음과 같은 구조로 구성되어 있습니다:\n\n1. 현황 분석\n   - 시장 환경 및 경쟁 상황 분석\n   - 내부 역량 및 자원 현황 검토\n   - 기회 요인 및 위험 요소 식별\n\n2. 전략 방향\n   - 비전 및 목표 설정\n   - 핵심 전략 및 추진 방향\n   - 성과 지표 및 측정 방법\n\n3. 실행 계획\n   - 단계별 추진 일정\n   - 필요 자원 및 예산 계획\n   - 조직 체계 및 역할 분담\n\n4. 기대 효과\n   - 정량적 성과 목표\n   - 정성적 개선 효과\n   - 리스크 관리 방안\n\n== 상세 내용 ==\n\n[이 부분에는 실제 비즈니스 상황에 맞는 구체적인 내용이 포함됩니다]\n\n본 문서는 AI 기반 초안으로, 실제 활용 시 다음 사항을 고려하시기 바랍니다:\n\n⚠️ 주의사항:\n- 생성된 내용은 일반적인 가이드라인이며, 실제 상황에 맞게 수정이 필요합니다\n- 중요한 의사결정 시 관련 전문가의 검토를 받으시기 바랍니다\n- 법적, 재무적 내용은 반드시 해당 분야 전문가의 확인이 필요합니다\n\n생성 완료 시간: ${new Date().toLocaleString("ko-KR")}`,
+    });
+    
+    setStatus("completed");
   };
 
   if (!category) return null;
@@ -163,7 +149,7 @@ export default function Generate() {
       <div className="container mx-auto px-4 -mt-8 relative z-20">
         <AnimatePresence mode="wait">
           {/* 1단계: 입력 폼 */}
-          {pageStatus === "input" && (
+          {status === "input" && (
             <motion.div
               key="input-step"
               initial={{ opacity: 0, y: 20 }}
@@ -192,7 +178,7 @@ export default function Generate() {
           )}
 
           {/* 2단계: 생성 중 모니터링 화면 */}
-          {pageStatus === "generating" && (
+          {status === "generating" && (
             <motion.div
               key="generating-step"
               initial={{ opacity: 0, scale: 0.95 }}
@@ -322,7 +308,7 @@ export default function Generate() {
           )}
 
           {/* 3단계: 결과 확인 */}
-          {pageStatus === "completed" && generatedDoc && (
+          {status === "completed" && generatedDoc && (
             <motion.div
               key="completed-step"
               initial={{ opacity: 0, y: 20 }}
@@ -339,14 +325,12 @@ export default function Generate() {
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => {
                         navigator.clipboard.writeText(generatedDoc.content);
-                        toast.success("클립보드에 복사되었습니다.");
+                        alert("클립보드에 복사되었습니다.");
                       }}>
                         <Copy className="mr-2 h-4 w-4" />
                         복사
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => {
-                        if (currentProjectId) download(currentProjectId);
-                      }}>
+                      <Button variant="outline" size="sm">
                         <Download className="mr-2 h-4 w-4" />
                         다운로드
                       </Button>
@@ -390,7 +374,7 @@ export default function Generate() {
                     <Button 
                       variant="ghost" 
                       className="w-full"
-                      onClick={() => setPageStatus("input")}
+                      onClick={() => setStatus("input")}
                     >
                       다시 생성하기
                     </Button>

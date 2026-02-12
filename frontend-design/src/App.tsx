@@ -10,8 +10,6 @@ import Categories from "@/pages/Categories";
 import Dashboard from "@/pages/Dashboard";
 import Generate from "@/pages/Generate";
 import Profile from "@/pages/Profile";
-import Login from "@/pages/Login";
-import Register from "@/pages/Register";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,24 +20,38 @@ const queryClient = new QueryClient({
   },
 });
 
-function WithLayout({ children }: { children: React.ReactNode }) {
-  return <Layout>{children}</Layout>;
-}
-
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <BrowserRouter>
           <Routes>
-            <Route path={ROUTE_PATHS.HOME} element={<WithLayout><Home /></WithLayout>} />
-            <Route path={ROUTE_PATHS.LOGIN} element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path={ROUTE_PATHS.DASHBOARD} element={<WithLayout><Dashboard /></WithLayout>} />
-            <Route path={ROUTE_PATHS.CATEGORIES} element={<WithLayout><Categories /></WithLayout>} />
-            <Route path={ROUTE_PATHS.GENERATE} element={<WithLayout><Generate /></WithLayout>} />
-            <Route path={`${ROUTE_PATHS.GENERATE}/:categoryId`} element={<WithLayout><Generate /></WithLayout>} />
-            <Route path={ROUTE_PATHS.PROFILE} element={<WithLayout><Profile /></WithLayout>} />
+            <Route path={ROUTE_PATHS.HOME} element={<Home />} />
+            
+            <Route
+              element={
+                <Layout>
+                  <Home />
+                </Layout>
+              }
+            />
+
+            <Route
+              path="/"
+              element={
+                <Layout>
+                  <Routes>
+                    <Route index element={<Navigate to={ROUTE_PATHS.HOME} replace />} />
+                    <Route path={ROUTE_PATHS.DASHBOARD} element={<Dashboard />} />
+                    <Route path={ROUTE_PATHS.CATEGORIES} element={<Categories />} />
+                    <Route path={ROUTE_PATHS.GENERATE} element={<Generate />} />
+                    <Route path={`${ROUTE_PATHS.GENERATE}/:categoryId`} element={<Generate />} />
+                    <Route path={ROUTE_PATHS.PROFILE} element={<Profile />} />
+                  </Routes>
+                </Layout>
+              }
+            />
+
             <Route path="*" element={<Navigate to={ROUTE_PATHS.HOME} replace />} />
           </Routes>
         </BrowserRouter>
