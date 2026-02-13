@@ -341,6 +341,7 @@ export class AgentTeamOrchestrator {
       // Phase 2.5: PPT 생성 (PPT Generator) — graceful, 실패해도 문서 생성 계속
       let pptxBuffer: Buffer | null = null;
       let pptSlideCount = 0;
+      let pptSlideData: any[] = [];
       try {
         console.log('\n📊 Phase 2.5: PPT 생성 (PPT Generator)');
         this.updateProgress('pptGenerator', { status: 'running', progress: 50 });
@@ -377,6 +378,7 @@ export class AgentTeamOrchestrator {
 
         pptxBuffer = pptResult.buffer;
         pptSlideCount = pptResult.slideCount;
+        pptSlideData = pptResult.slideData || [];
 
         console.log(`✅ PPT 생성 완료: ${pptSlideCount}장, ${(pptxBuffer.length / 1024).toFixed(0)}KB`);
         this.updateProgress('pptGenerator', { status: 'completed', progress: 100 });
@@ -573,6 +575,7 @@ export class AgentTeamOrchestrator {
         research: researchResult || null,
         pptxBuffer: pptxBuffer || null,
         pptSlideCount,
+        pptSlideData,
         metadata: {
           totalTime: elapsed,
           tokenUsage: totalTokens,

@@ -48,8 +48,9 @@ export interface PptProjectInfo {
   date?: string;
 }
 
-interface SlideData {
+export interface SlideData {
   sectionTitle: string;
+  sectionId?: string;
   bullets: string[];
   keyData?: string;
   hasTable?: boolean;
@@ -427,11 +428,18 @@ JSON 배열만 응답하세요.`
   async generatePptx(
     sections: PptSection[],
     projectInfo: PptProjectInfo
-  ): Promise<{ buffer: Buffer; slideCount: number }> {
+  ): Promise<{ buffer: Buffer; slideCount: number; slideData: SlideData[] }> {
     console.log(`🎨 [PptGenerator] Starting PPT generation for "${projectInfo.title}" (${sections.length} sections)`);
 
     // 1. AI로 섹션 요약
     const slideDataList = await this.summarizeSectionsForPpt(sections, projectInfo);
+
+    // Attach sectionId from original sections
+    slideDataList.forEach((slide, idx) => {
+      if (idx < sections.length) {
+        slide.sectionId = sections[idx].id;
+      }
+    });
 
     // Limit to MAX_SLIDES - 3 (cover + toc + summary)
     const maxContentSlides = MAX_SLIDES - 3;
@@ -469,6 +477,6 @@ JSON 배열만 응답하세요.`
 
     console.log(`✅ [PptGenerator] PPT generated: ${totalPages} slides, ${(buffer.length / 1024).toFixed(0)}KB`);
 
-    return { buffer, slideCount: totalPages };
+    return { buffer, slideCount: totalPages, slideData: slideDataList };
   }
 }

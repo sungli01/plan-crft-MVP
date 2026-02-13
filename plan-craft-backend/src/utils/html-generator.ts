@@ -4,6 +4,7 @@
  */
 
 import { marked } from 'marked';
+import type { SlideData } from '../engine/agents/ppt-generator';
 
 // Configure marked for GFM + line breaks
 marked.setOptions({ gfm: true, breaks: true });
@@ -126,12 +127,71 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+/**
+ * Build a lookup from slide data: sectionId → SlideData
+ */
+function buildSlideMap(slideData?: SlideData[]): Record<string, SlideData> {
+  const map: Record<string, SlideData> = {};
+  if (!slideData || !Array.isArray(slideData)) return map;
+  for (const slide of slideData) {
+    if (slide.sectionId) {
+      map[slide.sectionId] = slide;
+    }
+  }
+  return map;
+}
+
+/**
+ * Render a slide card as HTML
+ */
+function renderSlideCard(slide: SlideData): string {
+  const icons = ['✅', '📈', '🎯', '💡', '🔑', '📊', '⚡', '🏆'];
+  const bulletsHtml = slide.bullets
+    .map((b, i) => `<li>${icons[i % icons.length]} ${escapeHtml(b)}</li>`)
+    .join('\n          ');
+
+  let tableHtml = '';
+  if (slide.hasTable && slide.tableData && slide.tableData.length > 0) {
+    const headerRow = slide.tableData[0].map(h => `<th>${escapeHtml(h)}</th>`).join('');
+    const bodyRows = slide.tableData.slice(1).map(row =>
+      `<tr>${row.map(c => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`
+    ).join('\n');
+    tableHtml = `
+      <table class="slide-table">
+        <thead><tr>${headerRow}</tr></thead>
+        <tbody>${bodyRows}</tbody>
+      </table>`;
+  }
+
+  const keyDataHtml = slide.keyData
+    ? `<div class="slide-key-data">📊 ${escapeHtml(slide.keyData)}</div>`
+    : '';
+
+  return `
+    <div class="slide-card">
+      <div class="slide-card-header">
+        <span class="slide-icon">📊</span>
+        <span class="slide-title">핵심 요약: ${escapeHtml(slide.sectionTitle)}</span>
+      </div>
+      <div class="slide-card-body">
+        <ul class="slide-bullets">
+          ${bulletsHtml}
+        </ul>
+        ${tableHtml}
+        ${keyDataHtml}
+      </div>
+    </div>`;
+}
+
 export function generateHTML(result, projectInfo) {
-  const { design, sections, images, reviews, metadata } = result;
+  const { design, sections, images, reviews, metadata, pptSlideData } = result;
   const avgQuality = reviews.summary.averageScore;
 
   // Build image map for embedding
   const imageMap = buildImageMap(images);
+  
+  // Build slide map for embedding
+  const slideMap = buildSlideMap(pptSlideData);
   
   // Count total images
   const totalImageCount = images
@@ -278,6 +338,95 @@ export function generateHTML(result, projectInfo) {
       font-style: italic;
       line-height: 1.5;
     }
+
+    /* Slide Card Styles */
+    .slide-card {
+      margin: 32px 0;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(37, 99, 235, 0.12), 0 1px 4px rgba(0,0,0,0.06);
+      border: 1px solid #dbeafe;
+      page-break-inside: avoid;
+    }
+    .slide-card-header {
+      background: linear-gradient(135deg, #2563eb 0%, #1e40af 60%, #1e3a8a 100%);
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .slide-icon {
+      font-size: 20px;
+    }
+    .slide-title {
+      color: #fff;
+      font-size: 14pt;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .slide-card-body {
+      background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%);
+      padding: 20px 24px;
+    }
+    .slide-bullets {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .slide-bullets li {
+      padding: 7px 0;
+      font-size: 12pt;
+      color: #1e293b;
+      line-height: 1.6;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .slide-bullets li:last-child {
+      border-bottom: none;
+    }
+    .slide-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      font-size: 11pt;
+    }
+    .slide-table th {
+      background: #2563eb;
+      color: #fff;
+      padding: 8px 12px;
+      font-weight: 600;
+      text-align: left;
+    }
+    .slide-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .slide-table tr:nth-child(even) td {
+      background: #f1f5f9;
+    }
+    .slide-key-data {
+      margin-top: 14px;
+      padding: 10px 16px;
+      background: #dbeafe;
+      border-radius: 8px;
+      font-size: 11pt;
+      color: #1e40af;
+      font-weight: 500;
+    }
+
+    @media print {
+      .slide-card {
+        box-shadow: none;
+        border: 2px solid #2563eb;
+      }
+      .slide-card-header {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .slide-card-body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
   </style>
 </head>
 <body>
@@ -327,12 +476,17 @@ export function generateHTML(result, projectInfo) {
     // Look up images for this section
     const sectionImages = imageMap[section.sectionId] || [];
     
+    // Look up slide card for this section
+    const slideData = slideMap[section.sectionId];
+    const slideCardHtml = slideData ? renderSlideCard(slideData) : '';
+    
     // Convert Markdown → HTML, then embed images
     const htmlContent = marked.parse(section.content || '') as string;
     const contentWithImages = embedImagesInContent(htmlContent, sectionImages);
     
     html += `  <div class="section page-break">
     <h2>${section.sectionId}</h2>
+${slideCardHtml}
 ${contentWithImages}
   </div>\n\n`;
   });
