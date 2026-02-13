@@ -4,7 +4,8 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import PptxGenJS from 'pptxgenjs';
+import PptxGenJSModule from 'pptxgenjs';
+const PptxGenJS = (PptxGenJSModule as any).default || PptxGenJSModule;
 
 // ── Design Constants ────────────────────────────────────────────
 const COLORS = {
