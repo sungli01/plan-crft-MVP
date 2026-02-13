@@ -14,6 +14,7 @@ import { ImageCuratorAgent } from './agents/image-curator';
 import { ReviewerAgent } from './agents/reviewer';
 import { ResearchAgent } from './agents/researcher';
 import { PptGeneratorAgent } from './agents/ppt-generator';
+import { PdfPresenterAgent } from './agents/pdf-presenter';
 import { ModelRouter } from './model-router';
 import { TokenTracker } from './token-tracker';
 
@@ -338,49 +339,49 @@ export class AgentTeamOrchestrator {
         });
       }
 
-      // Phase 2.5: PPT 생성 (PPT Generator) — graceful, 실패해도 문서 생성 계속
+      // Phase 2.5: 발표자료 생성 (PDF Presenter) — graceful, 실패해도 문서 생성 계속
       let pptxBuffer: Buffer | null = null;
       let pptSlideCount = 0;
       let pptSlideData: any[] = [];
+      let presentationHtml: string | null = null;
       try {
-        console.log('\n📊 Phase 2.5: PPT 생성 (PPT Generator)');
+        console.log('\n📊 Phase 2.5: 발표자료 생성 (PDF Presenter)');
         this.updateProgress('pptGenerator', { status: 'running', progress: 50 });
 
         if (progressTracker && projectInfo.projectId) {
           progressTracker.updateAgent(projectInfo.projectId, 'pptGenerator', {
             status: 'running',
             progress: 50,
-            detail: 'PPT 슬라이드 생성 중...'
+            detail: '발표자료 슬라이드 생성 중...'
           });
           progressTracker.addLog(projectInfo.projectId, {
             agent: 'pptGenerator',
             level: 'info',
-            message: 'PPT 생성 시작'
+            message: '발표자료 생성 시작'
           });
         }
 
-        const pptGenerator = new PptGeneratorAgent({
+        const pdfPresenter = new PdfPresenterAgent({
           apiKey: this.config.apiKey,
           model: 'claude-sonnet-4-5-20250929',
         });
 
-        const pptSections = writtenSections.map((ws: any, idx: number) => ({
+        const presenterSections = writtenSections.map((ws: any, idx: number) => ({
           id: sections[idx]?.id || sections[idx]?.title || `section-${idx}`,
           title: sections[idx]?.title || `섹션 ${idx + 1}`,
           content: ws.content || '',
           wordCount: ws.wordCount || 0,
         }));
 
-        const pptResult = await pptGenerator.generatePptx(pptSections, {
+        const presResult = await pdfPresenter.generatePresentation(presenterSections, {
           title: projectInfo.title,
           idea: projectInfo.idea,
         });
 
-        pptxBuffer = pptResult.buffer;
-        pptSlideCount = pptResult.slideCount;
-        pptSlideData = pptResult.slideData || [];
+        presentationHtml = presResult.html;
+        pptSlideCount = presResult.slideCount;
 
-        console.log(`✅ PPT 생성 완료: ${pptSlideCount}장, ${(pptxBuffer.length / 1024).toFixed(0)}KB`);
+        console.log(`✅ 발표자료 생성 완료: ${pptSlideCount}장`);
         this.updateProgress('pptGenerator', { status: 'completed', progress: 100 });
 
         if (progressTracker && projectInfo.projectId) {
@@ -392,18 +393,18 @@ export class AgentTeamOrchestrator {
           progressTracker.addLog(projectInfo.projectId, {
             agent: 'pptGenerator',
             level: 'success',
-            message: `PPT 생성 완료: ${pptSlideCount}장`
+            message: `발표자료 생성 완료: ${pptSlideCount}장`
           });
         }
-      } catch (pptError: any) {
-        console.warn('[PptGenerator] PPT generation failed (non-fatal):', pptError.message);
+      } catch (presError: any) {
+        console.warn('[PdfPresenter] Presentation generation failed (non-fatal):', presError.message);
         this.updateProgress('pptGenerator', { status: 'skipped', progress: 0 });
 
         if (progressTracker && projectInfo.projectId) {
           progressTracker.addLog(projectInfo.projectId, {
             agent: 'pptGenerator',
             level: 'warn',
-            message: `PPT 생성 건너뜀: ${pptError.message}`
+            message: `발표자료 생성 건너뜀: ${presError.message}`
           });
         }
       }
@@ -576,6 +577,7 @@ export class AgentTeamOrchestrator {
         pptxBuffer: pptxBuffer || null,
         pptSlideCount,
         pptSlideData,
+        presentationHtml: presentationHtml || null,
         metadata: {
           totalTime: elapsed,
           tokenUsage: totalTokens,

@@ -89,7 +89,7 @@ export default function Generate() {
     { id: 5, title: "서식 적용", description: "전문적인 문서 서식과 레이아웃을 적용합니다" }
   ]);
 
-  const { startGenerate, regenerate, download, downloadPptx, resumePolling, status: genStatus, progress: genProgress, currentStep: genStepText } = useGenerate({
+  const { startGenerate, regenerate, download, downloadPptx, openPresentation, resumePolling, status: genStatus, progress: genProgress, currentStep: genStepText } = useGenerate({
     onComplete: (s) => {
       const resolvedCategory = category || (savedCategoryId ? getCategoryById(savedCategoryId) : null);
       setGeneratedDoc({
@@ -510,12 +510,12 @@ export default function Generate() {
                         HTML 저장
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => {
-                        if (currentProjectId) downloadPptx(currentProjectId);
+                        if (currentProjectId) openPresentation(currentProjectId);
                       }}
                         className="border-indigo-300 text-indigo-600 hover:bg-indigo-50"
                       >
                         <Download className="mr-2 h-4 w-4" />
-                        PPT 다운로드
+                        발표자료 보기
                       </Button>
                       <Button variant="outline" size="sm" onClick={handleRegenerate}
                         className="border-orange-300 text-orange-600 hover:bg-orange-50"

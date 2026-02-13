@@ -67,3 +67,9 @@ export async function getPptxStatusApi(projectId: string): Promise<{ available: 
   const res = await apiClient.get(`/api/generate/${projectId}/pptx-status`);
   return res.data;
 }
+
+export function getPresentationUrl(projectId: string): string {
+  const token = localStorage.getItem('token') || '';
+  const base = apiClient.defaults.baseURL || '';
+  return `${base}/api/generate/${projectId}/download-presentation?token=${encodeURIComponent(token)}`;
+}

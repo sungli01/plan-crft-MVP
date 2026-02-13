@@ -18,6 +18,14 @@ function cachePptx(projectId: string, buffer: Buffer) {
   setTimeout(() => pptxCache.delete(projectId), 30 * 60 * 1000);
 }
 
+// In-memory presentation HTML cache (projectId → HTML)
+const presentationCache = new Map<string, { html: string; createdAt: number }>();
+
+function cachePresentation(projectId: string, html: string) {
+  presentationCache.set(projectId, { html, createdAt: Date.now() });
+  setTimeout(() => presentationCache.delete(projectId), 60 * 60 * 1000);
+}
+
 const generate = new Hono();
 
 // POST /api/generate/:projectId - 문서 생성 (tier check applied)
@@ -415,6 +423,98 @@ generate.get('/:projectId/download-pptx', async (c) => {
   }
 });
 
+// GET /api/generate/:projectId/download-presentation — 발표자료 HTML 슬라이드
+generate.get('/:projectId/download-presentation', async (c) => {
+  try {
+    let userId: string | undefined;
+    const authHeader = c.req.header('Authorization');
+    const tokenParam = c.req.query('token');
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const payload = verifyToken(authHeader.substring(7));
+      if (payload) userId = payload.userId;
+    }
+    if (!userId && tokenParam) {
+      const payload = verifyToken(tokenParam);
+      if (payload) userId = payload.userId;
+    }
+    if (!userId) {
+      return c.json({ error: '인증 토큰이 필요합니다' }, 401);
+    }
+
+    const projectId = c.req.param('projectId');
+    const [project] = await db.select().from(projects).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).limit(1);
+    if (!project) return c.json({ error: 'Project not found' }, 404);
+
+    // Check cache first
+    let cached = presentationCache.get(projectId);
+    if (cached) {
+      c.header('Content-Type', 'text/html; charset=utf-8');
+      return c.body(cached.html);
+    }
+
+    // Try to regenerate from latest document
+    const [latestDoc] = await db.select().from(documents)
+      .where(eq(documents.projectId, projectId))
+      .orderBy(desc(documents.generatedAt))
+      .limit(1);
+
+    if (!latestDoc) return c.json({ error: 'Document not found. Generate a document first.' }, 404);
+
+    // Check if presentationHtml is stored in metadata
+    try {
+      const meta = JSON.parse(latestDoc.metadata || '{}');
+      if (meta.presentationHtml) {
+        cachePresentation(projectId, meta.presentationHtml);
+        c.header('Content-Type', 'text/html; charset=utf-8');
+        return c.body(meta.presentationHtml);
+      }
+    } catch {}
+
+    // Generate on-the-fly
+    try {
+      const { PdfPresenterAgent } = await import('../engine/agents/pdf-presenter');
+      const presenter = new PdfPresenterAgent({
+        apiKey: process.env.ANTHROPIC_API_KEY || '',
+        model: 'claude-sonnet-4-5-20250929',
+      });
+
+      const contentStr = typeof latestDoc.content === 'string'
+        ? latestDoc.content
+        : JSON.stringify(latestDoc.content);
+
+      let sections: any[];
+      try {
+        const parsed = JSON.parse(contentStr);
+        sections = Array.isArray(parsed) ? parsed : (parsed.sections || [parsed]);
+      } catch {
+        sections = [{ id: 'full', title: project.title, content: contentStr }];
+      }
+
+      const presenterSections = sections.map((s: any, idx: number) => ({
+        id: s.id || `section-${idx}`,
+        title: s.title || `섹션 ${idx + 1}`,
+        content: s.content || s.text || '',
+      }));
+
+      const result = await presenter.generatePresentation(presenterSections, {
+        title: project.title,
+        idea: project.idea || '',
+      });
+
+      cachePresentation(projectId, result.html);
+      c.header('Content-Type', 'text/html; charset=utf-8');
+      return c.body(result.html);
+    } catch (genError: any) {
+      console.error('[Presentation] Generation failed:', genError.message);
+      return c.json({ error: '발표자료 생성에 실패했습니다.' }, 500);
+    }
+  } catch (error) {
+    console.error('Presentation download error:', error);
+    return c.json({ error: 'Failed to generate presentation' }, 500);
+  }
+});
+
 // GET /api/generate/:projectId/pptx-status — Check if PPTX is available
 generate.get('/:projectId/pptx-status', authMiddleware, async (c) => {
   const projectId = c.req.param('projectId');
@@ -550,6 +650,12 @@ async function generateDocumentBackground(projectId: string, projectData: any, u
       console.log(`[Background] PPTX cached for project ${projectId} (${(result.pptxBuffer.length / 1024).toFixed(0)}KB)`);
     }
 
+    // Cache presentation HTML if available
+    if (result.presentationHtml) {
+      cachePresentation(projectId, result.presentationHtml);
+      console.log(`[Background] Presentation HTML cached for project ${projectId}`);
+    }
+
     // HTML 생성
     const html = generateHTML(result, projectInfo);
     const summary = extractSummary(result);
@@ -570,7 +676,8 @@ async function generateDocumentBackground(projectId: string, projectData: any, u
           title: projectData.title,
           version: version || 1,
           generatedAt: new Date().toISOString(),
-          tokenUsage: summary.tokenUsage || {}
+          tokenUsage: summary.tokenUsage || {},
+          presentationHtml: result.presentationHtml || null
         }),
         generatedAt: new Date()
       });

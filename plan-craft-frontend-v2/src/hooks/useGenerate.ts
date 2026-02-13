@@ -5,6 +5,7 @@ import {
   getGenerateStatusApi,
   downloadGeneratedApi,
   downloadPptxApi,
+  getPresentationUrl,
   type GenerateStatus,
 } from "@/api/generate";
 import { toast } from "sonner";
@@ -220,6 +221,15 @@ export function useGenerate(options: UseGenerateOptions = {}) {
     }
   }, []);
 
+  const openPresentation = useCallback((projectId: string) => {
+    const url = getPresentationUrl(projectId);
+    window.open(url, '_blank');
+    toast.success("발표자료가 새 탭에서 열렸습니다.", {
+      description: "PDF로 저장하려면 Ctrl+P (Mac: ⌘+P) → PDF로 저장",
+      duration: 6000,
+    });
+  }, []);
+
   /**
    * Resume polling for an in-progress generation (e.g. after page revisit).
    * Call this from the page component when localStorage indicates generating.
@@ -242,6 +252,7 @@ export function useGenerate(options: UseGenerateOptions = {}) {
     regenerate,
     download,
     downloadPptx,
+    openPresentation,
     stopPolling,
     resumePolling,
   };
