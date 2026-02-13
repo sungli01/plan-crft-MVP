@@ -157,6 +157,7 @@ export default function Generate() {
               content: "이 프로젝트의 문서를 확인하려면 다운로드하세요.",
             });
             setPageStatus("completed");
+            fetchVersions(existingProjectId);
           }
         } catch {
           if (cancelled) return;
@@ -165,6 +166,7 @@ export default function Generate() {
             content: "이 프로젝트의 문서를 확인하려면 다운로드하세요.",
           });
           setPageStatus("completed");
+          fetchVersions(existingProjectId);
         }
       } catch {
         if (!cancelled) navigate(ROUTE_PATHS.DASHBOARD);
