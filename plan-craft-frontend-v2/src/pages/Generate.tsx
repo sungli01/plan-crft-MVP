@@ -23,6 +23,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useProjects } from "@/hooks/useProjects";
 import { useGenerate } from "@/hooks/useGenerate";
+import { getVersionsApi, downloadVersionHtmlApi, type VersionSummary } from "@/api/versions";
 import { DocumentGenerationForm } from "@/components/Forms";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -51,6 +52,34 @@ export default function Generate() {
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(existingProjectId);
   const [savedCategoryId, setSavedCategoryId] = useState<string | null>(categoryId);
 
+  const [versions, setVersions] = useState<VersionSummary[]>([]);
+
+  // Fetch version history when completed
+  const fetchVersions = async (pid: string) => {
+    try {
+      const { versions: v } = await getVersionsApi(pid);
+      setVersions(v);
+    } catch { /* ignore */ }
+  };
+
+  const handleDownloadVersion = async (docId: string) => {
+    if (!currentProjectId) return;
+    try {
+      const blob = await downloadVersionHtmlApi(currentProjectId, docId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `document-${docId}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("다운로드가 시작되었습니다.");
+    } catch {
+      toast.error("다운로드에 실패했습니다.");
+    }
+  };
+
   const [generationSteps] = useState([
     { id: 1, title: "요구사항 분석", description: "입력된 정보를 분석하고 문서 구조를 설계합니다" },
     { id: 2, title: "콘텐츠 생성", description: "AI 모델을 활용하여 핵심 내용을 작성합니다" },
@@ -70,6 +99,8 @@ export default function Generate() {
       setCurrentStep(generationSteps.length);
       setPageStatus("completed");
       toast.success("문서 생성이 완료되었습니다!");
+      // Fetch version history
+      if (currentProjectId) fetchVersions(currentProjectId);
     },
     onError: () => {
       setPageStatus("input");
@@ -114,6 +145,7 @@ export default function Generate() {
             setPageStatus("completed");
             setProgress(100);
             setCurrentStep(generationSteps.length);
+            fetchVersions(existingProjectId);
           } else if (s.status === "generating") {
             setGeneratedDoc({ title: project.title || "문서", content: "" });
             setPageStatus("generating");
@@ -521,6 +553,50 @@ export default function Generate() {
                     </Button>
                   </CardContent>
                 </Card>
+
+                {/* 버전 히스토리 */}
+                {versions.length > 1 && (
+                  <Card className="border-border/50">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-muted-foreground" />
+                        버전 히스토리
+                      </CardTitle>
+                      <CardDescription>{versions.length}개 버전</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {versions.map((v) => (
+                        <div
+                          key={v.id}
+                          className="flex items-center justify-between p-3 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={v.version === versions[0]?.version ? "default" : "secondary"} className="text-xs">
+                                v{v.version}
+                              </Badge>
+                              {v.qualityScore != null && (
+                                <span className="text-xs text-muted-foreground">
+                                  {v.qualityScore.toFixed(1)}점
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {v.createdAt ? new Date(v.createdAt).toLocaleString("ko-KR") : ""}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDownloadVersion(v.id)}
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
 
                 <Card className="border-destructive/20 bg-destructive/5">
                   <CardHeader>

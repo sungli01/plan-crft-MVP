@@ -277,11 +277,12 @@ generate.get('/:projectId/download/pdf', async (c) => {
   }
 });
 
-// GET /api/generate/:projectId/download - 문서 다운로드
+// GET /api/generate/:projectId/download - 문서 다운로드 (optional ?docId= for specific version)
 generate.get('/:projectId/download', authMiddleware, async (c) => {
   try {
     const userId = c.get('userId') as string;
     const projectId = c.req.param('projectId');
+    const docId = c.req.query('docId');
 
     // 프로젝트 권한 확인
     const [project] = await db.select().from(projects).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).limit(1);
@@ -290,8 +291,13 @@ generate.get('/:projectId/download', authMiddleware, async (c) => {
       return c.json({ error: 'Project not found' }, 404);
     }
 
-    // 문서 조회
-    const [document] = await db.select().from(documents).where(eq(documents.projectId, projectId)).orderBy(desc(documents.generatedAt)).limit(1);
+    // 문서 조회 (특정 버전 or 최신)
+    let document;
+    if (docId) {
+      [document] = await db.select().from(documents).where(and(eq(documents.id, docId), eq(documents.projectId, projectId))).limit(1);
+    } else {
+      [document] = await db.select().from(documents).where(eq(documents.projectId, projectId)).orderBy(desc(documents.generatedAt)).limit(1);
+    }
 
     if (!document) {
       return c.json({ error: 'Document not found' }, 404);

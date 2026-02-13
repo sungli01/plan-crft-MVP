@@ -141,42 +141,6 @@ app.get('/', (c) => {
   });
 });
 
-// Debug: API key check (temporary)
-app.get('/debug/env', (c) => {
-  const key = process.env.ANTHROPIC_API_KEY || '';
-  return c.json({
-    keyLength: key.length,
-    keyPrefix: key.slice(0, 12) + '...',
-    keySuffix: '...' + key.slice(-6),
-    hasKey: key.length > 0,
-  });
-});
-
-// DB 초기화 트리거 (임시)
-app.get('/debug/init-db', async (c) => {
-  try {
-    const { initializeDatabase } = await import('./db/index');
-    const ok = await initializeDatabase();
-    return c.json({ status: ok ? 'success' : 'failed' });
-  } catch (err: any) {
-    return c.json({ status: 'error', message: err.message });
-  }
-});
-
-// DB 디버그 엔드포인트
-app.get('/debug/db', async (c) => {
-  const dbUrl = process.env.DATABASE_URL || '';
-  const host = dbUrl.match(/@([^:\/]+)/)?.[1] || 'unknown';
-  const port = dbUrl.match(/:(\d+)\//)?.[1] || 'unknown';
-  try {
-    const { client } = await import('./db/index');
-    const result = await client`SELECT current_database() as db, current_user as usr, version() as ver`;
-    return c.json({ status: 'connected', host, port, result: Array.isArray(result) ? result : [] });
-  } catch (err: any) {
-    return c.json({ status: 'error', host, port, error: err.message, code: err.code, errno: err.errno, syscall: err.syscall, stack: err.stack?.split('\n').slice(0,3) });
-  }
-});
-
 app.get('/health', async (c) => {
   const dbConnected = await checkDatabaseConnection();
   let cacheType = 'initializing';
