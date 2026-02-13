@@ -23,6 +23,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useProjects } from "@/hooks/useProjects";
 import { useGenerate } from "@/hooks/useGenerate";
+import { loadGeneratingState, saveGeneratingState, clearGeneratingState } from "@/lib/generation-persist";
 import { getVersionsApi, downloadVersionHtmlApi, type VersionSummary } from "@/api/versions";
 import { DocumentGenerationForm } from "@/components/Forms";
 import { Button } from "@/components/ui/button";
@@ -88,7 +89,7 @@ export default function Generate() {
     { id: 5, title: "서식 적용", description: "전문적인 문서 서식과 레이아웃을 적용합니다" }
   ]);
 
-  const { startGenerate, regenerate, download, downloadPptx, status: genStatus, progress: genProgress, currentStep: genStepText } = useGenerate({
+  const { startGenerate, regenerate, download, downloadPptx, resumePolling, status: genStatus, progress: genProgress, currentStep: genStepText } = useGenerate({
     onComplete: (s) => {
       const resolvedCategory = category || (savedCategoryId ? getCategoryById(savedCategoryId) : null);
       setGeneratedDoc({
@@ -149,7 +150,14 @@ export default function Generate() {
           } else if (s.status === "generating") {
             setGeneratedDoc({ title: project.title || "문서", content: "" });
             setPageStatus("generating");
-            startGenerate(existingProjectId);
+            // Save to localStorage so revisit can resume
+            saveGeneratingState({
+              projectId: existingProjectId,
+              projectTitle: project.title,
+              startedAt: new Date().toISOString(),
+              status: "generating",
+            });
+            resumePolling(existingProjectId);
           } else {
             // draft or other — show download view
             setGeneratedDoc({
@@ -176,9 +184,23 @@ export default function Generate() {
     return () => { cancelled = true; };
   }, [existingProjectId]);
 
+  // Restore generation state from localStorage on mount (no existingProjectId in URL)
   useEffect(() => {
-    // Only redirect to categories if no category AND no existing project
-    if (!category && !existingProjectId) {
+    if (existingProjectId) return; // handled by the effect above
+    const saved = loadGeneratingState();
+    if (!saved || saved.status !== "generating") return;
+
+    // There's an in-progress generation – restore it
+    setCurrentProjectId(saved.projectId);
+    setGeneratedDoc({ title: saved.projectTitle || "문서", content: "" });
+    setPageStatus("generating");
+    resumePolling(saved.projectId);
+  }, [existingProjectId]);
+
+  useEffect(() => {
+    // Only redirect to categories if no category AND no existing project AND no saved generation
+    const saved = loadGeneratingState();
+    if (!category && !existingProjectId && (!saved || saved.status !== "generating")) {
       navigate(ROUTE_PATHS.CATEGORIES);
       return;
     }
@@ -205,8 +227,8 @@ export default function Generate() {
       const projectId = project.id || (project as any)._id;
       setCurrentProjectId(projectId);
 
-      // Start generation with polling
-      await startGenerate(projectId);
+      // Start generation with polling (pass title for localStorage persistence)
+      await startGenerate(projectId, formData.title || category?.label);
     } catch (error: any) {
       // If project creation fails but generate doesn't handle it
       if (pageStatus === "generating") {
@@ -242,7 +264,7 @@ export default function Generate() {
     }
   };
 
-  if (!category && !existingProjectId) return null;
+  if (!category && !existingProjectId && !currentProjectId) return null;
 
   return (
     <div className="min-h-screen bg-background pb-20">

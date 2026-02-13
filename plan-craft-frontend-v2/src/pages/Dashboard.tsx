@@ -10,9 +10,11 @@ import {
   ChevronRight,
   Clock,
   CheckCircle2,
-  FileEdit
+  FileEdit,
+  Loader2
 } from "lucide-react";
 import { ROUTE_PATHS, DOCUMENT_CATEGORIES, cn, Document } from "@/lib";
+import { loadGeneratingState } from "@/lib/generation-persist";
 import { DocumentCard, CategoryCard } from "@/components/Cards";
 import { useAuth } from "@/hooks/useAuth";
 import { useProjects } from "@/hooks/useProjects";
@@ -27,6 +29,10 @@ export default function Dashboard() {
   const viewAll = searchParams.get("view") === "all";
   const { user, isProMember } = useAuth();
   const { projects, isLoading, deleteProject } = useProjects();
+
+  // Check for in-progress generation
+  const generatingState = loadGeneratingState();
+  const hasActiveGeneration = generatingState?.status === "generating";
 
   // Map API projects to Document type for existing DocumentCard component
   const documents: Document[] = projects.map((p) => ({
@@ -157,6 +163,27 @@ export default function Dashboard() {
               </motion.div>
             ))}
           </motion.div>
+
+          {/* Generation in-progress banner */}
+          {hasActiveGeneration && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-6 cursor-pointer"
+              onClick={() => navigate(`${ROUTE_PATHS.GENERATE}?id=${generatingState!.projectId}`)}
+            >
+              <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-5 py-4 hover:bg-primary/10 transition-colors">
+                <Loader2 className="h-5 w-5 text-primary animate-spin flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-primary truncate">
+                    문서 생성 중... — {generatingState!.projectTitle || "프로젝트"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">클릭하여 진행 상황 확인</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-primary flex-shrink-0" />
+              </div>
+            </motion.div>
+          )}
         </div>
       </section>
 

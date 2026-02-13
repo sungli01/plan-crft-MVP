@@ -8,6 +8,13 @@ import {
   type GenerateStatus,
 } from "@/api/generate";
 import { toast } from "sonner";
+import {
+  saveGeneratingState,
+  clearGeneratingState,
+  loadGeneratingState,
+  requestNotificationPermission,
+  showBrowserNotification,
+} from "@/lib/generation-persist";
 
 interface UseGenerateOptions {
   onComplete?: (status: GenerateStatus) => void;
@@ -68,13 +75,20 @@ export function useGenerate(options: UseGenerateOptions = {}) {
       if (s.status === "completed") {
         stopPolling();
         setIsGenerating(false);
+        clearGeneratingState();
         toast.success(`문서 생성 완료! 품질 점수: ${s.document?.qualityScore?.toFixed(1) || "N/A"}/100`);
+        showBrowserNotification(
+          "📄 문서 생성 완료!",
+          `품질 점수: ${s.document?.qualityScore?.toFixed(1) || "N/A"}/100`
+        );
         onComplete?.(s);
       } else if (s.status === "failed") {
         stopPolling();
         setIsGenerating(false);
+        clearGeneratingState();
         const errMsg = s.error || "문서 생성에 실패했습니다.";
         toast.error(errMsg);
+        showBrowserNotification("❌ 문서 생성 실패", errMsg);
         onError?.(errMsg);
       }
     } catch (error: any) {
@@ -82,27 +96,44 @@ export function useGenerate(options: UseGenerateOptions = {}) {
     }
   }, [onComplete, onError, stopPolling]);
 
-  const startGenerate = useCallback(async (projectId: string) => {
+  const startPollingFor = useCallback((projectId: string) => {
+    stopPolling();
+    setIsGenerating(true);
+    requestNotificationPermission();
+
+    pollRef.current = setInterval(() => {
+      pollStatus(projectId);
+    }, pollIntervalMs);
+
+    // Poll immediately
+    setTimeout(() => pollStatus(projectId), 1000);
+  }, [pollStatus, pollIntervalMs, stopPolling]);
+
+  const startGenerate = useCallback(async (projectId: string, projectTitle?: string) => {
     try {
       setIsGenerating(true);
       setStatus(null);
+      requestNotificationPermission();
 
       await startGenerateApi(projectId);
 
-      // Start polling
-      pollRef.current = setInterval(() => {
-        pollStatus(projectId);
-      }, pollIntervalMs);
+      // Persist state
+      saveGeneratingState({
+        projectId,
+        projectTitle,
+        startedAt: new Date().toISOString(),
+        status: "generating",
+      });
 
-      // Poll immediately
-      setTimeout(() => pollStatus(projectId), 1000);
+      // Start polling
+      startPollingFor(projectId);
     } catch (error: any) {
       setIsGenerating(false);
       const message = error.response?.data?.message || error.response?.data?.error || "문서 생성 요청에 실패했습니다.";
       toast.error(message);
       onError?.(message);
     }
-  }, [pollStatus, pollIntervalMs, onError]);
+  }, [startPollingFor, onError]);
 
   const download = useCallback(async (projectId: string, preview = false) => {
     try {
@@ -110,7 +141,6 @@ export function useGenerate(options: UseGenerateOptions = {}) {
       const url = URL.createObjectURL(blob);
 
       if (preview) {
-        // 새 탭에서 미리보기
         window.open(url, '_blank');
         toast.success("문서가 새 탭에서 열렸습니다.");
         return;
@@ -124,7 +154,6 @@ export function useGenerate(options: UseGenerateOptions = {}) {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      // 모바일 감지 후 상세 안내
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) {
         toast.success("다운로드 완료! 📂", {
@@ -139,7 +168,7 @@ export function useGenerate(options: UseGenerateOptions = {}) {
     }
   }, []);
 
-  const regenerate = useCallback(async (projectId: string) => {
+  const regenerate = useCallback(async (projectId: string, projectTitle?: string) => {
     try {
       stopPolling();
       setIsGenerating(true);
@@ -147,20 +176,23 @@ export function useGenerate(options: UseGenerateOptions = {}) {
 
       await regenerateApi(projectId);
 
-      // Start polling
-      pollRef.current = setInterval(() => {
-        pollStatus(projectId);
-      }, pollIntervalMs);
+      // Persist state
+      saveGeneratingState({
+        projectId,
+        projectTitle,
+        startedAt: new Date().toISOString(),
+        status: "generating",
+      });
 
-      // Poll immediately
-      setTimeout(() => pollStatus(projectId), 1000);
+      // Start polling
+      startPollingFor(projectId);
     } catch (error: any) {
       setIsGenerating(false);
       const message = error.response?.data?.message || error.response?.data?.error || "재생성 요청에 실패했습니다.";
       toast.error(message);
       onError?.(message);
     }
-  }, [pollStatus, pollIntervalMs, onError]);
+  }, [startPollingFor, onError, stopPolling]);
 
   const downloadPptx = useCallback(async (projectId: string) => {
     try {
@@ -188,6 +220,14 @@ export function useGenerate(options: UseGenerateOptions = {}) {
     }
   }, []);
 
+  /**
+   * Resume polling for an in-progress generation (e.g. after page revisit).
+   * Call this from the page component when localStorage indicates generating.
+   */
+  const resumePolling = useCallback((projectId: string) => {
+    startPollingFor(projectId);
+  }, [startPollingFor]);
+
   useEffect(() => {
     return () => stopPolling();
   }, [stopPolling]);
@@ -203,5 +243,6 @@ export function useGenerate(options: UseGenerateOptions = {}) {
     download,
     downloadPptx,
     stopPolling,
+    resumePolling,
   };
 }
