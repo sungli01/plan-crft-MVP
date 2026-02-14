@@ -206,8 +206,8 @@ Only include images scoring 90+. If none qualify, return [].`,
 
     console.log(`\n🔎 [BraveImageRAG] "${sectionTitle}" 이미지 검색 시작`);
 
-    // Wrap entire pipeline in 30s timeout
-    const timeoutMs = 30000;
+    // Wrap entire pipeline in 15s timeout (reduced from 30s)
+    const timeoutMs = 15000;
     const timeoutPromise = new Promise<null>((resolve) => {
       setTimeout(() => {
         console.warn(`   ⏰ [BraveImageRAG] "${sectionTitle}" 타임아웃 (${timeoutMs}ms) — fallback`);

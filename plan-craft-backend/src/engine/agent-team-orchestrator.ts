@@ -261,69 +261,10 @@ export class AgentTeamOrchestrator {
         });
       }
 
-      // Phase 1.5: 슬라이드 생성 (Slide Generator — 프레젠테이션 먼저)
-      let slideResult: any = null;
-      let slideDataArray: SlideData[] = [];
-      try {
-        console.log('\n🎨 Phase 1.5: 슬라이드 프레젠테이션 생성 (GenSpark 스타일)');
-        this.updateProgress('slideGenerator', { status: 'running', progress: 20 });
+      // Phase 1.5 + 2: SlideGenerator와 Writer를 병렬 실행 (architect 완료 후)
+      console.log('\n🚀 Phase 1.5+2: 슬라이드 생성 + 병렬 작성 동시 시작');
 
-        if (progressTracker && projectInfo.projectId) {
-          progressTracker.updateAgent(projectInfo.projectId, 'slideGenerator', {
-            status: 'running', progress: 20,
-            detail: '25페이지 프레젠테이션 슬라이드 생성 중...'
-          });
-          progressTracker.addLog(projectInfo.projectId, {
-            agent: 'slideGenerator', level: 'info',
-            message: 'GenSpark 스타일 슬라이드 생성 시작'
-          });
-        }
-
-        const slideGenerator = new SlideGeneratorAgent({
-          apiKey: this.config.apiKey,
-          model: 'claude-sonnet-4-5-20250929',
-          openaiKey: this.config.openaiKey,
-          maxDalleImages: 8,
-        });
-
-        slideResult = await slideGenerator.generateSlides(
-          design,
-          researchResult,
-          { title: projectInfo.title, idea: projectInfo.idea }
-        );
-        slideDataArray = slideResult.slides || [];
-
-        const chartSlides = slideDataArray.filter((s: SlideData) => s.chartUrl).length;
-        const dalleSlides = slideDataArray.filter((s: SlideData) => s.diagramUrl).length;
-        const imgTagSlides = slideDataArray.filter((s: SlideData) => s.chartUrl || s.diagramUrl).length;
-        console.log(`✅ 슬라이드 생성 완료: ${slideResult.slideCount}장`);
-        console.log(`   📊 Charts: ${chartSlides}개, 🎨 DALL-E: ${dalleSlides}개, 🖼️ Total visuals: ${imgTagSlides}개`);
-        this.updateProgress('slideGenerator', { status: 'completed', progress: 100 });
-
-        if (progressTracker && projectInfo.projectId) {
-          progressTracker.updateAgent(projectInfo.projectId, 'slideGenerator', {
-            status: 'completed', progress: 100,
-            detail: `${slideResult.slideCount}장 슬라이드 생성 완료`
-          });
-          progressTracker.addLog(projectInfo.projectId, {
-            agent: 'slideGenerator', level: 'success',
-            message: `프레젠테이션 완료: ${slideResult.slideCount}장, 차트 ${slideDataArray.filter((s: SlideData) => s.chartUrl).length}개, DALL-E ${slideDataArray.filter((s: SlideData) => s.diagramUrl).length}개`
-          });
-        }
-      } catch (slideError: any) {
-        console.warn('[SlideGenerator] Failed (non-fatal):', slideError.message);
-        this.updateProgress('slideGenerator', { status: 'skipped', progress: 0 });
-        if (progressTracker && projectInfo.projectId) {
-          progressTracker.addLog(projectInfo.projectId, {
-            agent: 'slideGenerator', level: 'warn',
-            message: `슬라이드 생성 건너뜀: ${slideError.message}`
-          });
-        }
-      }
-
-      // Phase 2: 병렬 작성 (Writer Team)
-      console.log(`\n✍️  Phase 2: 병렬 작성 (Writer Team x${this.writerTeamSize})`);
-      
+      // Prepare sections for writer
       const sections: any[] = [];
       design.structure.forEach(section => {
         section.subsections?.forEach(sub => {
@@ -345,30 +286,6 @@ export class AgentTeamOrchestrator {
         const budget = this.modelRouter.getTokenBudget(s.title, i, sectionCount);
         s.maxTokens = budget.maxTokens;
       }
-      
-      console.log(`📝 총 ${sections.length}개 섹션을 ${this.writerTeamSize}개 팀으로 분산`);
-      
-      this.updateProgress('writerTeam', { 
-        status: 'running', 
-        progress: 0,
-        totalSections: sections.length,
-        completedSections: 0
-      });
-      
-      if (progressTracker && projectInfo.projectId) {
-        progressTracker.updateAgent(projectInfo.projectId, 'writer', {
-          status: 'running',
-          progress: 0,
-          detail: `${this.writerTeamSize}개 팀으로 병렬 작성 시작...`,
-          currentSection: 0,
-          totalSections: sections.length
-        });
-        progressTracker.addLog(projectInfo.projectId, {
-          agent: 'writer',
-          level: 'info',
-          message: `병렬 작성 시작: ${this.writerTeamSize}개 Writer 에이전트`
-        });
-      }
 
       // Enrich projectInfo with research context for writers
       const writerProjectInfo = { ...projectInfo };
@@ -377,30 +294,130 @@ export class AgentTeamOrchestrator {
         writerProjectInfo.idea = (writerProjectInfo.idea || '') + researchContext;
       }
 
-      let writtenSections = await this.parallelWriteSections(
-        sections, 
-        writerProjectInfo,
-        progressTracker,
-        slideDataArray
-      );
-      
-      console.log(`\n✅ 작성 완료: ${writtenSections.length}개 섹션`);
-      console.log(`   총 단어 수: ${writtenSections.reduce((sum: number, s: any) => sum + s.wordCount, 0)}`);
-      
-      this.updateProgress('writerTeam', { status: 'completed', progress: 100 });
-      
-      if (progressTracker && projectInfo.projectId) {
-        progressTracker.updateAgent(projectInfo.projectId, 'writer', {
-          status: 'completed',
-          progress: 100,
-          detail: `${sections.length}개 섹션 작성 완료`
+      // --- Launch SlideGenerator ---
+      const slideGeneratorPromise = (async () => {
+        let slideResult: any = null;
+        let slideDataArray: SlideData[] = [];
+        try {
+          console.log('\n🎨 Phase 1.5: 슬라이드 프레젠테이션 생성 (GenSpark 스타일)');
+          this.updateProgress('slideGenerator', { status: 'running', progress: 20 });
+
+          if (progressTracker && projectInfo.projectId) {
+            progressTracker.updateAgent(projectInfo.projectId, 'slideGenerator', {
+              status: 'running', progress: 20,
+              detail: '25페이지 프레젠테이션 슬라이드 생성 중...'
+            });
+            progressTracker.addLog(projectInfo.projectId, {
+              agent: 'slideGenerator', level: 'info',
+              message: 'GenSpark 스타일 슬라이드 생성 시작'
+            });
+          }
+
+          const slideGenerator = new SlideGeneratorAgent({
+            apiKey: this.config.apiKey,
+            model: 'claude-sonnet-4-5-20250929',
+            openaiKey: this.config.openaiKey,
+            maxDalleImages: 8,
+          });
+
+          slideResult = await slideGenerator.generateSlides(
+            design,
+            researchResult,
+            { title: projectInfo.title, idea: projectInfo.idea }
+          );
+          slideDataArray = slideResult.slides || [];
+
+          const chartSlides = slideDataArray.filter((s: SlideData) => s.chartUrl).length;
+          const dalleSlides = slideDataArray.filter((s: SlideData) => s.diagramUrl).length;
+          const imgTagSlides = slideDataArray.filter((s: SlideData) => s.chartUrl || s.diagramUrl).length;
+          console.log(`✅ 슬라이드 생성 완료: ${slideResult.slideCount}장`);
+          console.log(`   📊 Charts: ${chartSlides}개, 🎨 DALL-E: ${dalleSlides}개, 🖼️ Total visuals: ${imgTagSlides}개`);
+          this.updateProgress('slideGenerator', { status: 'completed', progress: 100 });
+
+          if (progressTracker && projectInfo.projectId) {
+            progressTracker.updateAgent(projectInfo.projectId, 'slideGenerator', {
+              status: 'completed', progress: 100,
+              detail: `${slideResult.slideCount}장 슬라이드 생성 완료`
+            });
+            progressTracker.addLog(projectInfo.projectId, {
+              agent: 'slideGenerator', level: 'success',
+              message: `프레젠테이션 완료: ${slideResult.slideCount}장, 차트 ${chartSlides}개, DALL-E ${dalleSlides}개`
+            });
+          }
+        } catch (slideError: any) {
+          console.warn('[SlideGenerator] Failed (non-fatal):', slideError.message);
+          this.updateProgress('slideGenerator', { status: 'skipped', progress: 0 });
+          if (progressTracker && projectInfo.projectId) {
+            progressTracker.addLog(projectInfo.projectId, {
+              agent: 'slideGenerator', level: 'warn',
+              message: `슬라이드 생성 건너뜀: ${slideError.message}`
+            });
+          }
+        }
+        return { slideResult, slideDataArray };
+      })();
+
+      // --- Launch Writer Team (in parallel with slideGenerator) ---
+      const writerPromise = (async () => {
+        console.log(`\n✍️  Phase 2: 병렬 작성 (Writer Team x${this.writerTeamSize})`);
+        console.log(`📝 총 ${sections.length}개 섹션을 ${this.writerTeamSize}개 팀으로 분산`);
+        
+        this.updateProgress('writerTeam', { 
+          status: 'running', 
+          progress: 0,
+          totalSections: sections.length,
+          completedSections: 0
         });
-        progressTracker.addLog(projectInfo.projectId, {
-          agent: 'writer',
-          level: 'success',
-          message: `병렬 작성 완료: ${sections.length}개 섹션, ${writtenSections.reduce((sum: number, s: any) => sum + s.wordCount, 0)}단어`
-        });
-      }
+        
+        if (progressTracker && projectInfo.projectId) {
+          progressTracker.updateAgent(projectInfo.projectId, 'writer', {
+            status: 'running',
+            progress: 0,
+            detail: `${this.writerTeamSize}개 팀으로 병렬 작성 시작...`,
+            currentSection: 0,
+            totalSections: sections.length
+          });
+          progressTracker.addLog(projectInfo.projectId, {
+            agent: 'writer',
+            level: 'info',
+            message: `병렬 작성 시작: ${this.writerTeamSize}개 Writer 에이전트`
+          });
+        }
+
+        // Writer runs without slide context initially (slides generating in parallel)
+        const written = await this.parallelWriteSections(
+          sections, 
+          writerProjectInfo,
+          progressTracker,
+          [] // no slide data yet — slides generating in parallel
+        );
+        
+        console.log(`\n✅ 작성 완료: ${written.length}개 섹션`);
+        console.log(`   총 단어 수: ${written.reduce((sum: number, s: any) => sum + s.wordCount, 0)}`);
+        
+        this.updateProgress('writerTeam', { status: 'completed', progress: 100 });
+        
+        if (progressTracker && projectInfo.projectId) {
+          progressTracker.updateAgent(projectInfo.projectId, 'writer', {
+            status: 'completed',
+            progress: 100,
+            detail: `${sections.length}개 섹션 작성 완료`
+          });
+          progressTracker.addLog(projectInfo.projectId, {
+            agent: 'writer',
+            level: 'success',
+            message: `병렬 작성 완료: ${sections.length}개 섹션, ${written.reduce((sum: number, s: any) => sum + s.wordCount, 0)}단어`
+          });
+        }
+        return written;
+      })();
+
+      // Wait for both to complete
+      const [slideGenResult, writtenSectionsResult] = await Promise.all([slideGeneratorPromise, writerPromise]);
+      
+      let slideResult = slideGenResult.slideResult;
+      let slideDataArray: SlideData[] = slideGenResult.slideDataArray;
+      let writtenSections = writtenSectionsResult;
 
       // Phase 2.5: Use slide result from Phase 1.5
       let pptxBuffer: Buffer | null = null;
@@ -426,8 +443,8 @@ export class AgentTeamOrchestrator {
         });
       }
 
-      // Wrap imageCurator in 120s overall timeout to prevent pipeline stalls
-      const IMAGE_CURATOR_TIMEOUT = 120000;
+      // Wrap imageCurator in 60s overall timeout (reduced from 120s — slide visuals already generated)
+      const IMAGE_CURATOR_TIMEOUT = 60000;
       const imageResults = await Promise.race([
         this.imageCurator.batchCurateImages(
           sections,
@@ -474,7 +491,7 @@ export class AgentTeamOrchestrator {
       let reviewResult: any;
 
       const sampleReviewSections = (allSections: any[], allContents: any[]) => {
-        const MAX_REVIEW_SECTIONS = 12;
+        const MAX_REVIEW_SECTIONS = 8;
         if (allSections.length <= MAX_REVIEW_SECTIONS) {
           return { reviewSections: allSections, reviewContents: allContents };
         }

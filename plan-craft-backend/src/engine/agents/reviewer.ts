@@ -149,7 +149,7 @@ JSON 형식으로만 출력하세요.`;
     try {
       const message = await this.anthropic.messages.create({
         model: this.model,
-        max_tokens: 4000,
+        max_tokens: 600,
         temperature: 0.2,
         messages: [{ role: 'user', content: prompt }]
       });

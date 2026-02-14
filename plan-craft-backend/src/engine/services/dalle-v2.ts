@@ -49,12 +49,14 @@ export class DalleV2Service {
 
   constructor(config: DalleV2Config = {}) {
     const apiKey = config.apiKey || process.env.OPENAI_API_KEY;
+    console.log(`[DalleV2Service] init — key source: ${config.apiKey ? 'config' : 'env'}, key prefix: ${apiKey?.substring(0, 10) || 'NONE'}, key length: ${apiKey?.length || 0}`);
     if (apiKey && apiKey !== 'undefined' && apiKey.trim() !== '') {
       this.openai = new OpenAI({ apiKey });
       this.available = true;
     } else {
       this.available = false;
     }
+    console.log(`[DalleV2Service] available: ${this.available}`);
   }
 
   isAvailable(): boolean {
@@ -94,7 +96,10 @@ export class DalleV2Service {
       console.log(`   ✅ DALL-E 3 image generated`);
       return { url: imageUrl, revisedPrompt, source: 'dalle-3' };
     } catch (error: any) {
-      console.warn(`   ⚠️  DALL-E failed: ${error.message}, using SVG fallback`);
+      const errDetail = error.status ? `HTTP ${error.status}` : '';
+      const errType = error.type || error.code || '';
+      console.warn(`   ⚠️  DALL-E failed [${errDetail} ${errType}]: ${error.message}`);
+      if (error.error) console.warn(`   ⚠️  DALL-E error body:`, JSON.stringify(error.error).slice(0, 300));
       return this.svgFallback(description, category);
     }
   }

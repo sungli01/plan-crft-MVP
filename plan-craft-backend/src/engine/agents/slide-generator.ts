@@ -291,10 +291,10 @@ ${researchSummary}
    */
   private async generateVisuals(plan: { slides: SlideData[]; tokens: any }): Promise<SlideData[]> {
     let dalleCount = 0;
-    const slides: SlideData[] = [];
+    const slides: SlideData[] = [...plan.slides];
 
-    for (const slide of plan.slides) {
-      // Generate QuickChart URL if chartData exists
+    // Generate QuickChart URLs (sync, no API calls)
+    for (const slide of slides) {
       if (slide.content?.chartData) {
         const cd = slide.content.chartData;
         try {
@@ -314,22 +314,42 @@ ${researchSummary}
           console.warn(`   ⚠️  Chart generation failed for slide ${slide.pageNumber}: ${e.message}`);
         }
       }
+    }
 
-      // Generate DALL-E image if needed and budget allows
-      if ((slide as any).needsDalleDiagram && dalleCount < this.maxDalleImages && this.dalle.isAvailable()) {
-        try {
-          const category = (slide as any).dalleCategory || 'concept-diagram';
-          const description = (slide as any).dalleDescription || slide.title;
-          const result = await this.dalle.generateDiagram(description, category);
-          slide.diagramUrl = result.url;
+    // Collect DALL-E tasks
+    const dalleTasks: { slide: SlideData; category: string; description: string }[] = [];
+    for (const slide of slides) {
+      if ((slide as any).needsDalleDiagram && dalleTasks.length < this.maxDalleImages && this.dalle.isAvailable()) {
+        const category = (slide as any).dalleCategory || 'concept-diagram';
+        const description = (slide as any).dalleDescription || slide.title;
+        dalleTasks.push({ slide, category, description });
+        console.log(`   🎨 DALL-E queued: slide ${slide.pageNumber} [${category}] needsDalleDiagram=true`);
+      } else if ((slide as any).needsDalleDiagram) {
+        console.log(`   ⏭️  Slide ${slide.pageNumber} needsDalleDiagram=true but skipped (available=${this.dalle.isAvailable()}, queued=${dalleTasks.length}/${this.maxDalleImages})`);
+      }
+    }
+
+    console.log(`   🎨 DALL-E tasks: ${dalleTasks.length} (parallel batches of 3)`);
+
+    // Execute DALL-E in parallel batches of 3
+    const BATCH_SIZE = 3;
+    for (let i = 0; i < dalleTasks.length; i += BATCH_SIZE) {
+      const batch = dalleTasks.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map(async (task) => {
+          const result = await this.dalle.generateDiagram(task.description, task.category);
+          return { slide: task.slide, result };
+        })
+      );
+      for (const r of results) {
+        if (r.status === 'fulfilled') {
+          r.value.slide.diagramUrl = r.value.result.url;
           dalleCount++;
-          console.log(`   🎨 DALL-E image ${dalleCount}/${this.maxDalleImages} for slide ${slide.pageNumber}`);
-        } catch (e: any) {
-          console.warn(`   ⚠️  DALL-E failed for slide ${slide.pageNumber}: ${e.message}`);
+          console.log(`   🎨 DALL-E image ${dalleCount}/${this.maxDalleImages} for slide ${r.value.slide.pageNumber} (source: ${r.value.result.source})`);
+        } else {
+          console.warn(`   ⚠️  DALL-E batch item failed: ${r.reason?.message || r.reason}`);
         }
       }
-
-      slides.push(slide);
     }
 
     console.log(`   📈 Visuals (before ensure): ${slides.filter(s => s.chartUrl).length} charts, ${dalleCount} DALL-E images`);
