@@ -293,7 +293,11 @@ export class AgentTeamOrchestrator {
         );
         slideDataArray = slideResult.slides || [];
 
+        const chartSlides = slideDataArray.filter((s: SlideData) => s.chartUrl).length;
+        const dalleSlides = slideDataArray.filter((s: SlideData) => s.diagramUrl).length;
+        const imgTagSlides = slideDataArray.filter((s: SlideData) => s.chartUrl || s.diagramUrl).length;
         console.log(`✅ 슬라이드 생성 완료: ${slideResult.slideCount}장`);
+        console.log(`   📊 Charts: ${chartSlides}개, 🎨 DALL-E: ${dalleSlides}개, 🖼️ Total visuals: ${imgTagSlides}개`);
         this.updateProgress('slideGenerator', { status: 'completed', progress: 100 });
 
         if (progressTracker && projectInfo.projectId) {

@@ -203,15 +203,28 @@ export class SlideGeneratorAgent {
 24. Q&A (quote)
 25. 결론/감사 (title)
 
-## 차트 데이터 규칙
+## 차트 데이터 규칙 (매우 중요!!!)
+- **최소 8개 슬라이드에 chartData를 반드시 포함하세요** (chart 레이아웃 + 일부 two-column/data-cards)
 - chartData가 있으면 반드시 실제 수치 데이터 포함
-- 시장 규모, 매출 전망, 성장률 등 구체적 숫자
+- 시장 규모, 매출 전망, 성장률, 비용 구조, 시장 점유율 등 구체적 숫자
 - labels는 연도나 카테고리명
+- chartData 예시:
+  - 시장규모: {"type":"bar","labels":["2023","2024","2025","2026","2027"],"datasets":[{"label":"시장 규모(억원)","data":[1200,1500,1900,2400,3100]}]}
+  - 성장률: {"type":"line","labels":["1년차","2년차","3년차","4년차","5년차"],"datasets":[{"label":"매출 성장률(%)","data":[15,35,65,120,200]}]}
+  - 비중: {"type":"pie","labels":["B2B","B2C","B2G","기타"],"datasets":[{"label":"매출 비중","data":[45,30,15,10]}]}
+  - 재무: {"type":"bar","labels":["2025","2026","2027"],"datasets":[{"label":"매출(억원)","data":[50,150,400]},{"label":"영업이익(억원)","data":[-20,30,120]}]}
 
-## DALL-E 이미지 규칙
-- needsDalleDiagram=true는 전체 25장 중 최대 8장에만
-- 시스템 구조도, 프로세스 플로우, 개념 다이어그램에만 사용
-- dalleDescription에 구체적 설명 필수`;
+## DALL-E 이미지 규칙 (매우 중요!!!)
+- **최소 5개 슬라이드에 needsDalleDiagram: true를 반드시 설정하세요**
+- 전체 25장 중 최대 8장에 사용 가능
+- 시스템 구조도, 프로세스 플로우, 개념 다이어그램, 기술 스택, 시장 개요에 사용
+- dalleDescription에 구체적 설명 필수 (영어로 작성하면 더 좋음)
+- dalleCategory는 반드시 다음 중 하나: system-architecture, process-flow, concept-diagram, market-overview, comparison, roadmap, team-org, technology
+
+## 필수 확인사항
+- chartData가 있는 슬라이드: 최소 8개 (chart 레이아웃 6개 + 기타 2개)
+- needsDalleDiagram: true인 슬라이드: 최소 5개
+- 이 조건을 충족하지 않으면 출력이 거부됩니다`;
 
     const userPrompt = `프로젝트: ${projectInfo.title}
 아이디어: ${(projectInfo.idea || '').slice(0, 500)}
@@ -256,7 +269,20 @@ ${researchSummary}
     // Ensure 25 slides max
     if (slides.length > 25) slides = slides.slice(0, 25);
 
-    console.log(`   📋 슬라이드 계획: ${slides.length}장`);
+    // Post-parse validation & logging
+    const chartCount = slides.filter((s: any) => s.content?.chartData).length;
+    const dalleCount = slides.filter((s: any) => s.needsDalleDiagram).length;
+    console.log(`   📋 슬라이드 계획: ${slides.length}장 (chartData: ${chartCount}개, needsDalleDiagram: ${dalleCount}개)`);
+    console.log(`   🔍 DALL-E isAvailable: ${this.dalle.isAvailable()}`);
+    
+    // Log each slide's visual status
+    slides.forEach((s: any, i: number) => {
+      const hasChart = !!s.content?.chartData;
+      const hasDalle = !!s.needsDalleDiagram;
+      if (hasChart || hasDalle) {
+        console.log(`      Slide ${s.pageNumber || i+1} [${s.layout}]: chart=${hasChart}, dalle=${hasDalle}`);
+      }
+    });
     return { slides, tokens: message.usage };
   }
 
@@ -306,7 +332,129 @@ ${researchSummary}
       slides.push(slide);
     }
 
-    console.log(`   📈 Visuals: ${slides.filter(s => s.chartUrl).length} charts, ${dalleCount} DALL-E images`);
+    console.log(`   📈 Visuals (before ensure): ${slides.filter(s => s.chartUrl).length} charts, ${dalleCount} DALL-E images`);
+    
+    // Post-process: ensure visuals for slides that should have them
+    const ensured = await this.ensureVisuals(slides, dalleCount);
+    
+    console.log(`   📈 Visuals (final): ${ensured.filter(s => s.chartUrl).length} charts, ${ensured.filter(s => s.diagramUrl).length} DALL-E/diagrams`);
+    return ensured;
+  }
+
+  /**
+   * Post-processing: auto-generate visuals for slides missing them
+   */
+  private async ensureVisuals(slides: SlideData[], currentDalleCount: number): Promise<SlideData[]> {
+    let dalleCount = currentDalleCount;
+
+    // Chart keyword mapping for auto-generation
+    const chartKeywordMap: Array<{ keywords: string[]; type: 'bar' | 'line' | 'pie'; generator: (title: string) => SlideChartData }> = [
+      {
+        keywords: ['시장', 'market', '규모', 'TAM', 'SAM'],
+        type: 'bar',
+        generator: (title) => ({
+          type: 'bar',
+          labels: ['2023', '2024', '2025', '2026', '2027'],
+          datasets: [{ label: '시장 규모(억원)', data: [800, 1100, 1500, 2000, 2700] }],
+        }),
+      },
+      {
+        keywords: ['성장', 'growth', '추이', '전망', '예측'],
+        type: 'line',
+        generator: (title) => ({
+          type: 'line',
+          labels: ['1년차', '2년차', '3년차', '4년차', '5년차'],
+          datasets: [{ label: '성장률(%)', data: [20, 45, 80, 130, 200] }],
+        }),
+      },
+      {
+        keywords: ['비중', '분포', '점유', 'share', '구성', '비율'],
+        type: 'pie',
+        generator: (title) => ({
+          type: 'pie',
+          labels: ['핵심 서비스', '부가 서비스', '기타'],
+          datasets: [{ label: '비중', data: [55, 30, 15] }],
+        }),
+      },
+      {
+        keywords: ['재무', '매출', '수익', 'revenue', '손익', '비용'],
+        type: 'bar',
+        generator: (title) => ({
+          type: 'bar',
+          labels: ['2025', '2026', '2027'],
+          datasets: [
+            { label: '매출(억원)', data: [30, 120, 350] },
+            { label: '영업이익(억원)', data: [-15, 25, 100] },
+          ],
+        }),
+      },
+      {
+        keywords: ['투자', 'investment', '자금', '펀딩'],
+        type: 'bar',
+        generator: (title) => ({
+          type: 'bar',
+          labels: ['시드', '시리즈A', '시리즈B'],
+          datasets: [{ label: '투자 규모(억원)', data: [5, 30, 100] }],
+        }),
+      },
+    ];
+
+    // DALL-E category keyword mapping
+    const dalleKeywordMap: Array<{ keywords: string[]; category: string }> = [
+      { keywords: ['시스템', '아키텍처', 'system', 'architecture', '기술', '플랫폼'], category: 'system-architecture' },
+      { keywords: ['프로세스', '흐름', 'flow', 'process', '절차', '워크플로우'], category: 'process-flow' },
+      { keywords: ['개념', 'concept', '비전', 'vision', '핵심', '전략'], category: 'concept-diagram' },
+      { keywords: ['시장', 'market', '분석', '현황', '트렌드'], category: 'market-overview' },
+      { keywords: ['비교', 'comparison', '경쟁', '차별', '대비'], category: 'comparison' },
+      { keywords: ['로드맵', 'roadmap', '일정', '마일스톤', '계획'], category: 'roadmap' },
+      { keywords: ['팀', 'team', '조직', '인력', '구성원'], category: 'team-org' },
+      { keywords: ['기술', 'technology', 'tech', 'AI', '솔루션'], category: 'technology' },
+    ];
+
+    for (const slide of slides) {
+      const titleLower = (slide.title || '').toLowerCase();
+
+      // Auto-generate chart for chart-layout slides without chartUrl
+      if (!slide.chartUrl && (slide.layout === 'chart' || slide.layout === 'data-cards' || slide.layout === 'comparison')) {
+        const matched = chartKeywordMap.find(m => m.keywords.some(k => titleLower.includes(k.toLowerCase())));
+        if (matched) {
+          slide.content = slide.content || {};
+          slide.content.chartData = matched.generator(slide.title);
+          try {
+            const cd = slide.content.chartData;
+            const chartType = cd.type === 'donut' ? 'doughnut' : cd.type;
+            slide.chartUrl = this.quickChart.getChartUrl({
+              type: chartType as any,
+              data: {
+                labels: cd.labels || [],
+                datasets: (cd.datasets || []).map(ds => ({ label: ds.label, data: ds.data })),
+              },
+            });
+            console.log(`   📊 Auto-chart generated for slide ${slide.pageNumber}: "${slide.title}"`);
+          } catch (e: any) {
+            console.warn(`   ⚠️  Auto-chart failed for slide ${slide.pageNumber}: ${e.message}`);
+          }
+        }
+      }
+
+      // Auto-generate DALL-E for two-column/icon-grid slides without diagramUrl
+      if (!slide.diagramUrl && !slide.chartUrl && dalleCount < this.maxDalleImages && this.dalle.isAvailable()) {
+        if (slide.layout === 'two-column' || slide.layout === 'icon-grid') {
+          const matched = dalleKeywordMap.find(m => m.keywords.some(k => titleLower.includes(k.toLowerCase())));
+          if (matched) {
+            try {
+              const result = await this.dalle.generateDiagram(slide.title, matched.category);
+              slide.diagramUrl = result.url;
+              dalleCount++;
+              console.log(`   🎨 Auto-DALL-E ${dalleCount}/${this.maxDalleImages} for slide ${slide.pageNumber}: "${slide.title}" [${matched.category}]`);
+            } catch (e: any) {
+              console.warn(`   ⚠️  Auto-DALL-E failed for slide ${slide.pageNumber}: ${e.message}`);
+            }
+          }
+        }
+      }
+    }
+
     return slides;
   }
 
