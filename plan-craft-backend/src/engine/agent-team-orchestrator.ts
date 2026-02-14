@@ -482,9 +482,10 @@ export class AgentTeamOrchestrator {
         });
       }
 
-      // Phase 4: 품질 검수 + 자동 재작성 (Quality Gate)
+      // Phase 4: 품질 검수 — SKIP (Reviewer 제거: 300초+ 병목, 문서 수정 없이 점수만 매김)
+      const SKIP_REVIEWER = true;
       const QUALITY_THRESHOLD = 90;
-      const MAX_REWRITE_ROUNDS = 2; // 최대 2회 재시도 (총 3회 작성)
+      const MAX_REWRITE_ROUNDS = 0; // 재시도 없음
       let reviewRound = 1;
       let bestScore = 0;
       let bestWrittenSections = writtenSections;
@@ -515,8 +516,8 @@ export class AgentTeamOrchestrator {
         };
       };
 
-      // Review-rewrite loop
-      while (reviewRound <= MAX_REWRITE_ROUNDS + 1) {
+      // Review-rewrite loop (skipped when SKIP_REVIEWER=true)
+      while (!SKIP_REVIEWER && reviewRound <= MAX_REWRITE_ROUNDS + 1) {
         console.log(`\n✅ Phase 4: 품질 검수 (${reviewRound}차)`);
         
         this.updateProgress('reviewer', { status: 'running', progress: 50 });
@@ -652,15 +653,16 @@ export class AgentTeamOrchestrator {
       this.updateProgress('reviewer', { status: 'completed', progress: 100 });
       
       if (progressTracker && projectInfo.projectId) {
+        const reviewScore = SKIP_REVIEWER ? 'N/A (skipped)' : `${reviewResult?.summary?.averageScore?.toFixed(1) || 0}/100점`;
         progressTracker.updateAgent(projectInfo.projectId, 'reviewer', {
           status: 'completed',
           progress: 100,
-          detail: `품질 검토 완료 (${reviewRound}차, ${reviewResult.summary.averageScore.toFixed(1)}점)`
+          detail: SKIP_REVIEWER ? '품질 검토 생략 (속도 최적화)' : `품질 검토 완료 (${reviewRound}차, ${reviewScore})`
         });
         progressTracker.addLog(projectInfo.projectId, {
           agent: 'reviewer',
           level: 'success',
-          message: `품질 검토 최종 완료: ${reviewResult.summary.averageScore.toFixed(1)}/100점 (${reviewRound}차 검토)`
+          message: SKIP_REVIEWER ? '품질 검토 생략 — 속도 최적화 적용' : `품질 검토 최종 완료: ${reviewScore} (${reviewRound}차 검토)`
         });
       }
 
@@ -672,7 +674,7 @@ export class AgentTeamOrchestrator {
       console.log('║                  생성 완료 (Agent Teams)                 ║');
       console.log('╚═══════════════════════════════════════════════════════════╝');
       console.log(`⏱️  소요 시간: ${(elapsed / 1000 / 60).toFixed(1)}분`);
-      console.log(`📊 품질 점수: ${reviewResult.summary.averageScore}/100`);
+      console.log(`📊 품질 점수: ${SKIP_REVIEWER ? 'N/A (reviewer skipped)' : reviewResult?.summary?.averageScore + '/100'}`);
       console.log(`📝 섹션 수: ${writtenSections.length}개`);
       console.log(`📖 총 단어: ${writtenSections.reduce((sum: number, s: any) => sum + s.wordCount, 0).toLocaleString()}개`);
       console.log(`🖼️  이미지: ${totalImages}개`);
