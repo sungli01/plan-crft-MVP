@@ -150,7 +150,7 @@ function renderSlideVisual(slide: SlideData, sectionIdx: number): string {
 export function generateHTML(result: any, projectInfo: any) {
   const { design, sections, images, reviews, metadata } = result;
   const slideDataArray: SlideData[] = result.pptSlideData || [];
-  const avgQuality = reviews.summary.averageScore;
+  const avgQuality = reviews?.summary?.averageScore ?? 0;
   const imageMap = buildImageMap(images);
   
   const totalImageCount = images
@@ -254,8 +254,8 @@ export function generateHTML(result: any, projectInfo: any) {
 `;
 
   sections.forEach((section: any) => {
-    const review = reviews.reviews.find((r: any) => r.sectionId === section.sectionId);
-    const score = review ? review.review.overallScore : 0;
+    const review = reviews?.reviews?.find((r: any) => r.sectionId === section.sectionId);
+    const score = review ? review.review?.overallScore ?? 0 : 0;
     html += `      <li>${section.sectionId} (품질: ${score}/100)</li>\n`;
   });
 
@@ -298,7 +298,7 @@ export function extractSummary(result: any) {
     : 0;
   
   return {
-    qualityScore: reviews.summary.averageScore,
+    qualityScore: reviews?.summary?.averageScore ?? 0,
     sectionCount: sections.length,
     wordCount: sections.reduce((sum: number, s: any) => sum + (s.wordCount || 0), 0),
     imageCount,
