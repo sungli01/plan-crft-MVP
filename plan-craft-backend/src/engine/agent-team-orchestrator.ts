@@ -427,10 +427,20 @@ export class AgentTeamOrchestrator {
         });
       }
 
-      const imageResults = await this.imageCurator.batchCurateImages(
-        sections,
-        writtenSections.map((s: any) => s.content)
-      );
+      // Wrap imageCurator in 120s overall timeout to prevent pipeline stalls
+      const IMAGE_CURATOR_TIMEOUT = 120000;
+      const imageResults = await Promise.race([
+        this.imageCurator.batchCurateImages(
+          sections,
+          writtenSections.map((s: any) => s.content)
+        ),
+        new Promise<import('./agents/image-curator').CurationResult[]>((resolve) => {
+          setTimeout(() => {
+            console.warn(`⏰ [imageCurator] 전체 타임아웃 (${IMAGE_CURATOR_TIMEOUT / 1000}s) — 이미지 없이 진행`);
+            resolve(sections.map(s => ({ sectionId: s.id || s.title, images: [] })));
+          }, IMAGE_CURATOR_TIMEOUT);
+        })
+      ]);
       
       imageResults.forEach(result => {
         if (result.totalTokens) {

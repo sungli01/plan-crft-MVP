@@ -206,24 +206,42 @@ Only include images scoring 90+. If none qualify, return [].`,
 
     console.log(`\n🔎 [BraveImageRAG] "${sectionTitle}" 이미지 검색 시작`);
 
-    // 1. Generate query
-    const query = await this.generateSearchQuery(sectionTitle, sectionContent);
+    // Wrap entire pipeline in 30s timeout
+    const timeoutMs = 30000;
+    const timeoutPromise = new Promise<null>((resolve) => {
+      setTimeout(() => {
+        console.warn(`   ⏰ [BraveImageRAG] "${sectionTitle}" 타임아웃 (${timeoutMs}ms) — fallback`);
+        resolve(null);
+      }, timeoutMs);
+    });
 
-    // 2. Search
-    const candidates = await this.searchImages(query, 10);
-    if (candidates.length === 0) {
-      console.log(`   ℹ️ 검색 결과 없음 — fallback`);
-      return null;
-    }
+    const searchPromise = (async (): Promise<ScoredImage | null> => {
+      try {
+        // 1. Generate query
+        const query = await this.generateSearchQuery(sectionTitle, sectionContent);
 
-    // 3. Score
-    const scored = await this.scoreImages(sectionTitle, sectionContent, candidates);
-    if (scored.length === 0) {
-      console.log(`   ℹ️ 95점+ 이미지 없음 — fallback`);
-      return null;
-    }
+        // 2. Search
+        const candidates = await this.searchImages(query, 10);
+        if (candidates.length === 0) {
+          console.log(`   ℹ️ 검색 결과 없음 — fallback`);
+          return null;
+        }
 
-    console.log(`   ✅ 최고 이미지: score=${scored[0].relevanceScore}, "${scored[0].title.slice(0, 50)}"`);
-    return scored[0];
+        // 3. Score
+        const scored = await this.scoreImages(sectionTitle, sectionContent, candidates);
+        if (scored.length === 0) {
+          console.log(`   ℹ️ 95점+ 이미지 없음 — fallback`);
+          return null;
+        }
+
+        console.log(`   ✅ 최고 이미지: score=${scored[0].relevanceScore}, "${scored[0].title.slice(0, 50)}"`);
+        return scored[0];
+      } catch (error: any) {
+        console.error(`   ❌ [BraveImageRAG] "${sectionTitle}" 검색 실패: ${error.message}`);
+        return null;
+      }
+    })();
+
+    return Promise.race([searchPromise, timeoutPromise]);
   }
 }

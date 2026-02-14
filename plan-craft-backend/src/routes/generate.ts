@@ -451,6 +451,7 @@ generate.get('/:projectId/download-presentation', async (c) => {
     let cached = presentationCache.get(projectId);
     if (cached) {
       c.header('Content-Type', 'text/html; charset=utf-8');
+      c.header('Content-Disposition', 'inline; filename="presentation.html"');
       return c.body(cached.html);
     }
 
@@ -468,6 +469,7 @@ generate.get('/:projectId/download-presentation', async (c) => {
       if (meta.presentationHtml) {
         cachePresentation(projectId, meta.presentationHtml);
         c.header('Content-Type', 'text/html; charset=utf-8');
+        c.header('Content-Disposition', 'inline; filename="presentation.html"');
         return c.body(meta.presentationHtml);
       }
     } catch {}
@@ -505,6 +507,7 @@ generate.get('/:projectId/download-presentation', async (c) => {
 
       cachePresentation(projectId, result.html);
       c.header('Content-Type', 'text/html; charset=utf-8');
+      c.header('Content-Disposition', 'inline; filename="presentation.html"');
       return c.body(result.html);
     } catch (genError: any) {
       console.error('[Presentation] Generation failed:', genError.message);
@@ -514,6 +517,34 @@ generate.get('/:projectId/download-presentation', async (c) => {
     console.error('Presentation download error:', error);
     return c.json({ error: 'Failed to generate presentation' }, 500);
   }
+});
+
+// GET /api/generate/:projectId/versions — 버전 목록 (alias for /api/versions/:projectId)
+generate.get('/:projectId/versions', authMiddleware, async (c) => {
+  const user = c.get('user') as any;
+  const projectId = c.req.param('projectId');
+
+  const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
+  if (!project || project.userId !== user.id) {
+    return c.json({ error: '프로젝트를 찾을 수 없습니다' }, 404);
+  }
+
+  const versions = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.projectId, projectId))
+    .orderBy(desc(documents.generatedAt));
+
+  return c.json({
+    versions: versions.map((v, i) => ({
+      id: v.id,
+      version: versions.length - i,
+      createdAt: v.createdAt,
+      qualityScore: v.qualityScore,
+      wordCount: v.wordCount,
+      sectionCount: v.sectionCount,
+    })),
+  });
 });
 
 // GET /api/generate/:projectId/pptx-status — Check if PPTX is available
