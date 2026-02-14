@@ -64,7 +64,7 @@ export class ImageCuratorAgent {
 
   constructor(apiKey: string, config: ImageCuratorConfig = {}) {
     this.anthropic = new Anthropic({ apiKey });
-    this.model = config.model || 'claude-3-5-haiku-20241022';
+    this.model = config.model || 'claude-3-5-haiku-20250414';
     this.name = 'ImageCurator';
     this.role = '이미지 큐레이터';
     

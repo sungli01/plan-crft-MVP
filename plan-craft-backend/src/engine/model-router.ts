@@ -5,7 +5,7 @@
 export const MODEL_TIERS = {
   opus: 'claude-opus-4-6',
   sonnet: 'claude-sonnet-4-5-20250929',
-  haiku: 'claude-3-5-haiku-20241022',
+  haiku: 'claude-3-5-haiku-20250414',
 } as const;
 
 export type ModelTier = typeof MODEL_TIERS[keyof typeof MODEL_TIERS];

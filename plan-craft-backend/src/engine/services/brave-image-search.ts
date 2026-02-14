@@ -48,7 +48,7 @@ export class BraveImageSearchService {
       const snippet = sectionContent.length > 500 ? sectionContent.slice(0, 500) : sectionContent;
 
       const msg = await anthropic.messages.create({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-3-5-haiku-20250414',
         max_tokens: 100,
         temperature: 0,
         system: `You generate precise English image search queries for professional business documents. Output ONLY the search query, nothing else. The query should find a high-quality, professional photograph or infographic that directly illustrates the section topic. Be specific — avoid generic terms like "business" or "technology" alone.`,
@@ -150,7 +150,7 @@ export class BraveImageSearchService {
       ).join('\n');
 
       const msg = await anthropic.messages.create({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-3-5-haiku-20250414',
         max_tokens: 600,
         temperature: 0,
         system: `You evaluate image relevance for professional business documents. Score each image candidate 0-100 based on:

@@ -694,7 +694,7 @@ export class AgentTeamOrchestrator {
         design,
         sections: writtenSections,
         images: imageResults,
-        reviews: reviewResult,
+        reviews: reviewResult || null,
         research: researchResult || null,
         pptxBuffer: pptxBuffer || null,
         pptSlideCount,
