@@ -15,6 +15,8 @@ import { ReviewerAgent } from './agents/reviewer';
 import { ResearchAgent } from './agents/researcher';
 import { PptGeneratorAgent } from './agents/ppt-generator';
 import { PdfPresenterAgent } from './agents/pdf-presenter';
+import { SlideGeneratorAgent } from './agents/slide-generator';
+import type { SlideData } from './agents/slide-generator';
 import { ModelRouter } from './model-router';
 import { TokenTracker } from './token-tracker';
 
@@ -259,6 +261,62 @@ export class AgentTeamOrchestrator {
         });
       }
 
+      // Phase 1.5: 슬라이드 생성 (Slide Generator — 프레젠테이션 먼저)
+      let slideResult: any = null;
+      let slideDataArray: SlideData[] = [];
+      try {
+        console.log('\n🎨 Phase 1.5: 슬라이드 프레젠테이션 생성 (GenSpark 스타일)');
+        this.updateProgress('slideGenerator', { status: 'running', progress: 20 });
+
+        if (progressTracker && projectInfo.projectId) {
+          progressTracker.updateAgent(projectInfo.projectId, 'slideGenerator', {
+            status: 'running', progress: 20,
+            detail: '25페이지 프레젠테이션 슬라이드 생성 중...'
+          });
+          progressTracker.addLog(projectInfo.projectId, {
+            agent: 'slideGenerator', level: 'info',
+            message: 'GenSpark 스타일 슬라이드 생성 시작'
+          });
+        }
+
+        const slideGenerator = new SlideGeneratorAgent({
+          apiKey: this.config.apiKey,
+          model: 'claude-sonnet-4-5-20250929',
+          openaiKey: this.config.openaiKey,
+          maxDalleImages: 8,
+        });
+
+        slideResult = await slideGenerator.generateSlides(
+          design,
+          researchResult,
+          { title: projectInfo.title, idea: projectInfo.idea }
+        );
+        slideDataArray = slideResult.slides || [];
+
+        console.log(`✅ 슬라이드 생성 완료: ${slideResult.slideCount}장`);
+        this.updateProgress('slideGenerator', { status: 'completed', progress: 100 });
+
+        if (progressTracker && projectInfo.projectId) {
+          progressTracker.updateAgent(projectInfo.projectId, 'slideGenerator', {
+            status: 'completed', progress: 100,
+            detail: `${slideResult.slideCount}장 슬라이드 생성 완료`
+          });
+          progressTracker.addLog(projectInfo.projectId, {
+            agent: 'slideGenerator', level: 'success',
+            message: `프레젠테이션 완료: ${slideResult.slideCount}장, 차트 ${slideDataArray.filter((s: SlideData) => s.chartUrl).length}개, DALL-E ${slideDataArray.filter((s: SlideData) => s.diagramUrl).length}개`
+          });
+        }
+      } catch (slideError: any) {
+        console.warn('[SlideGenerator] Failed (non-fatal):', slideError.message);
+        this.updateProgress('slideGenerator', { status: 'skipped', progress: 0 });
+        if (progressTracker && projectInfo.projectId) {
+          progressTracker.addLog(projectInfo.projectId, {
+            agent: 'slideGenerator', level: 'warn',
+            message: `슬라이드 생성 건너뜀: ${slideError.message}`
+          });
+        }
+      }
+
       // Phase 2: 병렬 작성 (Writer Team)
       console.log(`\n✍️  Phase 2: 병렬 작성 (Writer Team x${this.writerTeamSize})`);
       
@@ -318,7 +376,8 @@ export class AgentTeamOrchestrator {
       let writtenSections = await this.parallelWriteSections(
         sections, 
         writerProjectInfo,
-        progressTracker
+        progressTracker,
+        slideDataArray
       );
       
       console.log(`\n✅ 작성 완료: ${writtenSections.length}개 섹션`);
@@ -339,75 +398,11 @@ export class AgentTeamOrchestrator {
         });
       }
 
-      // Phase 2.5: 발표자료 생성 (PDF Presenter) — graceful, 실패해도 문서 생성 계속
+      // Phase 2.5: Use slide result from Phase 1.5
       let pptxBuffer: Buffer | null = null;
-      let pptSlideCount = 0;
-      let pptSlideData: any[] = [];
-      let presentationHtml: string | null = null;
-      try {
-        console.log('\n📊 Phase 2.5: 발표자료 생성 (PDF Presenter)');
-        this.updateProgress('pptGenerator', { status: 'running', progress: 50 });
-
-        if (progressTracker && projectInfo.projectId) {
-          progressTracker.updateAgent(projectInfo.projectId, 'pptGenerator', {
-            status: 'running',
-            progress: 50,
-            detail: '발표자료 슬라이드 생성 중...'
-          });
-          progressTracker.addLog(projectInfo.projectId, {
-            agent: 'pptGenerator',
-            level: 'info',
-            message: '발표자료 생성 시작'
-          });
-        }
-
-        const pdfPresenter = new PdfPresenterAgent({
-          apiKey: this.config.apiKey,
-          model: 'claude-sonnet-4-5-20250929',
-        });
-
-        const presenterSections = writtenSections.map((ws: any, idx: number) => ({
-          id: sections[idx]?.id || sections[idx]?.title || `section-${idx}`,
-          title: sections[idx]?.title || `섹션 ${idx + 1}`,
-          content: ws.content || '',
-          wordCount: ws.wordCount || 0,
-        }));
-
-        const presResult = await pdfPresenter.generatePresentation(presenterSections, {
-          title: projectInfo.title,
-          idea: projectInfo.idea,
-        });
-
-        presentationHtml = presResult.html;
-        pptSlideCount = presResult.slideCount;
-
-        console.log(`✅ 발표자료 생성 완료: ${pptSlideCount}장`);
-        this.updateProgress('pptGenerator', { status: 'completed', progress: 100 });
-
-        if (progressTracker && projectInfo.projectId) {
-          progressTracker.updateAgent(projectInfo.projectId, 'pptGenerator', {
-            status: 'completed',
-            progress: 100,
-            detail: `${pptSlideCount}장 슬라이드 생성 완료`
-          });
-          progressTracker.addLog(projectInfo.projectId, {
-            agent: 'pptGenerator',
-            level: 'success',
-            message: `발표자료 생성 완료: ${pptSlideCount}장`
-          });
-        }
-      } catch (presError: any) {
-        console.warn('[PdfPresenter] Presentation generation failed (non-fatal):', presError.message);
-        this.updateProgress('pptGenerator', { status: 'skipped', progress: 0 });
-
-        if (progressTracker && projectInfo.projectId) {
-          progressTracker.addLog(projectInfo.projectId, {
-            agent: 'pptGenerator',
-            level: 'warn',
-            message: `발표자료 생성 건너뜀: ${presError.message}`
-          });
-        }
-      }
+      let pptSlideCount = slideResult?.slideCount || 0;
+      let pptSlideData: any[] = slideDataArray;
+      let presentationHtml: string | null = slideResult?.presentationHtml || null;
 
       // Phase 3: 이미지 큐레이션 (Image Curator)
       console.log('\n🖼️  Phase 3: 이미지 큐레이션');
@@ -707,7 +702,7 @@ export class AgentTeamOrchestrator {
     }
   }
 
-  async parallelWriteSections(sections: any[], projectInfo: ProjectInfo & { projectId?: string }, progressTracker: ProgressTrackerLike | null = null): Promise<any[]> {
+  async parallelWriteSections(sections: any[], projectInfo: ProjectInfo & { projectId?: string }, progressTracker: ProgressTrackerLike | null = null, slideDataArray: SlideData[] = []): Promise<any[]> {
     const results: any[] = [];
     const totalSections = sections.length;
     let completedSections = 0;
@@ -728,8 +723,26 @@ export class AgentTeamOrchestrator {
         const globalIdx = round * this.writerTeamSize + idx;
         const prevTitle = globalIdx > 0 ? sections[globalIdx - 1]?.title : null;
         const nextTitle = globalIdx < sections.length - 1 ? sections[globalIdx + 1]?.title : null;
+        
+        // Find matching slide for this section
+        let slideContext: any = undefined;
+        if (slideDataArray.length > 0) {
+          // Match by index ratio or title similarity
+          const slideIdx = Math.min(Math.floor((globalIdx / sections.length) * slideDataArray.length) + 2, slideDataArray.length - 1);
+          const slide = slideDataArray[slideIdx];
+          if (slide) {
+            slideContext = {
+              pageNumber: slide.pageNumber,
+              title: slide.title,
+              keyMessage: slide.content?.mainText || '',
+              bullets: slide.content?.bullets,
+              kpiValues: slide.content?.kpiCards?.map(k => `${k.label}: ${k.value}`),
+            };
+          }
+        }
+        
         console.log(`      → ${writer.name}: "${section.title}" [${section.model?.split('-').slice(-1)}] max=${section.maxTokens}`);
-        return writer.writeSection(section, projectInfo, { prevTitle, nextTitle });
+        return writer.writeSection(section, projectInfo, { prevTitle, nextTitle, slideContext });
       });
       
       const roundResults = await Promise.all(promises);

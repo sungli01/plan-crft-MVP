@@ -35,11 +35,21 @@ export interface DesignSection {
   subsections?: DesignSubsection[];
 }
 
+export interface PresentationPageDesign {
+  pageNumber: number;
+  title: string;
+  keyMessage: string;
+  visualType: 'chart' | 'diagram' | 'kpi-cards' | 'icon-grid' | 'timeline' | 'comparison' | 'table' | 'image';
+  dataNeeds: string;
+  linkedSectionId?: string;
+}
+
 export interface DocumentDesign {
   documentTitle: string;
   structure: DesignSection[];
   imageRequirements?: Array<{ sectionId: string; type: string; description: string }>;
   estimatedTotalPages: number;
+  presentationStructure?: PresentationPageDesign[];
 }
 
 export interface DesignResult {
