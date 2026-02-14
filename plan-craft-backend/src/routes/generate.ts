@@ -674,7 +674,7 @@ async function generateDocumentBackground(projectId: string, projectData: any, u
     const result = await orchestrator.generateDocument(projectInfo, progressTracker);
 
     console.log(`[Background] Generation complete for project ${projectId}`);
-    console.log(`Quality: ${result.reviews.summary.averageScore}/100, Sections: ${result.sections.length}`);
+    console.log(`Quality: ${result.reviews?.summary?.averageScore ?? 'N/A'}/100, Sections: ${result.sections.length}`);
 
     // Cache PPTX buffer if available
     if (result.pptxBuffer) {
