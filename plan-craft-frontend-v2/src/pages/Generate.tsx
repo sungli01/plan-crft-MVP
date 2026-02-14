@@ -495,6 +495,27 @@ export default function Generate() {
                     <div className="mb-4">
                       <CardTitle className="text-xl sm:text-2xl">{generatedDoc.title}</CardTitle>
                       <CardDescription>AI 초안 생성이 완료되었습니다.</CardDescription>
+                      {/* 품질 점수 배지 & 재작성 횟수 */}
+                      <div className="flex items-center gap-2 mt-2">
+                        {genStatus?.document?.qualityScore != null && (() => {
+                          const score = genStatus.document.qualityScore;
+                          const colorClass = score >= 90
+                            ? "bg-green-100 text-green-700 border-green-300"
+                            : score >= 80
+                            ? "bg-yellow-100 text-yellow-700 border-yellow-300"
+                            : "bg-red-100 text-red-700 border-red-300";
+                          return (
+                            <Badge className={cn("text-xs border", colorClass)}>
+                              품질 {score.toFixed(1)}점
+                            </Badge>
+                          );
+                        })()}
+                        {genStatus?.document && (genStatus.document as any).reviewRound != null && (
+                          <Badge variant="secondary" className="text-xs">
+                            {(genStatus.document as any).reviewRound}차 검토 통과
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Button variant="outline" size="sm" onClick={() => {
@@ -515,7 +536,7 @@ export default function Generate() {
                         className="border-indigo-300 text-indigo-600 hover:bg-indigo-50"
                       >
                         <Download className="mr-2 h-4 w-4" />
-                        발표자료 보기
+                        📊 발표자료 (PDF)
                       </Button>
                       <Button variant="outline" size="sm" onClick={handleRegenerate}
                         className="border-orange-300 text-orange-600 hover:bg-orange-50"

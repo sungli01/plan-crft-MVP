@@ -176,7 +176,8 @@ generate.get('/:projectId/status', authMiddleware, async (c) => {
         sectionCount: document.sectionCount,
         wordCount: document.wordCount,
         imageCount: document.imageCount,
-        createdAt: document.generatedAt
+        createdAt: document.generatedAt,
+        reviewRound: (() => { try { return JSON.parse(document.metadata || '{}').reviewRound || 1; } catch { return 1; } })()
       } : null
     });
   } catch (error) {
@@ -675,6 +676,7 @@ async function generateDocumentBackground(projectId: string, projectData: any, u
         metadata: JSON.stringify({
           title: projectData.title,
           version: version || 1,
+          reviewRound: result.reviewRound || 1,
           generatedAt: new Date().toISOString(),
           tokenUsage: summary.tokenUsage || {},
           presentationHtml: result.presentationHtml || null

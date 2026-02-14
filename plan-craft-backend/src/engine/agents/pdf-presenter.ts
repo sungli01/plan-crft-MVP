@@ -61,7 +61,7 @@ export class PdfPresenterAgent {
           max_tokens: 4000,
           messages: [{
             role: 'user',
-            content: `다음 문서 섹션들을 발표자료 슬라이드로 변환하세요.
+            content: `다음 문서 섹션들을 고품질 발표자료 슬라이드로 변환하세요.
 
 프로젝트: "${projectInfo.title}"
 
@@ -74,16 +74,20 @@ export class PdfPresenterAgent {
   }
 ]
 
-HTML 규칙:
+## 품질 기준 (필수)
+1. **핵심 포인트 3~5개**: 한 슬라이드에 불릿 3~5개만. 6개 이상이면 슬라이드 분할
+2. **수치/통계 강조 필수**: 문서에서 수치가 있으면 반드시 stat-grid로 크게 표시. 수치 없는 슬라이드가 연속 2개 이상이면 안됨
+3. **표/비교 시각화 포함**: 비교 항목이 있으면 반드시 comparison-table 사용
+4. **발표자 노트 필수**: 각 슬라이드마다 실제 발표 시 말할 스크립트 2-3문장
+
+## HTML 규칙
 - 사용 가능한 CSS 클래스: slide-title, slide-subtitle, bullet-list, key-number, key-label, stat-grid, stat-item, comparison-table, process-steps, step-item, highlight-box
 - 핵심 포인트만 추출 (장황한 텍스트 금지, 각 불릿 30자 이내)
-- 수치/통계가 있으면 <div class="stat-grid"><div class="stat-item"><span class="key-number">42%</span><span class="key-label">성장률</span></div></div> 형태로 크게 강조
-- 비교가 있으면 <table class="comparison-table"> 사용
-- 프로세스가 있으면 <div class="process-steps"><div class="step-item"><span class="step-num">1</span><span class="step-text">내용</span></div></div>
-- 한 슬라이드에 불릿 3~5개 max
+- 수치/통계: <div class="stat-grid"><div class="stat-item"><span class="key-number">42%</span><span class="key-label">성장률</span></div></div>
+- 비교: <table class="comparison-table"> 사용
+- 프로세스: <div class="process-steps"><div class="step-item"><span class="step-num">1</span><span class="step-text">내용</span></div></div>
 - 불릿 리스트: <ul class="bullet-list"><li>내용</li></ul>
 - 강조 박스: <div class="highlight-box">핵심 메시지</div>
-- 발표자 노트는 실제 발표 시 말할 스크립트 (2-3문장)
 
 JSON 배열만 응답하세요. 마크다운 코드블록 없이 순수 JSON만.
 

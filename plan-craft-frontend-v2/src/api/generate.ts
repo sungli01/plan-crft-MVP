@@ -30,6 +30,7 @@ export interface GenerateStatus {
     wordCount: number;
     imageCount: number;
     createdAt: string;
+    reviewRound?: number;
   };
   error?: string;
 }

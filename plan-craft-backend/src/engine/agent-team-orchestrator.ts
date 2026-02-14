@@ -315,7 +315,7 @@ export class AgentTeamOrchestrator {
         writerProjectInfo.idea = (writerProjectInfo.idea || '') + researchContext;
       }
 
-      const writtenSections = await this.parallelWriteSections(
+      let writtenSections = await this.parallelWriteSections(
         sections, 
         writerProjectInfo,
         progressTracker
@@ -456,78 +456,172 @@ export class AgentTeamOrchestrator {
         });
       }
 
-      // Phase 4: 품질 검수 (Reviewer)
-      console.log('\n✅ Phase 4: 품질 검수');
-      
-      this.updateProgress('reviewer', { status: 'running', progress: 50 });
-      
-      if (progressTracker && projectInfo.projectId) {
-        progressTracker.updateAgent(projectInfo.projectId, 'reviewer', {
-          status: 'running',
-          progress: 50,
-          detail: '품질 검토 중...'
-        });
-        progressTracker.addLog(projectInfo.projectId, {
-          agent: 'reviewer',
-          level: 'info',
-          message: '품질 검토 시작'
-        });
-      }
+      // Phase 4: 품질 검수 + 자동 재작성 (Quality Gate)
+      const QUALITY_THRESHOLD = 90;
+      const MAX_REWRITE_ROUNDS = 2; // 최대 2회 재시도 (총 3회 작성)
+      let reviewRound = 1;
+      let bestScore = 0;
+      let bestWrittenSections = writtenSections;
+      let reviewResult: any;
 
-      // 핵심 섹션만 샘플링 리뷰 (최대 12개)
-      const MAX_REVIEW_SECTIONS = 12;
-      let reviewSections = sections;
-      let reviewContents = writtenSections.map((s: any) => s.content);
-      
-      if (sections.length > MAX_REVIEW_SECTIONS) {
-        // 우선순위: importance가 high/critical인 섹션 + 첫/마지막 섹션 + 균등 샘플링
+      const sampleReviewSections = (allSections: any[], allContents: any[]) => {
+        const MAX_REVIEW_SECTIONS = 12;
+        if (allSections.length <= MAX_REVIEW_SECTIONS) {
+          return { reviewSections: allSections, reviewContents: allContents };
+        }
         const importantIndices = new Set<number>();
-        
-        // 첫/마지막 섹션은 항상 포함
         importantIndices.add(0);
-        importantIndices.add(sections.length - 1);
-        
-        // importance가 high/critical인 섹션
-        sections.forEach((s: any, i: number) => {
-          if (s.importance === 'high' || s.importance === 'critical') {
-            importantIndices.add(i);
-          }
+        importantIndices.add(allSections.length - 1);
+        allSections.forEach((s: any, i: number) => {
+          if (s.importance === 'high' || s.importance === 'critical') importantIndices.add(i);
+          if (s.level === 1 || s.level === 2) importantIndices.add(i);
         });
-        
-        // level 1 (최상위) 섹션
-        sections.forEach((s: any, i: number) => {
-          if (s.level === 1 || s.level === 2) {
-            importantIndices.add(i);
-          }
-        });
-        
-        // 부족하면 균등 간격으로 추가
         if (importantIndices.size < MAX_REVIEW_SECTIONS) {
-          const step = Math.floor(sections.length / (MAX_REVIEW_SECTIONS - importantIndices.size));
-          for (let i = 0; i < sections.length && importantIndices.size < MAX_REVIEW_SECTIONS; i += step) {
+          const step = Math.floor(allSections.length / (MAX_REVIEW_SECTIONS - importantIndices.size));
+          for (let i = 0; i < allSections.length && importantIndices.size < MAX_REVIEW_SECTIONS; i += step) {
             importantIndices.add(i);
           }
         }
-        
         const sortedIndices = Array.from(importantIndices).sort((a, b) => a - b).slice(0, MAX_REVIEW_SECTIONS);
-        reviewSections = sortedIndices.map(i => sections[i]);
-        reviewContents = sortedIndices.map(i => writtenSections[i]?.content || '');
+        return {
+          reviewSections: sortedIndices.map(i => allSections[i]),
+          reviewContents: sortedIndices.map(i => allContents[i]?.content || allContents[i] || '')
+        };
+      };
+
+      // Review-rewrite loop
+      while (reviewRound <= MAX_REWRITE_ROUNDS + 1) {
+        console.log(`\n✅ Phase 4: 품질 검수 (${reviewRound}차)`);
         
-        console.log(`📋 리뷰 샘플링: ${sections.length}개 중 ${reviewSections.length}개 핵심 섹션 선별`);
-      }
-      
-      const reviewResult = await this.reviewer.reviewMultipleSections(
-        reviewSections,
-        reviewContents
-      );
-      
-      reviewResult.reviews.forEach(review => {
-        if (review.tokens) {
-          this.updateTokenUsage('reviewer', review.tokens, { model: this.reviewer.model });
+        this.updateProgress('reviewer', { status: 'running', progress: 50 });
+        
+        if (progressTracker && projectInfo.projectId) {
+          progressTracker.updateAgent(projectInfo.projectId, 'reviewer', {
+            status: 'running',
+            progress: 50,
+            detail: `${reviewRound}차 품질 검토 중...`
+          });
+          progressTracker.addLog(projectInfo.projectId, {
+            agent: 'reviewer',
+            level: 'info',
+            message: `${reviewRound}차 품질 검토 시작`
+          });
         }
-      });
-      
-      console.log(`✅ 품질 검수 완료: 평균 ${reviewResult.summary.averageScore}/100점`);
+
+        const currentContents = writtenSections.map((s: any) => s.content);
+        const { reviewSections: rSections, reviewContents: rContents } = sampleReviewSections(sections, currentContents);
+        
+        console.log(`📋 리뷰: ${rSections.length}개 섹션 검토`);
+        
+        reviewResult = await this.reviewer.reviewMultipleSections(rSections, rContents);
+        
+        reviewResult.reviews.forEach((review: any) => {
+          if (review.tokens) {
+            this.updateTokenUsage('reviewer', review.tokens, { model: this.reviewer.model });
+          }
+        });
+        
+        const avgScore = reviewResult.summary.averageScore;
+        console.log(`✅ ${reviewRound}차 품질 검수: 평균 ${avgScore.toFixed(1)}/100점`);
+
+        // Track best result
+        if (avgScore > bestScore) {
+          bestScore = avgScore;
+          bestWrittenSections = [...writtenSections];
+        }
+
+        if (progressTracker && projectInfo.projectId) {
+          progressTracker.addLog(projectInfo.projectId, {
+            agent: 'reviewer',
+            level: avgScore >= QUALITY_THRESHOLD ? 'success' : 'warn',
+            message: `${reviewRound}차 검토: ${avgScore.toFixed(1)}/100점 ${avgScore >= QUALITY_THRESHOLD ? '(통과)' : '(미달)'}`
+          });
+        }
+
+        // Quality gate passed or max rounds reached
+        if (avgScore >= QUALITY_THRESHOLD || reviewRound > MAX_REWRITE_ROUNDS) {
+          if (avgScore < QUALITY_THRESHOLD && reviewRound > MAX_REWRITE_ROUNDS) {
+            console.log(`⚠️  최대 재시도 횟수 도달. Best score: ${bestScore.toFixed(1)} 사용`);
+            writtenSections = bestWrittenSections;
+          }
+          break;
+        }
+
+        // Rewrite: collect feedback from low-scoring sections
+        console.log(`\n✍️  ${reviewRound + 1}차 재작성 시작 (피드백 반영)`);
+        
+        if (progressTracker && projectInfo.projectId) {
+          progressTracker.updateAgent(projectInfo.projectId, 'writer', {
+            status: 'running',
+            progress: 50,
+            detail: `${reviewRound + 1}차 재작성 중 (품질 개선)...`
+          });
+          progressTracker.addLog(projectInfo.projectId, {
+            agent: 'writer',
+            level: 'info',
+            message: `${reviewRound + 1}차 재작성: ${avgScore.toFixed(1)}점 → ${QUALITY_THRESHOLD}점 목표`
+          });
+        }
+
+        // Find sections that need rewriting (score < 90 or verdict !== 'pass')
+        const rewriteIndices: number[] = [];
+        const feedbackMap = new Map<number, string>();
+        
+        reviewResult.reviews.forEach((r: any, reviewIdx: number) => {
+          if (r.review.overallScore < QUALITY_THRESHOLD || r.review.verdict !== 'pass') {
+            // Find original section index
+            const sectionTitle = rSections[reviewIdx]?.title;
+            const origIdx = sections.findIndex((s: any) => s.title === sectionTitle);
+            if (origIdx >= 0) {
+              rewriteIndices.push(origIdx);
+              const feedback = [
+                ...(r.review.weaknesses || []),
+                ...(r.review.improvements || []).map((imp: any) => `${imp.issue}: ${imp.suggestion}`)
+              ].join('\n- ');
+              feedbackMap.set(origIdx, feedback);
+            }
+          }
+        });
+
+        console.log(`   ${rewriteIndices.length}개 섹션 재작성 필요`);
+
+        // Rewrite low-scoring sections with feedback
+        for (const idx of rewriteIndices) {
+          const section = sections[idx];
+          const feedback = feedbackMap.get(idx) || '';
+          const writer = this.writerTeam[idx % this.writerTeamSize];
+          
+          // Enhance section requirements with reviewer feedback
+          const enhancedSection = {
+            ...section,
+            requirements: `${section.requirements || ''}\n\n[품질 개선 피드백 - 반드시 반영하세요]\n- ${feedback}\n\n[필수 요구사항]\n- 구체적 수치/데이터 3개 이상 포함\n- Markdown 표 1개 이상 포함\n- 볼드체(**) 활용한 강조\n- 전문 용어 사용\n- 각 불릿은 50자 이내 간결하게`
+          };
+
+          try {
+            const prevTitle = idx > 0 ? sections[idx - 1]?.title : null;
+            const nextTitle = idx < sections.length - 1 ? sections[idx + 1]?.title : null;
+            const result = await writer.writeSection(enhancedSection, writerProjectInfo, { prevTitle, nextTitle });
+            writtenSections[idx] = result;
+            this.updateTokenUsage('writerTeam', result.tokens, {
+              model: section.model || writer.model,
+              sectionTitle: section.title,
+            });
+            console.log(`   ✓ "${section.title}" 재작성 완료`);
+          } catch (rewriteErr: any) {
+            console.warn(`   ⚠️  "${section.title}" 재작성 실패: ${rewriteErr.message}`);
+          }
+        }
+
+        if (progressTracker && projectInfo.projectId) {
+          progressTracker.updateAgent(projectInfo.projectId, 'writer', {
+            status: 'completed',
+            progress: 100,
+            detail: `${reviewRound + 1}차 재작성 완료`
+          });
+        }
+
+        reviewRound++;
+      }
       
       this.updateProgress('reviewer', { status: 'completed', progress: 100 });
       
@@ -535,12 +629,12 @@ export class AgentTeamOrchestrator {
         progressTracker.updateAgent(projectInfo.projectId, 'reviewer', {
           status: 'completed',
           progress: 100,
-          detail: '품질 검토 완료'
+          detail: `품질 검토 완료 (${reviewRound}차, ${reviewResult.summary.averageScore.toFixed(1)}점)`
         });
         progressTracker.addLog(projectInfo.projectId, {
           agent: 'reviewer',
           level: 'success',
-          message: `품질 검토 완료: ${reviewResult.summary.averageScore}/100점`
+          message: `품질 검토 최종 완료: ${reviewResult.summary.averageScore.toFixed(1)}/100점 (${reviewRound}차 검토)`
         });
       }
 
@@ -578,6 +672,7 @@ export class AgentTeamOrchestrator {
         pptSlideCount,
         pptSlideData,
         presentationHtml: presentationHtml || null,
+        reviewRound,
         metadata: {
           totalTime: elapsed,
           tokenUsage: totalTokens,
