@@ -235,10 +235,7 @@ export function generateHTML(result: any, projectInfo: any) {
       <p><strong>생성 방식:</strong> 프레젠테이션 먼저 → 문서 확장 (GenSpark 패턴)</p>
       <p><strong>총 섹션:</strong> ${sections.length}개</p>
       <p><strong>슬라이드:</strong> ${slideDataArray.length}장 (차트/다이어그램 ${slideVisualCount}개)</p>
-      <p><strong>평균 품질:</strong> ${avgQuality.toFixed(1)}/100점</p>
       <p><strong>이미지:</strong> ${totalImageCount}개</p>
-      <p><strong>토큰 사용:</strong> ${metadata.tokenUsage?.total?.toLocaleString() || 'N/A'} tokens</p>
-      <p><strong>생성 시간:</strong> ${metadata.totalTime ? Math.round(metadata.totalTime / 1000) : 'N/A'}초</p>
     </div>
   </div>
 

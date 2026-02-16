@@ -85,7 +85,7 @@ export default function Generate() {
     { id: 1, title: "요구사항 분석", description: "입력된 정보를 분석하고 문서 구조를 설계합니다" },
     { id: 2, title: "콘텐츠 생성", description: "AI 모델을 활용하여 핵심 내용을 작성합니다" },
     { id: 3, title: "구조 최적화", description: "문서의 논리적 흐름과 구성을 최적화합니다" },
-    { id: 4, title: "품질 검증", description: "생성된 내용의 일관성과 품질을 검증합니다" },
+    { id: 4, title: "이미지 생성", description: "DALL-E 3 및 차트를 생성하여 문서에 삽입합니다" },
     { id: 5, title: "서식 적용", description: "전문적인 문서 서식과 레이아웃을 적용합니다" }
   ]);
 
@@ -94,7 +94,7 @@ export default function Generate() {
       const resolvedCategory = category || (savedCategoryId ? getCategoryById(savedCategoryId) : null);
       setGeneratedDoc({
         title: generatedDoc?.title || `${resolvedCategory?.label || "문서"} 결과물`,
-        content: `문서 생성이 완료되었습니다.\n\n품질 점수: ${s.document?.qualityScore?.toFixed(1) || "N/A"}/100\n섹션 수: ${s.document?.sectionCount || 0}개\n단어 수: ${s.document?.wordCount?.toLocaleString() || 0}개\n이미지: ${s.document?.imageCount || 0}개`,
+        content: `문서 생성이 완료되었습니다.\n\n섹션 수: ${s.document?.sectionCount || 0}개\n단어 수: ${s.document?.wordCount?.toLocaleString() || 0}개\n이미지: ${s.document?.imageCount || 0}개`,
       });
       setProgress(100);
       setCurrentStep(generationSteps.length);
@@ -141,7 +141,7 @@ export default function Generate() {
           if (s.status === "completed" && s.document) {
             setGeneratedDoc({
               title: project.title || "문서",
-              content: `문서 생성 완료\n\n품질 점수: ${s.document.qualityScore?.toFixed(1) || "N/A"}/100\n섹션 수: ${s.document.sectionCount || 0}개\n단어 수: ${s.document.wordCount?.toLocaleString() || 0}개\n이미지: ${s.document.imageCount || 0}개`,
+              content: `문서 생성 완료\n\n섹션 수: ${s.document.sectionCount || 0}개\n단어 수: ${s.document.wordCount?.toLocaleString() || 0}개\n이미지: ${s.document.imageCount || 0}개`,
             });
             setPageStatus("completed");
             setProgress(100);
@@ -495,24 +495,10 @@ export default function Generate() {
                     <div className="mb-4">
                       <CardTitle className="text-xl sm:text-2xl">{generatedDoc.title}</CardTitle>
                       <CardDescription>AI 초안 생성이 완료되었습니다.</CardDescription>
-                      {/* 품질 점수 배지 & 재작성 횟수 */}
                       <div className="flex items-center gap-2 mt-2">
-                        {genStatus?.document?.qualityScore != null && (() => {
-                          const score = genStatus.document.qualityScore;
-                          const colorClass = score >= 90
-                            ? "bg-green-100 text-green-700 border-green-300"
-                            : score >= 80
-                            ? "bg-yellow-100 text-yellow-700 border-yellow-300"
-                            : "bg-red-100 text-red-700 border-red-300";
-                          return (
-                            <Badge className={cn("text-xs border", colorClass)}>
-                              품질 {score.toFixed(1)}점
-                            </Badge>
-                          );
-                        })()}
-                        {genStatus?.document && (genStatus.document as any).reviewRound != null && (
+                        {genStatus?.document?.imageCount != null && (
                           <Badge variant="secondary" className="text-xs">
-                            {(genStatus.document as any).reviewRound}차 검토 통과
+                            이미지 {genStatus.document.imageCount}개
                           </Badge>
                         )}
                       </div>
