@@ -58,8 +58,10 @@ export class ResearchAgent {
     // Step 4: Summarize findings using AI
     const summary = await this.summarizeFindings(idea, allPapers);
     
-    // Step 5: Generate references
-    const references = allPapers.slice(0, 15).map(p => p.citation);
+    // Step 5: Generate references with full bibliographic info
+    const references = allPapers.slice(0, 15).map((p, i) => 
+      `[${i + 1}] ${p.authors || 'Unknown'}, "${p.title}", ${p.source === 'arxiv' ? 'arXiv' : 'Semantic Scholar'}, ${p.year || 'n.d.'}${p.url ? ', ' + p.url : ''}`
+    );
     const referenceLinks = this.publicData.generateReferenceLinks(idea, researchKeywords);
     
     return {

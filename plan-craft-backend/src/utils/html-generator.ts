@@ -113,9 +113,21 @@ export function generateHTML(result: any, projectInfo: any) {
     ul, ol { margin: 12px 0; padding-left: 30px; }
     li { margin: 8px 0; line-height: 1.7; }
     strong { color: #1e40af; font-weight: 600; }
-    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11pt; }
-    th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: left; }
-    th { background: #f1f5f9; font-weight: 600; color: #334155; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 11pt; border: 1px solid #94a3b8; border-radius: 8px; overflow: hidden; }
+    th, td { border: 1px solid #cbd5e1; padding: 12px 14px; text-align: left; line-height: 1.6; }
+    th { background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); font-weight: 600; color: #ffffff; border-color: #1e40af; }
+    tr:nth-child(even) { background-color: #f8fafc; }
+    tr:nth-child(odd) { background-color: #ffffff; }
+    tr:hover { background-color: #eff6ff; transition: background-color 0.2s; }
+    td:first-child { font-weight: 500; }
+    /* Inline citations [1], [2] styling */
+    .section p, .section li, .section td { }
+    
+    /* References section styling */
+    .references-section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px 28px; margin-top: 32px; }
+    .references-section h2 { color: #1e40af; border-bottom: 2px solid #1e40af; }
+    .references-section p, .references-section li { font-size: 10.5pt; line-height: 1.7; color: #475569; word-break: break-all; }
+
     .cover { text-align: center; padding: 100px 0; page-break-after: always; }
     .cover h1 { font-size: 36pt; color: #1e3a8a; border: none; margin-bottom: 40px; }
     .cover .subtitle { font-size: 20pt; color: #64748b; margin: 20px 0; }
@@ -166,10 +178,15 @@ export function generateHTML(result: any, projectInfo: any) {
   sections.forEach((section: any, idx: number) => {
     const sectionImages = imageMap[section.sectionId] || [];
     
-    const htmlContent = marked.parse(section.content || '') as string;
+    let htmlContent = marked.parse(section.content || '') as string;
+    // Style inline citations [1], [2], etc. as superscript links
+    htmlContent = htmlContent.replace(/\[(\d{1,3})\]/g, '<sup style="font-size:0.75em;color:#2563eb;font-weight:600;cursor:pointer;">[$1]</sup>');
     const contentWithImages = embedImagesInContent(htmlContent, sectionImages);
     
-    html += `  <div class="section page-break">
+    // Check if this is a references section
+    const isReferencesSection = /참고문헌|references/i.test(section.sectionId);
+    
+    html += `  <div class="section page-break${isReferencesSection ? ' references-section' : ''}">
     <h2>${section.sectionId}</h2>
 ${contentWithImages}
   </div>\n\n`;
