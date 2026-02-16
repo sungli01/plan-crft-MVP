@@ -4,8 +4,6 @@ import {
   regenerateApi,
   getGenerateStatusApi,
   downloadGeneratedApi,
-  downloadPptxApi,
-  getPresentationUrl,
   type GenerateStatus,
 } from "@/api/generate";
 import { toast } from "sonner";
@@ -195,41 +193,6 @@ export function useGenerate(options: UseGenerateOptions = {}) {
     }
   }, [startPollingFor, onError, stopPolling]);
 
-  const downloadPptx = useCallback(async (projectId: string) => {
-    try {
-      const blob = await downloadPptxApi(projectId);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `presentation-${projectId}.pptx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        toast.success("PPT 다운로드 완료! 📂", {
-          description: "브라우저 상단 또는 알림바에서 파일을 확인하세요.",
-          duration: 5000,
-        });
-      } else {
-        toast.success("PPT 다운로드가 시작되었습니다.");
-      }
-    } catch (error: any) {
-      toast.error("PPT 파일이 없거나 만료되었습니다.");
-    }
-  }, []);
-
-  const openPresentation = useCallback((projectId: string) => {
-    const url = getPresentationUrl(projectId);
-    window.open(url, '_blank');
-    toast.success("발표자료가 새 탭에서 열렸습니다.", {
-      description: "PDF로 저장하려면 Ctrl+P (Mac: ⌘+P) → PDF로 저장",
-      duration: 6000,
-    });
-  }, []);
-
   /**
    * Resume polling for an in-progress generation (e.g. after page revisit).
    * Call this from the page component when localStorage indicates generating.
@@ -251,8 +214,6 @@ export function useGenerate(options: UseGenerateOptions = {}) {
     startGenerate,
     regenerate,
     download,
-    downloadPptx,
-    openPresentation,
     stopPolling,
     resumePolling,
   };

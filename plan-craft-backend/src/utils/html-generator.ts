@@ -4,7 +4,6 @@
  */
 
 import { marked } from 'marked';
-import type { SlideData } from '../engine/agents/slide-generator';
 
 // Configure marked for GFM + line breaks
 marked.setOptions({ gfm: true, breaks: true });
@@ -86,78 +85,14 @@ function escapeHtml(str: string) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-/**
- * Render a slide visual card for embedding in the document
- */
-function renderSlideVisual(slide: SlideData, sectionIdx: number): string {
-  const c = slide.content || {};
-  let visualHtml = '';
-
-  // KPI cards
-  if (c.kpiCards && c.kpiCards.length > 0) {
-    visualHtml += `<div class="kpi-row">${c.kpiCards.map(k => `
-      <div class="kpi-card">
-        <div class="kpi-value">${escapeHtml(k.value)}</div>
-        <div class="kpi-label">${escapeHtml(k.label)}</div>
-        ${k.change ? `<div class="kpi-change ${k.change.startsWith('-') ? 'neg' : ''}">${escapeHtml(k.change)}</div>` : ''}
-      </div>`).join('')}
-    </div>`;
-  }
-
-  // Chart image
-  if (slide.chartUrl) {
-    visualHtml += `
-      <figure class="slide-chart" style="margin:24px auto;text-align:center;max-width:680px;">
-        <img src="${slide.chartUrl}" alt="${escapeHtml(slide.title)}" 
-             style="max-width:100%;height:auto;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.08);" loading="lazy"/>
-      </figure>`;
-  }
-
-  // DALL-E diagram
-  if (slide.diagramUrl) {
-    visualHtml += `
-      <figure class="slide-diagram" style="margin:24px auto;text-align:center;max-width:720px;">
-        <img src="${slide.diagramUrl}" alt="${escapeHtml(slide.title)}" 
-             style="max-width:100%;height:auto;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.08);" loading="lazy"/>
-      </figure>`;
-  }
-
-  // Icon boxes
-  if (c.iconBoxes && c.iconBoxes.length > 0) {
-    visualHtml += `<div class="icon-grid-doc">${c.iconBoxes.map(ib => `
-      <div class="icon-box-doc">
-        <div class="ib-icon">${ib.icon}</div>
-        <div class="ib-title">${escapeHtml(ib.title)}</div>
-        <div class="ib-desc">${escapeHtml(ib.description)}</div>
-      </div>`).join('')}
-    </div>`;
-  }
-
-  if (!visualHtml) return '';
-
-  return `
-    <div class="slide-visual-card">
-      <div class="svc-header">
-        <span class="svc-badge">📊 핵심 요약</span>
-        <span class="svc-title">${escapeHtml(slide.title)}</span>
-      </div>
-      <div class="svc-body">
-        ${visualHtml}
-      </div>
-    </div>`;
-}
-
 export function generateHTML(result: any, projectInfo: any) {
   const { design, sections, images, reviews, metadata } = result;
-  const slideDataArray: SlideData[] = result.pptSlideData || [];
   const avgQuality = reviews?.summary?.averageScore ?? 0;
   const imageMap = buildImageMap(images);
   
   const totalImageCount = images
     ? images.reduce((sum: number, r: any) => sum + (r.images ? r.images.length : 0), 0)
     : 0;
-
-  const slideVisualCount = slideDataArray.filter(s => s.chartUrl || s.diagramUrl || (s.content?.kpiCards && s.content.kpiCards.length > 0)).length;
 
   let html = `<!DOCTYPE html>
 <html lang="ko">
@@ -189,38 +124,8 @@ export function generateHTML(result: any, projectInfo: any) {
     .section { page-break-inside: avoid; margin-bottom: 40px; }
     .page-break { page-break-after: always; }
 
-    /* Slide Visual Cards */
-    .slide-visual-card {
-      margin: 28px 0; border-radius: 14px; overflow: hidden;
-      box-shadow: 0 4px 20px rgba(37,99,235,0.12), 0 1px 4px rgba(0,0,0,0.06);
-      border: 1px solid #dbeafe; page-break-inside: avoid;
-    }
-    .svc-header {
-      background: linear-gradient(135deg, #2563eb 0%, #1e40af 60%, #1e3a8a 100%);
-      padding: 14px 22px; display: flex; align-items: center; gap: 10px;
-    }
-    .svc-badge { font-size: 18px; }
-    .svc-title { color: #fff; font-size: 14pt; font-weight: 700; letter-spacing: -0.3px; }
-    .svc-body { background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%); padding: 20px 24px; }
-
-    /* KPI Cards */
-    .kpi-row { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin: 16px 0; }
-    .kpi-card { background: white; border-radius: 12px; padding: 20px 24px; text-align: center; border: 1px solid #E2E8F0; flex: 1; min-width: 140px; max-width: 220px; }
-    .kpi-value { font-size: 36px; font-weight: 800; color: #2563EB; }
-    .kpi-label { font-size: 13px; color: #64748B; margin-top: 4px; }
-    .kpi-change { font-size: 12px; color: #10B981; font-weight: 600; margin-top: 2px; }
-    .kpi-change.neg { color: #EF4444; }
-
-    /* Icon Grid */
-    .icon-grid-doc { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin: 16px 0; }
-    .icon-box-doc { background: white; border-radius: 10px; padding: 16px; border: 1px solid #E2E8F0; }
-    .ib-icon { font-size: 24px; margin-bottom: 6px; }
-    .ib-title { font-size: 14px; font-weight: 700; color: #1E293B; margin-bottom: 4px; }
-    .ib-desc { font-size: 12px; color: #64748B; line-height: 1.5; }
-
     @media print {
-      .slide-visual-card { box-shadow: none; border: 2px solid #2563eb; }
-      .svc-header, .svc-body, .kpi-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      body { margin: 0; }
     }
   </style>
 </head>
@@ -232,9 +137,7 @@ export function generateHTML(result: any, projectInfo: any) {
     <div class="subtitle" style="margin-top: 50px;">${new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
     <div class="stats">
       <h3>📊 문서 정보</h3>
-      <p><strong>생성 방식:</strong> 프레젠테이션 먼저 → 문서 확장 (GenSpark 패턴)</p>
       <p><strong>총 섹션:</strong> ${sections.length}개</p>
-      <p><strong>슬라이드:</strong> ${slideDataArray.length}장 (차트/다이어그램 ${slideVisualCount}개)</p>
       <p><strong>이미지:</strong> ${totalImageCount}개</p>
     </div>
   </div>
@@ -263,22 +166,11 @@ export function generateHTML(result: any, projectInfo: any) {
   sections.forEach((section: any, idx: number) => {
     const sectionImages = imageMap[section.sectionId] || [];
     
-    // Find matching slide visual for this section
-    let slideVisualHtml = '';
-    if (slideDataArray.length > 0) {
-      const slideIdx = Math.min(Math.floor((idx / sections.length) * slideDataArray.length) + 2, slideDataArray.length - 2);
-      const slide = slideDataArray[slideIdx];
-      if (slide && (slide.chartUrl || slide.diagramUrl || (slide.content?.kpiCards && slide.content.kpiCards.length > 0) || (slide.content?.iconBoxes && slide.content.iconBoxes.length > 0))) {
-        slideVisualHtml = renderSlideVisual(slide, idx);
-      }
-    }
-    
     const htmlContent = marked.parse(section.content || '') as string;
     const contentWithImages = embedImagesInContent(htmlContent, sectionImages);
     
     html += `  <div class="section page-break">
     <h2>${section.sectionId}</h2>
-${slideVisualHtml}
 ${contentWithImages}
   </div>\n\n`;
   });
