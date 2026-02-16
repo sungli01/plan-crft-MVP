@@ -104,7 +104,7 @@ export class SlideContentGenerator {
 
   constructor(options: { apiKey: string; model?: string }) {
     this.client = new Anthropic({ apiKey: options.apiKey });
-    this.model = options.model || 'claude-sonnet-4-20250514';
+    this.model = options.model || 'claude-sonnet-4-5-20250929';
   }
 
   async generate(

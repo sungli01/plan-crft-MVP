@@ -319,7 +319,7 @@ export class AgentTeamOrchestrator {
           // Step 1: Generate slide content JSON (single AI call)
           const slideContentGen = new SlideContentGenerator({
             apiKey: this.config.apiKey,
-            model: 'claude-sonnet-4-20250514',
+            model: 'claude-sonnet-4-5-20250929',
           });
 
           const slideContent = await slideContentGen.generate(
@@ -329,7 +329,7 @@ export class AgentTeamOrchestrator {
           );
 
           if (slideContent.tokens) {
-            this.updateTokenUsage('architect', slideContent.tokens, { model: 'claude-sonnet-4-20250514' });
+            this.updateTokenUsage('architect', slideContent.tokens, { model: 'claude-sonnet-4-5-20250929' });
           }
 
           // Step 2: Render to HTML via template engine (instant, no AI)
