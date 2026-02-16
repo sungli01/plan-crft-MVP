@@ -70,7 +70,7 @@ export async function getPptxStatusApi(projectId: string): Promise<{ available: 
 }
 
 export function getPresentationUrl(projectId: string): string {
-  const token = localStorage.getItem('token') || '';
+  const token = localStorage.getItem('plan_craft_token') || '';
   const base = apiClient.defaults.baseURL || '';
   return `${base}/api/generate/${projectId}/download-presentation?token=${encodeURIComponent(token)}`;
 }
